@@ -2,7 +2,6 @@
 // CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-// include barney.h first, so we know whether BARNEY_HAVE_NANOVDB is set 
 #include "native/volume/NanoVDB.h"
 
 #if BARNEY_HAVE_NANOVDB

@@ -1,22 +1,21 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 
 #pragma once
 
-
-#include "barney/common/barney-common.h"
+#include "barney/native/common/barney-common.h"
 #ifndef BARNEY_MPI
 # pragma error(FATAL "should not include mpi.h unless from barney_mpi")
 #endif
 #include <mpi.h>
 #include <stdexcept>
 
-#define BN_MPI_CALL(fctCall)                                                 \
-  { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw barney_api::mpi::Exception(__PRETTY_FUNCTION__,rc); }
+#define BN_MPI_CALL(fctCall)                                            \
+  { int rc = MPI_##fctCall; if (rc != MPI_SUCCESS) throw native::Exception(__PRETTY_FUNCTION__,rc); }
     
-namespace barney_api {
-  namespace mpi {
+namespace BARNEY_NS {
+  namespace native {
 
     inline std::string mpiErrorString(int rc)
     {

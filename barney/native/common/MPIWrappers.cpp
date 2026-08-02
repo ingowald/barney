@@ -1,11 +1,12 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 
-#include "barney/common/MPIWrappers.h"
+#include "barney/native/common/MPIWrappers.h"
 
-namespace barney_api {
-  namespace mpi {
+namespace BARNEY_NS {
+  namespace native {
 
     void init(int &ac, char **av)
     {

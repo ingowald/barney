@@ -11,6 +11,7 @@
 #include <cstring>
 
 #include "generated/anari_library_barney_queries.h"
+#include "barney/native/include/barney_mpi.h"
 
 namespace BARNEY_NS {
   namespace anari {
@@ -22,6 +23,7 @@ namespace BARNEY_NS {
     
       BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
       void initMPI() override;
+      void deviceCommitParameters() override;
     
       /*! communicator to use for barney data-parallel rendering, set as
         a uint64_t. If set to 0, we'll use local rendering even if mpi
@@ -47,83 +49,90 @@ namespace BARNEY_NS {
       if (commNeedsFree)
         MPI_Comm_free(&comm);
     }
-
-    BNContext BarneyMPIDevice::createContext()
+  
+    void BarneyMPIDevice::initMPI() 
     {
-      if (comm) {
-        int initialized = false;
-        MPI_Initialized(&initialized);
-      }
-    }
-  }
-  
-  void BarneyMPIDevice::initMPI() 
-  {
-    assert(comm
-           && "BarneyMPIDevice - comm not set!?");
-    
-    int mpiInitialized = 0;
-    MPI_Initialized(&mpiInitialized);
-
-    if (!initialized) {
-      std::cout << "#barney: anari_barney device created in MPI mode (loaded from barney_mpi device in either mpi or default mode), but MPI not yet initialized. Doing so now, but this is not how it should be."
-                << std::endl;
-      int required = MPI_THREAD_MULTIPLE;
-      int provided = 0;
-      MPI_Init_thread(nullptr,nullptr,required,&provided);
-    }
-
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &size);
-    printf("#banari.mpi: running banari mpi device on rank %i size %i\n",
-           rank,size);
-    multiNode.rank = rank;
-    multiNode.size = size;
-  }
-  
-  void BarneyMPIDevice::deviceCommitParameters()
-  {
-    /* we do ours FIRST, so BarneyDevice::commit() can then directly
-       create the device; if we called parent commit first the device
-       would be created without this comm being set. */
-    uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
-    if (pointerToComm) {
-      printf("#banari.mpi: got passed a pointer to a MPI "
-             "communicator, going to use this.\n");
-      comm = *(MPI_Comm *)pointerToComm;
-      commNeedsFree = false;
       assert(comm
-             && "BarneyMPI: app did set comm, but set it to a null communicator?");
-    } else {
-      std::cout << "#banari: Device started in MPI mode, but no MPI Communicator passed to it; started with a MPI_Comm_dup() of MPI_COMM_WORLD" << std::endl;
-      MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-      commNeedsFree = true;
+             && "BarneyMPIDevice - comm not set!?");
+    
+      int mpiInitialized = 0;
+      MPI_Initialized(&mpiInitialized);
+
+      if (!mpiInitialized) {
+        std::cout << "#barney: anari_barney device created in MPI mode (loaded from barney_mpi device in either mpi or default mode), but MPI not yet initialized. Doing so now, but this is not how it should be."
+                  << std::endl;
+        int required = MPI_THREAD_MULTIPLE;
+        int provided = 0;
+        MPI_Init_thread(nullptr,nullptr,required,&provided);
+      }
+
+      int rank,size;
+      MPI_Comm_rank(comm, &rank);
+      MPI_Comm_size(comm, &size);
+      printf("#banari.mpi: running banari mpi device on rank %i size %i\n",
+             rank,size);
+      multiNode.rank = rank;
+      multiNode.size = size;
     }
-    // if (comm) {
-    //   int rank, size;
-    //   MPI_Comm_rank(comm,&rank);
-    //   MPI_Comm_size(comm,&size);
-    // }
+  
+    void BarneyMPIDevice::deviceCommitParameters()
+    {
+      /* we do ours FIRST, so BarneyDevice::commit() can then directly
+         create the device; if we called parent commit first the device
+         would be created without this comm being set. */
+      uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
+      if (pointerToComm) {
+        printf("#banari.mpi: got passed a pointer to a MPI "
+               "communicator, going to use this.\n");
+        comm = *(MPI_Comm *)pointerToComm;
+        commNeedsFree = false;
+        assert(comm
+               && "BarneyMPI: app did set comm, but set it to a null communicator?");
+      } else {
+        std::cout << "#banari: Device started in MPI mode, but no MPI Communicator passed to it; started with a MPI_Comm_dup() of MPI_COMM_WORLD" << std::endl;
+        MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+        commNeedsFree = true;
+      }
+      // if (comm) {
+      //   int rank, size;
+      //   MPI_Comm_rank(comm,&rank);
+      //   MPI_Comm_size(comm,&size);
+      // }
 
-    BarneyDevice::deviceCommitParameters();
+      BarneyDevice::deviceCommitParameters();
+    }
+
+    BNContext BarneyMPIDevice::createContext(std::vector<vec2i> &gpuIDsAndDataRank)
+    {
+      PING;
+      std::vector<int> dataRanks;
+      std::vector<int> gpuIDs;
+      for (auto in : gpuIDsAndDataRank) {
+        gpuIDs.push_back(in.x);
+        dataRanks.push_back(in.y);
+      }
+      BNContext ctx =
+        bnMPIContextCreate(comm,
+                           dataRanks.data(),
+                           dataRanks.size(),
+                           gpuIDs.data(),
+                           gpuIDs.size());
+      return ctx;
+      // // #if BARNEY_MPI
+      // //     if (comm && !forceLocalRendering)
+      //       // state->tether->context =
+      //     return
+      //         bnMPIContextCreate(comm,
+      //                              _dgIDs,_dgCount,
+      //                              _gpuIDs,_gpuCount);
+      //       else
+      // #endif
+      //         state->tether->context
+      //         = bnContextCreate(_dgIDs,_dgCount,
+      //                           _gpuIDs,_gpuCount);
+
+      // #endif
+    }
+
   }
-
-  BNContext BarneyMPIDevice::createContext()
-  {
-#if BARNEY_MPI
-    if (comm && !forceLocalRendering)
-      state->tether->context
-        = bnMPIContextCreate(comm,
-                             _dgIDs,_dgCount,
-                             _gpuIDs,_gpuCount);
-    else
-#endif
-      state->tether->context
-        = bnContextCreate(_dgIDs,_dgCount,
-                          _gpuIDs,_gpuCount);
-
-#endif
-  }
-
-}
 }

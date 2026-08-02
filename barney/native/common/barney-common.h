@@ -6,12 +6,8 @@
 
 #include "barney_rtc.h"
 #include "rtcore/common/rtcore-common.h"
-#include "native/include/barney-native.h"
+#include "native/include/barney.h"
  
-#ifndef BARNEY_NS
-# error "BARNEY_NS is not defined - cmake should do this"
-#endif
-
 namespace BARNEY_NS {
   namespace native {
     

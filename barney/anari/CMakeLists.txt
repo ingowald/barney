@@ -37,7 +37,7 @@ set(BANARI_SOURCES
   # properly recognize this as requiring linking with cuda.
   dummy.cu
 )
-set(MPI_SOURCES
+set(BANARI_MPI_SOURCES
   MPIDevice.cpp
 )
 
@@ -67,17 +67,25 @@ message("anari_library_barney_${backend}_static ")
 add_library(anari_library_barney_${backend}_static STATIC ${BANARI_SOURCES})
 target_link_libraries(anari_library_barney_${backend}_static PUBLIC
   barney_${backend}_static
-  #$<BUILD_INTERFACE:barney_config_${backend}>
-#  $<BUILD_INTERFACE:banari-config-${backend}>
   anari::helium
 )
 rtc_library_properties(anari_library_barney_${backend}_static)
+
+if (BARNEY_MPI)
+  add_library(anari_library_barney_${backend}_mpi_static STATIC
+    ${BANARI_SOURCE} ${BANARI_MPI_SOURCES}
+  )
+  target_link_libraries(anari_library_barney_${backend}_mpi_static PUBLIC
+    barney_${backend}_mpi_static
+    anari::helium
+  )
+  rtc_library_properties(anari_library_barney_${backend}_mpi_static)
+endif()
 
 # ==================================================================
 # the 'full' barney+anari, as a real shared loadable library, but
 # containing only a single backend
 # ==================================================================
-message("anari_library_barney_${backend}")
 add_library(anari_library_barney_${backend} SHARED SingleDeviceLibrary.cpp)
 target_link_libraries(anari_library_barney_${backend} PUBLIC
   anari_library_barney_${backend}_static
@@ -94,6 +102,25 @@ set_target_properties(anari_library_barney_${backend}
 )
 set(BARNEY_INSTALL_TARGETS anari_library_barney_${backend})
 
+
+if (BARNEY_MPI)
+  add_library(anari_library_barney_${backend}_mpi SHARED
+    SingleDeviceLibrary.cpp
+  )
+  target_link_libraries(anari_library_barney_${backend}_mpi PUBLIC
+    anari_library_barney_${backend}_mpi_static
+  )
+  set_target_properties(anari_library_barney_${backend}_mpi
+    PROPERTIES
+    POSITION_INDEPENDENT_CODE    ON
+    VISIBILITY_INLINES_HIDDEN    ON
+    CUDA_SEPARABLE_COMPILATION   ON
+    CUDA_USE_STATIC_CUDA_RUNTIME ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+    CUDA_VISIBILITY_PRESET       hidden
+    CXX_VISIBILITY_PRESET        hidden
+  )
+endif()
 
 # json files that specify configs global to all of barney, no matter the backend
 file(GLOB COMMON_DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/json/common "*.json")

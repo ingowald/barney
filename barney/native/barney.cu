@@ -68,16 +68,18 @@ namespace BARNEY_NS {
                             int  numGPUs)
   {
     LOG_API_ENTRY;
-    if (FromEnv::get()->logBackend) {
-      std::cout << "#bn. creating context over numGPUs = " << numGPUs << " gpu IDs ";
-      if (gpuIDs == nullptr)
-        std::cout << "<null>" << std::endl;
-      else {
-        for (int i=0;i<numGPUs;i++)
-          std::cout << gpuIDs[i] << " ";
-        std::cout << std::endl;
-      }
-    }
+    assert(dataRanksOnThisContext);
+    assert(gpuIDs);
+    // if (FromEnv::get()->logBackend) {
+    //   std::cout << "#bn. creating context over numGPUs = " << numGPUs << " gpu IDs ";
+    //   if (gpuIDs == nullptr)
+    //     std::cout << "<null>" << std::endl;
+    //   else {
+    //     for (int i=0;i<numGPUs;i++)
+    //       std::cout << gpuIDs[i] << " ";
+    //     std::cout << std::endl;
+    //   }
+    // }
     BNContext ctx
       = (BNContext)LocalContext::create(dataRanksOnThisContext,
                                         numDataRanksOnThisContext,

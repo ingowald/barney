@@ -259,38 +259,6 @@ if(MSVC) # That's also clang-cl
     PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
 endif()
 
-
-#------------------------------------------------------------------
-# include rtcore subdir - this will declare the different backend
-# configs. configs that are disabled via BARNEY_BACKEND_XYZ=OFF will
-# not be *attempted* to be built; those that are enabled in this
-# config will be attempted to build, but may still get disabled by
-# rtcore/ if certain requirements are not met (eg, not having CUDA or
-# HIP compiler(s)
-# ------------------------------------------------------------------
-# configure_file(
-#   "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in"
-#   "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barneyConfig.h"
-# )
-# configure_file(
-#   "${PROJECT_SOURCE_DIR}/barney/include/barney.h"
-#   "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney.h"
-# )
-# if (BARNEY_MPI)
-#   configure_file(
-#     "${PROJECT_SOURCE_DIR}/barney/include/barney_mpi.h"
-#     "${CMAKE_CURRENT_BINARY_DIR}/include/barney/barney_mpi.h"
-#   )
-# endif()
-
-# target_include_directories(barney_config INTERFACE
-#   ${CMAKE_CURRENT_LIST_DIR}
-#   # for any owl::common stuff
-#   ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
-#   # for configure_file output:
-#   ${CMAKE_CURRENT_BINARY_DIR}/include/ 
-# )
-
 include(CMakePackageConfigHelpers)
 
 
@@ -307,8 +275,8 @@ include(CMakePackageConfigHelpers)
 # device, not the anari library or entrypoint,t hus allowing us to
 # link those same devices also the multi-device 'barney' library
 function(build_barney backend)
-  string(TOUPPER BARNEY_BACKEND_${backend} FLAG_NAME)
-  if (NOT (${FLAG_NAME}))
+  string(TOUPPER ${backend} BACKEND)
+  if (NOT (${BARNEY_BACKEND_${BACKEND}}))
     message("#barney: backend '${backend}' disabled by user request")
   else()
     add_subdirectory(barney build_barney_${backend})
@@ -319,9 +287,15 @@ function(build_barney backend)
     # ==================================================================
     target_link_libraries(anari_library_barney PRIVATE
       anari_library_barney_${backend}_static)
-    string(TOUPPER ${backend} BACKEND)
     target_compile_definitions(anari_library_barney PRIVATE
       -DBARNEY_BACKEND_${BACKEND}=1)
+    
+    if (BARNEY_MPI)
+      target_link_libraries(anari_library_barney_mpi PRIVATE
+        anari_library_barney_${backend}_mpi_static)
+      target_compile_definitions(anari_library_barney_mpi PRIVATE
+        -DBARNEY_BACKEND_${BACKEND}=1)
+    endif()
   endif()
 endfunction()
 
@@ -338,6 +312,15 @@ target_include_directories(anari_library_barney PRIVATE
 target_link_libraries(anari_library_barney PRIVATE
   barney_config
 )
+if (BARNEY_MPI)
+  add_library(anari_library_barney_mpi SHARED
+    barney/anari/MultiDeviceLibrary.cpp)
+  target_include_directories(anari_library_barney_mpi PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/)
+  target_link_libraries(anari_library_barney_mpi PRIVATE
+    barney_config
+  )
+endif()
 
 # ==================================================================
 # now, build - and link-add to multi-dev 'barney' - all possible

@@ -231,7 +231,7 @@ if (BARNEY_MPI)
     ${MPI_SOURCES}
   )
   target_link_libraries(barney_${backend}_mpi_static PUBLIC
-    barney_${backend}
+    barney_${backend}_static
   )
   rtc_library_properties(barney_${backend}_mpi_static) 
 endif()

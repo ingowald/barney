@@ -110,7 +110,7 @@ namespace BARNEY_NS {
 
       const char **extensions() override;
 
-    private:
+    protected:
       void initDevice();
       void deviceCommitParameters() override;
       int deviceGetProperty(const char *name,
