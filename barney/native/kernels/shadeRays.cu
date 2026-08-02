@@ -611,7 +611,7 @@ namespace BARNEY_NS {
 
 #if BARNEY_USE_MULTI_SCATTERING
       if (isVolumeHit && bsdf.type == PackedBSDF::TYPE_Phase) {
-        vec3f emission = (vec3f)bsdf.data.phase.emission;
+        vec3f emission = (const vec3f &)bsdf.data.phase.emission;
         if (reduce_max(emission) > 0.f)
           fragment = incomingThroughput * emission;
       }
