@@ -10,11 +10,10 @@ namespace BARNEY_NS {
   namespace native {
     namespace packedBSDF {
 
-#if BARNEY_USE_MULTI_SCATTERING
       /*! homogeneous phase function with Henyey-Greenstein anisotropy. */
-      struct Phase {
-        inline Phase() = default;
-        inline __rtc_device Phase(vec3f color, float scatteringAlbedo=.9f,
+      struct HGPhase {
+        inline HGPhase() = default;
+        inline __rtc_device HGPhase(vec3f color, float scatteringAlbedo=.9f,
                                   float g=0.f);
 
         inline __rtc_device
@@ -31,6 +30,9 @@ namespace BARNEY_NS {
 
         inline __rtc_device
         float hgPhase(float cosTheta) const;
+
+        static inline __rtc_device
+        vec3f sampleDirection(vec3f wi_in, float g, Random &random);
         
         rtc::float3 albedo;
         float g;
@@ -38,7 +40,7 @@ namespace BARNEY_NS {
       };
 
       inline __rtc_device
-      Phase::Phase(vec3f color, float scatteringAlbedo, float _g)
+      HGPhase::HGPhase(vec3f color, float scatteringAlbedo, float _g)
       {
         (vec3f&)this->albedo = scatteringAlbedo * color;
         this->g = _g;
@@ -46,7 +48,7 @@ namespace BARNEY_NS {
       }
 
       inline __rtc_device
-      float Phase::hgPhase(float cosTheta) const
+      float HGPhase::hgPhase(float cosTheta) const
       {
         if (fabsf(g) < 1e-3f)
           return ONE_OVER_FOUR_PI;
@@ -56,7 +58,7 @@ namespace BARNEY_NS {
       }
       
       inline __rtc_device
-      float Phase::pdf(DG dg, vec3f wi, bool dbg) const
+      float HGPhase::pdf(DG dg, vec3f wi, bool dbg) const
       {
         vec3f wi_in = normalize(-dg.wo);
         float cosTheta = dot(wi_in, normalize(wi));
@@ -64,14 +66,14 @@ namespace BARNEY_NS {
       }
         
       inline __rtc_device
-      EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
+      EvalRes HGPhase::eval(DG dg, vec3f wi, bool dbg) const
       {
         float density = pdf(dg, wi, dbg);
         return EvalRes(density * (const vec3f&)albedo, density);
       }
 
       inline __rtc_device
-      vec3f sampleHGDirection(vec3f wi_in, float g, Random &random)
+      vec3f HGPhase::sampleDirection(vec3f wi_in, float g, Random &random)
       {
         float u0 = random();
         float u1 = random();
@@ -98,26 +100,25 @@ namespace BARNEY_NS {
       }
 
       inline __rtc_device
-      void Phase::scatter(ScatterResult &scatter,
+      void HGPhase::scatter(ScatterResult &scatter,
                           const DG &dg,
                           Random &random,
                           bool dbg) const
       {
         vec3f wi_in = normalize(-dg.wo);
-        scatter.dir = sampleHGDirection(wi_in, g, random);
+        scatter.dir = HGPhase::sampleDirection(wi_in, g, random);
         float density = hgPhase(dot(wi_in, scatter.dir));
         scatter.pdf = density;
         scatter.f_r = (const vec3f&)albedo * density;
         scatter.type = ScatterResult::VOLUME;
       }
 
-#else
       /*! implements a homogenous phase function that scatters equally
           in all directions, with given average reflectance and
           color */
-      struct Phase {
-        inline Phase() = default;
-        inline __rtc_device Phase(vec3f color, float avg_reflectance=.7f);
+      struct SimplePhase {
+        inline SimplePhase() = default;
+        inline __rtc_device SimplePhase(vec3f color, float avg_reflectance=.7f);
 
         inline __rtc_device
         float pdf(DG dg, vec3f wi, bool dbg) const;
@@ -135,17 +136,17 @@ namespace BARNEY_NS {
       };
 
       inline __rtc_device
-      Phase::Phase(vec3f color, float avg_reflectance)
+      SimplePhase::SimplePhase(vec3f color, float avg_reflectance)
       {
         (vec3f&)this->albedo = avg_reflectance * color;
       }
       
       inline __rtc_device
-      float Phase::pdf(DG dg, vec3f wi, bool dbg) const
+      float SimplePhase::pdf(DG dg, vec3f wi, bool dbg) const
       { return ONE_OVER_FOUR_PI; }
         
       inline __rtc_device
-      EvalRes Phase::eval(DG dg, vec3f wi, bool dbg) const
+      EvalRes SimplePhase::eval(DG dg, vec3f wi, bool dbg) const
       {
         float density = ONE_OVER_FOUR_PI;
         return EvalRes(density*
@@ -153,7 +154,7 @@ namespace BARNEY_NS {
       }
 
       inline __rtc_device
-      void Phase::scatter(ScatterResult &scatter,
+      void SimplePhase::scatter(ScatterResult &scatter,
                           const DG &dg,
                           Random &random,
                           bool dbg) const
@@ -169,7 +170,6 @@ namespace BARNEY_NS {
         scatter.dir = vec3f(x,y,z);
         scatter.type = ScatterResult::VOLUME;
       }
-#endif
       
     }
   }

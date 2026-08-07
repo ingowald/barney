@@ -20,18 +20,19 @@ namespace BARNEY_NS {
     struct PackedBSDF {
       typedef enum {
         INVALID=0, NONE=INVALID,
-        /* phase function */
-        TYPE_Phase,
+        /* henyey/greenstein*/TYPE_HGPhase,
+        TYPE_SimplePhase,
         TYPE_Glass,
         TYPE_Lambertian,
         TYPE_NVisii
       } Type;
       struct Data {
         union {
-          packedBSDF::Phase      phase;
-          packedBSDF::Lambertian lambertian;
-          packedBSDF::Glass      glass;
-          packedBSDF::NVisii     nvisii;
+          packedBSDF::SimplePhase simplePhase;
+          packedBSDF::HGPhase     hgPhase;
+          packedBSDF::Lambertian  lambertian;
+          packedBSDF::Glass       glass;
+          packedBSDF::NVisii      nvisii;
         };
       } data;
 
@@ -43,8 +44,13 @@ namespace BARNEY_NS {
         : type(type), data(data) {}
       inline __rtc_device PackedBSDF(const packedBSDF::Invalid &invalid)
       { type = INVALID; }
-      inline __rtc_device PackedBSDF(const packedBSDF::Phase  &phase)
-      { type = TYPE_Phase; data.phase = phase; }
+      
+      inline __rtc_device PackedBSDF(const packedBSDF::SimplePhase  &phase)
+      { type = TYPE_SimplePhase; data.simplePhase = phase; }
+      
+      inline __rtc_device PackedBSDF(const packedBSDF::HGPhase  &phase)
+      { type = TYPE_HGPhase; data.hgPhase = phase; }
+      
       inline __rtc_device PackedBSDF(const packedBSDF::NVisii  &nvisii)
       { type = TYPE_NVisii; data.nvisii = nvisii; }
       inline __rtc_device PackedBSDF(const packedBSDF::Glass  &glass)
@@ -77,8 +83,12 @@ namespace BARNEY_NS {
     inline __rtc_device
     EvalRes PackedBSDF::eval(DG dg, vec3f w_i, bool dbg) const
     {
-      if (type == TYPE_Phase)
-        return data.phase.eval(dg,w_i,dbg);
+      if (type == TYPE_SimplePhase)
+        return data.simplePhase.eval(dg,w_i,dbg);
+      
+      if (type == TYPE_HGPhase)
+        return data.hgPhase.eval(dg,w_i,dbg);
+      
       if (type == TYPE_NVisii)
         return data.nvisii.eval(dg,w_i,dbg);
       if (type == TYPE_Glass)
@@ -97,8 +107,10 @@ namespace BARNEY_NS {
         return data.glass.pdf(dg,w_i,dbg);
       if (type == TYPE_Lambertian)
         return data.lambertian.pdf(dg,w_i,dbg);
-      if (type == TYPE_Phase)
-        return data.phase.pdf(dg,w_i,dbg);
+      if (type == TYPE_SimplePhase)
+        return data.simplePhase.pdf(dg,w_i,dbg);
+      if (type == TYPE_HGPhase)
+        return data.hgPhase.pdf(dg,w_i,dbg);
       return 0.f;
     }
     
@@ -125,8 +137,10 @@ namespace BARNEY_NS {
                              bool dbg) const
     {
       scatter.pdf = 0.f;
-      if (type == TYPE_Phase)
-        return data.phase.scatter(scatter,dg,random,dbg);
+      if (type == TYPE_HGPhase)
+        return data.hgPhase.scatter(scatter,dg,random,dbg);
+      if (type == TYPE_SimplePhase)
+        return data.simplePhase.scatter(scatter,dg,random,dbg);
       if (type == TYPE_NVisii)
         return data.nvisii.scatter(scatter,dg,random,dbg);
       if (type == TYPE_Glass)

@@ -19,9 +19,7 @@ namespace BARNEY_NS {
       int32_t  pixelID;
       float    misWeight;
       int      numDiffuseBounces;
-#if BARNEY_USE_MULTI_SCATTERING
       int      numVolumeBounces;
-#endif
     };
 
     struct RayOnly {
@@ -47,7 +45,6 @@ namespace BARNEY_NS {
     
     struct Ray {
 #if RTC_DEVICE_CODE
-#if BARNEY_USE_MULTI_SCATTERING
       inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo,
                                             float anisotropy,
                                             float scatteringAlbedo);
@@ -56,9 +53,7 @@ namespace BARNEY_NS {
                                                         float anisotropy,
                                                         float scatteringAlbedo,
                                                         vec3f emission);
-#else
       inline __rtc_device void setVolumeHit(vec3f P, float t, vec3f albedo);
-#endif
       inline __rtc_device PackedBSDF getBSDF() const;
       inline __rtc_device void setHit(vec3f P, vec3f N, float t,
                                     const PackedBSDF &packedBSDF);
@@ -113,40 +108,40 @@ namespace BARNEY_NS {
       this->P         = P;
     }
     
-#if BARNEY_USE_MULTI_SCATTERING
-    inline __rtc_device void Ray::setVolumeHit(vec3f P,
-                                             float t,
-                                             vec3f albedo,
-                                             float anisotropy,
-                                             float scatteringAlbedo)
+    inline __rtc_device
+    void Ray::setVolumeHit(vec3f P,
+                           float t,
+                           vec3f albedo,
+                           float anisotropy,
+                           float scatteringAlbedo)
     {
       if (this->dbg()) printf("setting volume hit %f %f %f g=%f\n",
                             albedo.x, albedo.y, albedo.z, anisotropy);
       setHit(P, vec3f(0.f), t,
-             packedBSDF::Phase(albedo, scatteringAlbedo, anisotropy));
+             packedBSDF::HGPhase(albedo, scatteringAlbedo, anisotropy));
     }
 
-    inline __rtc_device void Ray::setVolumeHitWithEmission(vec3f P,
-                                                           float t,
-                                                           vec3f albedo,
-                                                           float anisotropy,
-                                                           float scatteringAlbedo,
-                                                           vec3f emission)
+    inline __rtc_device
+    void Ray::setVolumeHitWithEmission(vec3f P,
+                                       float t,
+                                       vec3f albedo,
+                                       float anisotropy,
+                                       float scatteringAlbedo,
+                                       vec3f emission)
     {
-      packedBSDF::Phase phase(albedo, scatteringAlbedo, anisotropy);
+      packedBSDF::HGPhase phase(albedo, scatteringAlbedo, anisotropy);
       (vec3f&)phase.emission = emission;
       setHit(P, vec3f(0.f), t, phase);
     }
-#else
+
     inline __rtc_device void Ray::setVolumeHit(vec3f P,
                                              float t,
                                              vec3f albedo)
     {
       if (this->dbg()) printf("setting volume hit %f %f %f\n",
                             albedo.x, albedo.y, albedo.z);
-      setHit(P, vec3f(0.f), t, packedBSDF::Phase(albedo));
+      setHit(P, vec3f(0.f), t, packedBSDF::SimplePhase(albedo));
     }
-#endif
 
     inline __rtc_device
     void makeShadowRay(Ray &ray,
