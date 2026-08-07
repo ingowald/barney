@@ -383,90 +383,84 @@ namespace BARNEY_NS {
       dda_org = (dda_org - mcGridOrigin) * rcp(mcGridSpacing);
       dda_dir = dda_dir * rcp(mcGridSpacing);
 
-#if 1
       Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
                                   ti.getGeometryIndex(),
                                   ti.getPrimitiveIndex()));
-#else
-      Random rng(ray.rngSeed.next(hash(ti.getRTCInstanceIndex(),
-                                       ti.getGeometryIndex(),
-                                       ti.getPrimitiveIndex())));
-#endif
     
       float tHit = ray.tMax;
-      dda::dda3(dda_org,dda_dir,tRange.upper,
-                vec3ui(self.mcGrid.dims),
-                [&](const vec3i &cellIdx, float t0, float t1) -> bool
-                {
-                  float _t0 = t0;
-                  float _t1 = t1;
-                  range1f tRange = range1f {t0,min(t1,ray.tMax)};
-                  if (tRange.lower >= tRange.upper) return true;
+      dda3(dda_org,dda_dir,tRange.upper,
+           vec3ui(self.mcGrid.dims),
+           [&](const vec3i &cellIdx, float t0, float t1) -> bool
+           {
+             float _t0 = t0;
+             float _t1 = t1;
+             range1f tRange = range1f {t0,min(t1,ray.tMax)};
+             if (tRange.lower >= tRange.upper) return true;
                 
-                  range1f valueRange = self.mcGrid.scalarRange(cellIdx);
+             range1f valueRange = self.mcGrid.scalarRange(cellIdx);
                 
-                  // scalar values at begin/end of current ray segment
-                  // (NOT sorted by value as valuerange is!)
-                  float ff0 = 0.f, ff1 = 0.f;
-                  if (dbg) printf("dda %i %i %i [%f %f] -> [%f %f]\n",
-                                  cellIdx.x,
-                                  cellIdx.y,
-                                  cellIdx.z,
-                                  tRange.lower,
-                                  tRange.upper,
-                                  valueRange.lower,
-                                  valueRange.upper);
-                  auto overlaps = [&](float isoValue)
-                  {
-                    return
-                      isoValue >= valueRange.lower &&
-                      isoValue <= valueRange.upper;
-                  };
-                  if (!overlaps(self.isoSurface.isoValue))
-                    return true;
-
-                  auto intersect = [&](float isoValue)
-                  {
-                    float t = (isoValue - ff0) / (ff1-ff0);
-                    t = lerp_l(t,tRange.lower,tRange.upper);
-                    tHit = min(tHit,t);
-                  };
-                  
-
-                  float tt1 = t0;
-                  vec3f P = obj_org + tt1 * obj_dir;
-                  ff1 = self.isoSurface.sfSampler.sample(P,dbg);
-                  int numSteps = 10; 
-                  for (int i=1;i<=numSteps;i++) {
-                    float tt0 = tt1;
-                    ff0 = ff1;
-                    tt1 = lerp_l(i/float(numSteps),_t0,_t1);
-                    P = obj_org + tt1 * obj_dir;
-                    ff1 = self.isoSurface.sfSampler.sample(P,dbg);
-                    if (isnan(ff0) || isnan(ff1)) continue;
-                  
-                    valueRange.lower = min(ff0,ff1);
-                    valueRange.upper = max(ff0,ff1);
-                    tRange = range1f{tt0,tt1};
-                  
-                    if (dbg)
-                      printf(" ... t [%f %f] v [ %f %f ]\n",
+             // scalar values at begin/end of current ray segment
+             // (NOT sorted by value as valuerange is!)
+             float ff0 = 0.f, ff1 = 0.f;
+             if (dbg) printf("dda %i %i %i [%f %f] -> [%f %f]\n",
+                             cellIdx.x,
+                             cellIdx.y,
+                             cellIdx.z,
                              tRange.lower,
                              tRange.upper,
                              valueRange.lower,
                              valueRange.upper);
-                    if (overlaps(self.isoSurface.isoValue)) {
-                      intersect(self.isoSurface.isoValue);
-                      if (tHit < ray.tMax) {
-                        return false;
-                      }
-                    }
-                  }
+             auto overlaps = [&](float isoValue)
+             {
+               return
+                 isoValue >= valueRange.lower &&
+                 isoValue <= valueRange.upper;
+             };
+             if (!overlaps(self.isoSurface.isoValue))
+               return true;
 
-                  return true;
-                },
-                /*NO debug:*/false
-                );
+             auto intersect = [&](float isoValue)
+             {
+               float t = (isoValue - ff0) / (ff1-ff0);
+               t = lerp_l(t,tRange.lower,tRange.upper);
+               tHit = min(tHit,t);
+             };
+                  
+
+             float tt1 = t0;
+             vec3f P = obj_org + tt1 * obj_dir;
+             ff1 = self.isoSurface.sfSampler.sample(P,dbg);
+             int numSteps = 10; 
+             for (int i=1;i<=numSteps;i++) {
+               float tt0 = tt1;
+               ff0 = ff1;
+               tt1 = lerp_l(i/float(numSteps),_t0,_t1);
+               P = obj_org + tt1 * obj_dir;
+               ff1 = self.isoSurface.sfSampler.sample(P,dbg);
+               if (isnan(ff0) || isnan(ff1)) continue;
+                  
+               valueRange.lower = min(ff0,ff1);
+               valueRange.upper = max(ff0,ff1);
+               tRange = range1f{tt0,tt1};
+                  
+               if (dbg)
+                 printf(" ... t [%f %f] v [ %f %f ]\n",
+                        tRange.lower,
+                        tRange.upper,
+                        valueRange.lower,
+                        valueRange.upper);
+               if (overlaps(self.isoSurface.isoValue)) {
+                 intersect(self.isoSurface.isoValue);
+                 if (tHit < ray.tMax) {
+                   return false;
+                 }
+               }
+             }
+
+             return true;
+           },
+           /*NO debug:*/false
+           );
       if (tHit >= ray.tMax) return;
     
       // ------------------------------------------------------------------
@@ -605,101 +599,101 @@ namespace BARNEY_NS {
 
       Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
                                   ti.getGeometryIndex(),0));
-      dda::dda3(dda_org,dda_dir,tRange.upper,
-                vec3ui(self.mcGrid.dims),
-                [&](const vec3i &cellIdx, float t0, float t1) -> bool
-                {
-                  const float majorant = self.mcGrid.majorant(cellIdx);
+      dda3(dda_org,dda_dir,tRange.upper,
+           vec3ui(self.mcGrid.dims),
+           [&](const vec3i &cellIdx, float t0, float t1) -> bool
+           {
+             const float majorant = self.mcGrid.majorant(cellIdx);
                 
-                  if (majorant == 0.f) return true;
+             if (majorant == 0.f) return true;
                 
-                  vec4f   sample = 0.f;
-                  range1f tRange = {t0,min(t1,ray.tMax)};
-                  if (!Woodcock::sampleRange(sample,
-                                             self.volume,
-                                             obj_org,
-                                             obj_dir,
-                                             tRange,
-                                             majorant,
-                                             rng,
-                                             dbg)) 
-                    return true;
-                  if (dbg) printf("woodcock hit sample %f %f %f:%f\n",
-                                  sample.x,
-                                  sample.y,
-                                  sample.z,
-                                  sample.w);
+             vec4f   sample = 0.f;
+             range1f tRange = {t0,min(t1,ray.tMax)};
+             if (!Woodcock::sampleRange(sample,
+                                        self.volume,
+                                        obj_org,
+                                        obj_dir,
+                                        tRange,
+                                        majorant,
+                                        rng,
+                                        dbg)) 
+               return true;
+             if (dbg) printf("woodcock hit sample %f %f %f:%f\n",
+                             sample.x,
+                             sample.y,
+                             sample.z,
+                             sample.w);
                 
-                  vec3f P_obj = obj_org + tRange.upper * obj_dir;
-                  vec3f P = ti.transformPointFromObjectToWorldSpace(P_obj);
+             vec3f P_obj = obj_org + tRange.upper * obj_dir;
+             vec3f P = ti.transformPointFromObjectToWorldSpace(P_obj);
 #if BARNEY_USE_MULTI_SCATTERING
-                  vec3f tint = getPos(sample);
-                  vec3f emission = vec3f(0.f);
-                  float hitScatteringAlbedo = self.volume.scatteringAlbedo;
-                  if (self.volume.principled.enabled) {
-                    float scalar = self.volume.sampleScalar(P_obj, dbg);
-                    vec3f sigma_s = principledSigmaS(scalar, self.volume.principled);
-                    vec3f sigma_a = principledSigmaA(scalar, self.volume.principled);
-                    vec4f tf = self.volume.xf.map(scalar, dbg);
-                    if (tf.w > 0.f) {
-                      sigma_s = sigma_s * tf.w;
-                      sigma_a = sigma_a * tf.w;
-                      tint = tint * getPos(tf);
-                    } else {
-                      sigma_s = vec3f(0.f);
-                      sigma_a = vec3f(0.f);
-                    }
-                    float sigma_t = reduce_max(sigma_s + sigma_a);
-                    if (sigma_t > 0.f) {
-                      float ms = reduce_max(sigma_s);
-                      tint = ms > 0.f ? sigma_s / ms : tint;
-                      hitScatteringAlbedo = reduce_max(sigma_s) / sigma_t;
-                    }
-                    emission = principledEmission(scalar, self.volume.principled);
-                  }
-                  if (reduce_max(emission) > 0.f) {
-                    ray.setVolumeHitWithEmission(P,
-                                                 tRange.upper,
-                                                 tint,
-                                                 self.volume.anisotropy,
-                                                 hitScatteringAlbedo,
-                                                 emission);
-                  } else {
-                    ray.setVolumeHit(P,
-                                     tRange.upper,
-                                     tint,
-                                     self.volume.anisotropy,
-                                     hitScatteringAlbedo);
-                  }
+             vec3f tint = getPos(sample);
+             vec3f emission = vec3f(0.f);
+             float hitScatteringAlbedo = self.volume.scatteringAlbedo;
+             if (self.volume.principled.enabled) {
+               float scalar = self.volume.sampleScalar(P_obj, dbg);
+               vec3f sigma_s = principledSigmaS(scalar, self.volume.principled);
+               vec3f sigma_a = principledSigmaA(scalar, self.volume.principled);
+               vec4f tf = self.volume.xf.map(scalar, dbg);
+               if (tf.w > 0.f) {
+                 sigma_s = sigma_s * tf.w;
+                 sigma_a = sigma_a * tf.w;
+                 tint = tint * getPos(tf);
+               } else {
+                 sigma_s = vec3f(0.f);
+                 sigma_a = vec3f(0.f);
+               }
+               float sigma_t = reduce_max(sigma_s + sigma_a);
+               if (sigma_t > 0.f) {
+                 float ms = reduce_max(sigma_s);
+                 tint = ms > 0.f ? sigma_s / ms : tint;
+                 hitScatteringAlbedo = reduce_max(sigma_s) / sigma_t;
+               }
+               emission = principledEmission(scalar, self.volume.principled);
+             }
+             if (reduce_max(emission) > 0.f) {
+               ray.setVolumeHitWithEmission(P,
+                                            tRange.upper,
+                                            tint,
+                                            self.volume.anisotropy,
+                                            hitScatteringAlbedo,
+                                            emission);
+             } else {
+               ray.setVolumeHit(P,
+                                tRange.upper,
+                                tint,
+                                self.volume.anisotropy,
+                                hitScatteringAlbedo);
+             }
 #else
-                  ray.setVolumeHit(P,
-                                   tRange.upper,
-                                   getPos(sample));
+             ray.setVolumeHit(P,
+                              tRange.upper,
+                              getPos(sample));
 #endif
 
-                  // Write hit IDs for AOV channels on first non-transparent voxel
-                  const OptixGlobals &globals = OptixGlobals::get(ti);
-                  if (globals.hitIDs) {
-                    const int rayID
-                      = ti.getLaunchIndex().x
-                      + ti.getLaunchDims().x
-                      * ti.getLaunchIndex().y;
-                    if (tRange.upper < globals.hitIDs[rayID].depth) {
-                      globals.hitIDs[rayID].primID = ti.getPrimitiveIndex();
-                      globals.hitIDs[rayID].instID
-                        = globals.world.instIDToUserInstID
-                        ? globals.world.instIDToUserInstID[ti.getInstanceID()]
-                        : ti.getInstanceID();
-                      globals.hitIDs[rayID].objID  = self.volume.userID;
-                      globals.hitIDs[rayID].depth  = tRange.upper;
-                    }
-                  }
+             // Write hit IDs for AOV channels on first non-transparent voxel
+             const OptixGlobals &globals = OptixGlobals::get(ti);
+             if (globals.hitIDs) {
+               const int rayID
+                 = ti.getLaunchIndex().x
+                 + ti.getLaunchDims().x
+                 * ti.getLaunchIndex().y;
+               if (tRange.upper < globals.hitIDs[rayID].depth) {
+                 globals.hitIDs[rayID].primID = ti.getPrimitiveIndex();
+                 globals.hitIDs[rayID].instID
+                   = globals.world.instIDToUserInstID
+                   ? globals.world.instIDToUserInstID[ti.getInstanceID()]
+                   : ti.getInstanceID();
+                 globals.hitIDs[rayID].objID  = self.volume.userID;
+                 globals.hitIDs[rayID].depth  = tRange.upper;
+               }
+             }
 
-                  ti.reportIntersection(tRange.upper, 0);
-                  return false;
-                },
-                /*NO debug:*/false
-                );
+             ti.reportIntersection(tRange.upper, 0);
+             return false;
+           },
+           /*NO debug:*/false
+           );
     }
 #endif
   }

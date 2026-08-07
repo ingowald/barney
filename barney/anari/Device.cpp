@@ -310,25 +310,18 @@ namespace BARNEY_NS {
 
     void BarneyDevice::initDevice()
     {
-      PING; PRINT((int)m_initialized);
       if (m_initialized)
         return;
 
       reportMessage(ANARI_SEVERITY_DEBUG, "initializing barney device (%p)", this);
 
-      PING;
       auto state = deviceState();
     
-      // bool forceLocalRendering = false;
-
-      // int rank = 0, size = 1;
-      
       // non-mpi will just route this to a no-op, overloaded mpiDevice
       // will do mpi_init()
       initMPI();
     
       std::vector<int> gpuIDs;
-      PING;
       if (state->tether->devices[0]->m_cudaDevice >= 0) {
         // first device DID have a cudadevice explicitly set; let's
         // assume that app then explciitly sets cudaDevice for every
@@ -356,8 +349,6 @@ namespace BARNEY_NS {
         }
       }
 
-      PING;
-      
       std::vector<int> dgIDs;
       for (auto dev : state->tether->devices) {
         int dgID = dev->m_dataGroupID;
@@ -383,7 +374,6 @@ namespace BARNEY_NS {
         std::cout << ss.str() << std::endl;
         reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
       }
-      PING;
 
       assert(dgIDs.size() == gpuIDs.size());
       std::vector<vec2i> gpuIDsAndDataRanks;

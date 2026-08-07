@@ -139,7 +139,7 @@ namespace BARNEY_NS {
       int tetherIndex = 0;
       int tetherCount = 0;
 
-      struct { int rank=0, size=0; } multiNode;
+      struct { int rank=0, size=1; } multiNode;
     };
 
   }

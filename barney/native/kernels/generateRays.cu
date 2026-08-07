@@ -251,7 +251,7 @@ namespace BARNEY_NS {
         return fromEnv && std::stoi(fromEnv);
       };
       static bool enablePerRayDebug = getPerRayDebug();
-    
+      
       assert(fb);
       int accumID=fb->accumID;
       // ------------------------------------------------------------------
@@ -271,7 +271,7 @@ namespace BARNEY_NS {
               << std::endl;
           std::cout << ss.str();
         }
-
+        
         __rtc_launch(//device
                      device->rtc,
                      //kernel

@@ -4,23 +4,16 @@
 
 #include "Volume.h"
 // std
-#if BARNEY_USE_MULTI_SCATTERING
 #include <algorithm>
-#else
 #include <numeric>
-#endif
 
 namespace BARNEY_NS {
   namespace anari {
     
-#if BARNEY_USE_MULTI_SCATTERING
-    namespace {
-      inline float luminance(const math::float3 &c)
-      {
-        return 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z;
-      }
+    inline __rtc_both float luminance(const math::float3 &c)
+    {
+      return 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z;
     }
-#endif
 
     Volume::Volume(BarneyGlobalState *s) : Object(ANARI_VOLUME, s) {}
 
@@ -120,7 +113,8 @@ namespace BARNEY_NS {
         m_densityScale = 1.f;
       } else
         m_densityScale = 1.f / m_unitDistance;
-
+      PING; PRINT(m_densityScale);
+      
       m_bounds = m_field->bounds();
 
       size_t numColorChannels{4};

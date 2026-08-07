@@ -40,7 +40,11 @@ namespace BARNEY_NS {
       if (isnan(m_dir.x + m_dir.y + m_dir.z))
         reportMessage(ANARI_SEVERITY_ERROR,
                       "app set camera.direction to NAN coordinates");
-    
+
+      PING;
+      PRINT(m_pos);
+      PRINT(m_dir);
+      
       m_up = math::normalize
         (getParam<math::float3>("up", math::float3(0.f, 1.f, 0.f)));
       if (isnan(m_up.x + m_up.y + m_up.z))
