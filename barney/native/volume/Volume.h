@@ -8,9 +8,7 @@
 #include "native/Object.h"
 #include "native/volume/TransferFunction.h"
 #include "native/volume/ScalarField.h"
-#if BARNEY_USE_MULTI_SCATTERING
 #include "native/volume/PrincipledVolume.h"
-#endif
 #include <array>
 
 namespace BARNEY_NS {
@@ -35,10 +33,8 @@ namespace BARNEY_NS {
 
       virtual void build(bool full_rebuild) = 0;
 
-#if BARNEY_USE_MULTI_SCATTERING
       virtual void rebuildMajorantsOnly();
       virtual void refreshDeviceData();
-#endif
 
       const TransferFunction *getXF() const;
     
@@ -67,7 +63,6 @@ namespace BARNEY_NS {
         {
           float f = sfSampler.sample(point,dbg);
           if (isnan(f)) return vec4f(0.f);
-#if BARNEY_USE_MULTI_SCATTERING
           if (principled.enabled) {
             vec4f tf = xf.map(f, dbg);
             if (tf.w <= 0.f)
@@ -75,26 +70,21 @@ namespace BARNEY_NS {
             vec4f p = principledSampleMap(f, principled);
             return vec4f(getPos(p) * getPos(tf), p.w * tf.w);
           }
-#endif
           return xf.map(f,dbg);
         }
 
-#if BARNEY_USE_MULTI_SCATTERING
         inline __rtc_device
         float sampleScalar(vec3f point, bool dbg=false) const
         {
           return sfSampler.sample(point, dbg);
         }
-#endif
 
         ScalarField::DD               sfCommon;
-        typename SFSampler::DD      sfSampler;
-        TransferFunction::DD        xf;
-#if BARNEY_USE_MULTI_SCATTERING
+        typename SFSampler::DD        sfSampler;
+        TransferFunction::DD          xf;
         PrincipledVolumeParams::DD    principled;
         float                         anisotropy;
         float                         scatteringAlbedo;
-#endif
         int                           userID;
       };
     
@@ -106,11 +96,9 @@ namespace BARNEY_NS {
         dd.sfSampler = sampler->getDD(device);
         dd.xf = xf.getDD(device);
         dd.userID = userID;
-#if BARNEY_USE_MULTI_SCATTERING
         dd.principled = principled.getDD(device);
         dd.anisotropy = anisotropy;
         dd.scatteringAlbedo = scatteringAlbedo;
-#endif
         return dd;
       }
 
@@ -135,7 +123,6 @@ namespace BARNEY_NS {
                          const bn_float4 *values,
                          int numValues,
                          float baseDensity);
-#if BARNEY_USE_MULTI_SCATTERING
       void commit() override;
       bool set1i(const std::string &member,
                  const int   &value) override;
@@ -145,20 +132,14 @@ namespace BARNEY_NS {
                  const vec2f &value) override;
       bool set3f(const std::string &member,
                  const vec3f &value) override;
-#else
-      bool set1i(const std::string &member,
-                 const int   &value) override;
-#endif
                
       ScalarField::SP  sf;
       VolumeAccel::SP  accel;
       TransferFunction xf;
-#if BARNEY_USE_MULTI_SCATTERING
       PrincipledVolumeParams principled;
       float anisotropy = 0.6f;
       float scatteringAlbedo = 0.9f;
       bool needsMajorantRebuild = false;
-#endif
       DevGroup::SP const devices;
       int userID = 0;
     
@@ -169,7 +150,6 @@ namespace BARNEY_NS {
       PLD *getPLD(Device *device);
       std::vector<PLD> perLogical;
     };
-
 
     inline __rtc_device float fastLog(float f)
     {
@@ -230,10 +210,8 @@ namespace BARNEY_NS {
       assert(volume->sf);
     }
 
-#if BARNEY_USE_MULTI_SCATTERING
     inline void VolumeAccel::rebuildMajorantsOnly() {}
 
     inline void VolumeAccel::refreshDeviceData() {}
-#endif
   }
 }

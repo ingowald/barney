@@ -16,8 +16,6 @@ namespace BARNEY_NS {
     Volume::PLD *Volume::getPLD(Device *device)
     { return &perLogical[device->contextRank()]; }
 
-#if BARNEY_USE_MULTI_SCATTERING
-
     void Volume::setXF(const range1f &domain,
                        const bn_float4 *_values,
                        int numValues,
@@ -132,31 +130,6 @@ namespace BARNEY_NS {
       return false;
     }
 
-#else
-
-    void Volume::setXF(const range1f &domain,
-                       const bn_float4 *_values,
-                       int numValues,
-                       float baseDensity) 
-    {
-      std::vector<vec4f> values(numValues);
-      memcpy(values.data(),_values,numValues*sizeof(*_values));
-      xf.set(domain,values,baseDensity);
-    }
-
-    bool Volume::set1i(const std::string &member,
-                       const int   &value) 
-    {
-      if (member == "userID") {
-        userID = value;
-        return true; 
-      } 
-    
-      return false;
-    }
-
-#endif
-  
     inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
     { assert(s); return s; }
   
@@ -179,9 +152,7 @@ namespace BARNEY_NS {
     {
       assert(accel);
       accel->build(full_rebuild);
-#if BARNEY_USE_MULTI_SCATTERING
       needsMajorantRebuild = false;
-#endif
       for (auto device : *devices)
         device->sbtDirty = true;
     }

@@ -46,11 +46,6 @@ namespace BARNEY_NS {
       this->baseDensity = baseDensity;
       this->values = values;
 
-      PING;
-      PRINT(values[values.size()/4]);
-      PRINT(values[values.size()/2]);
-      PRINT(values[3*values.size()/4]);
-      
       for (auto device : *devices) {
         PLD *pld = getPLD(device);
         device->rtc->freeBuffer(pld->valuesBuffer);

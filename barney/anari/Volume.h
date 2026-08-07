@@ -41,8 +41,6 @@ namespace BARNEY_NS {
 
     // Subtypes ///////////////////////////////////////////////////////////////////
 
-#if BARNEY_USE_MULTI_SCATTERING
-
     struct FieldMappedVolume : public Volume
     {
       FieldMappedVolume(BarneyGlobalState *s);
@@ -114,43 +112,42 @@ namespace BARNEY_NS {
       void rebuildRGBAMapFromTransferFunction();
     };
 
-#else
+// #else
 
-    struct TransferFunction1D : public Volume
-    {
-      TransferFunction1D(BarneyGlobalState *s);
+//     struct TransferFunction1D : public Volume
+//     {
+//       TransferFunction1D(BarneyGlobalState *s);
 
-      void commitParameters() override;
-      void finalize() override;
-      bool isValid() const override;
+//       void commitParameters() override;
+//       void finalize() override;
+//       bool isValid() const override;
 
-      BNVolume createBarneyVolume() override;
+//       BNVolume createBarneyVolume() override;
 
-      box3 bounds() const override;
+//       box3 bounds() const override;
 
-    private:
-      void setBarneyParameters() override;
-      void invalidateBarneyVolumeIfFieldChanged();
+//     private:
+//       void setBarneyParameters() override;
+//       void invalidateBarneyVolumeIfFieldChanged();
 
-      helium::ChangeObserverPtr<SpatialField> m_field;
-      const SpatialField *m_boundField{nullptr};
+//       helium::ChangeObserverPtr<SpatialField> m_field;
+//       const SpatialField *m_boundField{nullptr};
 
-      box3 m_bounds;
+//       box3 m_bounds;
 
-      box1 m_valueRange{0.f, 1.f};
-      float m_unitDistance{1.f};
-      float m_densityScale{1.f};
-      math::float4 m_uniformColor{1.f, 1.f, 1.f, 1.f};
-      float m_uniformOpacity{1.f};
+//       box1 m_valueRange{0.f, 1.f};
+//       float m_unitDistance{1.f};
+//       float m_densityScale{1.f};
+//       math::float4 m_uniformColor{1.f, 1.f, 1.f, 1.f};
+//       float m_uniformOpacity{1.f};
 
-      helium::ChangeObserverPtr<helium::Array1D> m_colorData;
-      helium::ChangeObserverPtr<helium::Array1D> m_opacityData;
-      bool needsOpacityData;
+//       helium::ChangeObserverPtr<helium::Array1D> m_colorData;
+//       helium::ChangeObserverPtr<helium::Array1D> m_opacityData;
+//       bool needsOpacityData;
 
-      std::vector<math::float4> m_rgbaMap;
-    };
+//       std::vector<math::float4> m_rgbaMap;
+//     };
 
-#endif
 
   }
 }

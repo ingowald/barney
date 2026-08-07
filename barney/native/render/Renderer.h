@@ -23,10 +23,8 @@ namespace BARNEY_NS {
         float              ambientRadiance;
         int                pathsPerPixel;
         vec4f              cutPlane;
-#if BARNEY_USE_MULTI_SCATTERING
         int                maxVolumeBounces;
         int                volumeMultiScatter;
-#endif
       };
     
       Renderer(Context *context);
@@ -50,17 +48,15 @@ namespace BARNEY_NS {
       /*! @} */
       // ------------------------------------------------------------------
 
-      struct {
-        Texture::SP bgTexture       = 0;
-        vec4f       bgColor         = vec4f(0,0,0,1.f);
-        int         pathsPerPixel   = 1;
-        float       ambientRadiance = 1.f;
-        int         crosshairs      = 0;
-        vec4f       cutPlane        = vec4f(0,0,0,-1e30f);
-#if BARNEY_USE_MULTI_SCATTERING
-        int         maxVolumeBounces = 8;
-        int         volumeMultiScatter = 1;
-#endif
+      struct { /* no default values here, they all get set on host anyway */
+        vec4f       bgColor;
+        vec4f       cutPlane;
+        Texture::SP bgTexture;
+        int         pathsPerPixel;
+        float       ambientRadiance;
+        int         crosshairs;
+        int         maxVolumeBounces;
+        int         volumeMultiScatter;
       } staged;
       vec4f       bgColor         = vec4f(0,0,0,1.f);
       Texture::SP bgTexture       = 0;
@@ -68,10 +64,17 @@ namespace BARNEY_NS {
       float       ambientRadiance = 1.f;
       int         crosshairs      = 0;
       vec4f       cutPlane        = vec4f(0,0,0,-1e30f);
-#if BARNEY_USE_MULTI_SCATTERING
-      int         maxVolumeBounces = 8;
-      int         volumeMultiScatter = 1;
-#endif
+      /* iw - @ap: setting this to '0' so we can use it for both
+         multi- scattering and sci-vis mode no scattering. a value of
+         '0' means 'illuminate from light soruce, but do not scatter
+         path, so direct illum but no indirect, same as original
+         sci-vis mode. Made this the default value so if not set we'll
+         do non-multiscatter sci-vis, and only apps that set this
+         explicitly will use multi-scatter (and for those, we can then
+         also assume that they correctly set the other params) */
+      int         maxVolumeBounces = 0;// ap original value: 8;
+      /* iw - @ap: axed this; setting maxbounces to 0 should do the trick? */
+      // int         volumeMultiScatter = 1;
     };
 
   }
