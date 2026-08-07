@@ -144,6 +144,11 @@ namespace BARNEY_NS {
       return Le;
     }
 
+    /* iw - note this doesn't guarantee that the computed value is
+       truly a majorant; it samples the range and returns the maximum
+       of these samples; this is maybe/porbably? a godo guess but no
+       guarantee that this is truly the majorant - should actually use
+       interval aritmethic or similar */
     inline __rtc_device
     float principledMajorant(range1f r,
                              const PrincipledVolumeParams::DD &p)

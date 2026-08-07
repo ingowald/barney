@@ -51,11 +51,9 @@ namespace BARNEY_NS {
     
       void build(bool full_rebuild) override;
 
-#if BARNEY_USE_MULTI_SCATTERING
       void rebuildMajorantsOnly() override;
 
       void refreshDeviceData() override;
-#endif
 
 #if BARNEY_DEVICE_PROGRAM
       /*! optix bounds prog for this class of accels */
@@ -128,7 +126,6 @@ namespace BARNEY_NS {
     // INLINE IMPLEMENTATION SECTION
     // ==================================================================
   
-#if BARNEY_USE_MULTI_SCATTERING
     template<typename SFSampler>
     void MCVolumeAccel<SFSampler>::rebuildMajorantsOnly()
     {
@@ -154,7 +151,6 @@ namespace BARNEY_NS {
       for (auto device : *devices)
         device->sbtDirty = true;
     }
-#endif
 
     template<typename SFSampler>
     void MCVolumeAccel<SFSampler>::build(bool full_rebuild) 
@@ -163,11 +159,7 @@ namespace BARNEY_NS {
         auto mcGrid = volume->sf->getMCs();
         majorantsGrid = std::make_shared<MajorantsGrid>(mcGrid);
       }
-#if BARNEY_USE_MULTI_SCATTERING
       majorantsGrid->computeMajorants(volume);
-#else
-      majorantsGrid->computeMajorants(&volume->xf);
-#endif
       sfSampler->build();
     
       for (auto device : *devices) {

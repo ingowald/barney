@@ -136,11 +136,7 @@ namespace BARNEY_NS {
 
       /*! given the current per-cell scalar ranges, map each such cell's
         range through the transfer functoin to compute a majorant */
-#if BARNEY_USE_MULTI_SCATTERING
       void computeMajorants(Volume *volume);
-#else
-      void computeMajorants(TransferFunction *xf);
-#endif
 
       /*! allocate memory for the given grid */
       void resize(vec3i dims);

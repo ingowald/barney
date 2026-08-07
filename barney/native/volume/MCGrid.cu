@@ -94,28 +94,20 @@ namespace BARNEY_NS {
     __rtc_global
     void mapMCs(const rtc::ComputeInterface &ci,
                 MajorantsGrid::DD grid,
-                TransferFunction::DD xf
-#if BARNEY_USE_MULTI_SCATTERING
-                , PrincipledVolumeParams::DD principled
-#endif
-                )
+                TransferFunction::DD xf,
+                PrincipledVolumeParams::DD principled)
     {
       int ix = ci.getThreadIdx().x
         +ci.getBlockIdx().x*ci.getBlockDim().x;
       if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
       range1f scalarRange = grid.scalarRanges[ix];
-#if BARNEY_USE_MULTI_SCATTERING
       const float tfMaj = xf.majorant(scalarRange);
       const float maj = principled.enabled
         ? principledMajorant(scalarRange, principled) * tfMaj
         : tfMaj;
-#else
-      const float maj = xf.majorant(scalarRange);
-#endif
       grid.majorants[ix] = maj;
     }
   
-#if BARNEY_USE_MULTI_SCATTERING
     void MajorantsGrid::computeMajorants(Volume *volume)
     {
       if (dims != mcGrid->dims)
@@ -143,34 +135,6 @@ namespace BARNEY_NS {
       for (auto device : *devices) 
         device->sync();
     }
-#else
-    void MajorantsGrid::computeMajorants(TransferFunction *xf)
-    {
-      if (dims != mcGrid->dims)
-        resize(mcGrid->dims); 
-      assert(xf);
-      auto dims = mcGrid->dims;
-      assert(dims.x > 0);
-      assert(dims.y > 0);
-      assert(dims.z > 0);
-      size_t numCells = owl::common::volume(dims);
-      const int bs = 1024;
-      const int nb = (int)dru(numCells,bs);
-      for (auto device : *devices) 
-        device->sync();
-    
-      for (auto device : *devices) {
-        auto d_xf = xf->getDD(device);
-        auto dd = getDD(device);
-        __rtc_launch(device->rtc,
-                     mapMCs,
-                     nb,bs,
-                     dd,d_xf);
-      }
-      for (auto device : *devices) 
-        device->sync();
-    }
-#endif
   
     /*! allocate memory for the given grid */
     void MajorantsGrid::resize(vec3i dims)

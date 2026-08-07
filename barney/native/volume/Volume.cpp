@@ -4,11 +4,7 @@
 
 #include "native/volume/Volume.h"
 #include "native/ModelSlot.h"
-#if BARNEY_USE_MULTI_SCATTERING
-#include "native/common/math.h"
-#else
 #include "native/volume/ScalarField.h"
-#endif
 
 namespace BARNEY_NS {
   namespace native {
