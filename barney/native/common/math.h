@@ -32,6 +32,7 @@ namespace BARNEY_NS {
     struct mat4f {
       float e[16];
 
+      inline __rtc_both
       static mat4f identity();
     };
 
@@ -135,7 +136,7 @@ namespace BARNEY_NS {
     { return {v.x,v.y,v.z,w}; }
 
     inline __rtc_both
-    static mat4f identity()
+    mat4f mat4f::identity()
     {
       mat4f res;
       

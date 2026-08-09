@@ -32,6 +32,8 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/cpu)# buildDir_rtc_cpu)
 function(rtc_build_device_sources libname)
   message("rtc-cpu: dev lib ${libname} adding device sourcess ${ARGN}")
   add_library(${libname} STATIC ${ARGN})
+  target_compile_definitions(${libname} PRIVATE
+    -DBARNEY_DEVICE_PROGRAM=1)
   rtc_configure_source(${ARGN})
   target_link_libraries(${libname} barney_rtc_cpu)
   rtc_library_properties(${libname})
