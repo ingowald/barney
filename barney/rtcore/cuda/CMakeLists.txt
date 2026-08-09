@@ -2,12 +2,13 @@
 # CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-add_library(
-  barney_rtc_cuda STATIC
+add_library(barney_rtc_cuda STATIC
   Buffer.cpp
   GeomType.cpp
   Geom.cpp
   TraceKernel.cpp
+  Device.cu
+  Group.cu
 )
 target_link_libraries(barney_rtc_cuda PUBLIC
   barney_config

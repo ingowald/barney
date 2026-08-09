@@ -50,9 +50,8 @@ namespace BARNEY_NS {
                   (void *)&ray);
     }
 #endif
-    
-  }
   
-  RTC_EXPORT_TRACE2D(traceRays,native::TraceRays);
+    RTC_EXPORT_TRACE2D(traceRays,native::TraceRays);
+  }
 }
 

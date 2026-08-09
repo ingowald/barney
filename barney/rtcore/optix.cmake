@@ -75,22 +75,6 @@ function(rtc_build_device_sources libname)
   rtc_library_properties(${libname})
 endfunction()
 
-# macro(rtc_configure_source)
-#   foreach(src ${ARGN})
-#     get_filename_component(ext "${src}" EXT)
-#       message("rtc_config_source ${src} -? ${ext}")
-#     if ((${ext} STREQUAL ".cu") OR (${ext} STREQUAL ".dev.cu"))
-#       message("rtc_config_source FOUND ${src}")
-#       set_source_files_properties(${src} PROPERTIES
-#         LANGUAGE ${BARNEY_DEVICE_LANGUAGE}
-#         COMPILE_OPTIONS "--extended-lambda;-rdc=true"
-#       )
-#     endif()
-#   endforeach()
-# endmacro()
-
-
-#add_subdirectory(../submodules/cuBQL buildDir_cuBQL EXCLUDE_FROM_ALL)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/cudaCommon)# buildDir_rtc_cudaCommon)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/optix)# buildDir_rtc_optix)
 
