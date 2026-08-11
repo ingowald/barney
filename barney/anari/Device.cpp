@@ -15,11 +15,12 @@
 #include <cstring>
 
 // #include "generated/anari_library_barney_queries.h"
-#include "anari_library_barney_queries.h"
+// #include "anari_library_barney_queries.h"
+#include "generated_queries.h"
 
 namespace BARNEY_NS {
   namespace anari {
-    using ::barney_device::query_extensions;
+    // using ::barney_device::query_extensions;
   
     // Data Arrays ////////////////////////////////////////////////////////////////
 
@@ -149,7 +150,7 @@ namespace BARNEY_NS {
 
     const char **BarneyDevice::getObjectSubtypes(ANARIDataType objectType)
     {
-      return barney_device::query_object_types(objectType);
+      return BARNEY_NS::query_object_types(objectType);
     }
 
     const void *BarneyDevice::getObjectInfo(ANARIDataType objectType,
@@ -157,7 +158,7 @@ namespace BARNEY_NS {
                                             const char *infoName,
                                             ANARIDataType infoType)
     {
-      return barney_device::query_object_info(
+      return BARNEY_NS::query_object_info(
                                               objectType, objectSubtype, infoName, infoType);
     }
 
@@ -168,7 +169,7 @@ namespace BARNEY_NS {
                                                const char *infoName,
                                                ANARIDataType infoType)
     {
-      return barney_device::query_param_info(objectType,
+      return BARNEY_NS::query_param_info(objectType,
                                              objectSubtype,
                                              parameterName,
                                              parameterType,

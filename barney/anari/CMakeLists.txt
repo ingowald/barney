@@ -49,25 +49,33 @@ rtc_configure_source(dummy.cu)
 
 if (BARNEY_AUTO_GENERATE_QUERIES)
   # json files that specify configs only valid on specific backends
-  file(GLOB BACKEND_DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend} "*.json")
+#  file(GLOB BACKEND_DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend} "*.json")
   foreach(file ${BACKEND_DEVICE_JSONS} ${COMMON_DEVICE_JSONS})
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
   endforeach()
 
+  file(GLOB_RECURSE API_JSONS ${ANARI_CODE_GEN_ROOT}/api/*.json)
+  file(GLOB_RECURSE MY_JSONS ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend}/*.json)
+  
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.h ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.cpp
     COMMAND ${Python3_EXECUTABLE} ${ANARI_CODE_GEN_ROOT}/generate_queries.py
 #    --json ${CMAKE_CURRENT_BINARY_DIR}
     #${EXTRA_JSON_OPTION}
-    --prefix barney_${backend}
+    #--prefix barney_${backend}
+    # this will create <bulddir>/generated_queries.h/cpp
+    --prefix generated 
+    --json ${ANARI_CODE_GEN_ROOT}
     --json ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend}/
     --device ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend}/barney_device.json
     --namespace barney_${backend}
-    --output ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.cpp
+    #--output ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.cpp
+    --output ${CMAKE_CURRENT_BINARY_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${BACKEND_DEVICE_JSONS}
+    DEPENDS ${CORE_JSONS} ${MY_JSONS}
   )
   set(QUERIES_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.cpp)
+  set(QUERIES_INCLUDE ${CMAKE_CURRENT_BINARY_DIR})
 else()
   # todo
   set(QUERIES_SOURCES)
@@ -96,6 +104,8 @@ add_library(anari_library_barney_${backend}_static STATIC
   ${QUERIES_SOURCES}
   ${BANARI_MPI_SOURCES}
 )
+target_include_directories(anari_library_barney_${backend}_static PRIVATE
+  ${QUERIES_INCLUDE})
 target_link_libraries(anari_library_barney_${backend}_static PUBLIC
   barney_${backend}_static
   anari::helium
