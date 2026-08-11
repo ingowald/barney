@@ -72,10 +72,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(anari 0.15.0 COMPONENTS code_gen)
 
-option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" ON)
-if (BARNEY_AUTO_GENERATE_QUERIES)
-  find_package(Python3 REQUIRED COMPONENTS Interpreter)
-endif()
+find_package(Python3 COMPONENTS Interpreter)
+option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries"
+  ${Python3_FOUND})
+#if (BARNEY_AUTO_GENERATE_QUERIES)
+#  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+#endif()
 
 # ==================================================================
 # check if there's any compile language conflicts in the
