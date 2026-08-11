@@ -10,7 +10,6 @@
 // std
 #include <cstring>
 
-#include "generated/anari_library_barney_queries.h"
 #include "barney/native/include/barney_mpi.h"
 
 namespace BARNEY_NS {

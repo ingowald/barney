@@ -32,7 +32,7 @@
 #  endif
 #endif
 
-#include "generated/anari_library_barney_queries.h"
+// #include "generated/anari_library_barney_queries.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -40,7 +40,7 @@
 namespace BARNEY_NS {
   namespace anari {
 
-    using barney_device::query_extensions;
+    // using barney_device::query_extensions;
   
     struct BarneyLibrary : public ::anari::LibraryImpl
     {
@@ -71,9 +71,17 @@ namespace BARNEY_NS {
       }
     }
 
-    const char **BarneyLibrary::getDeviceExtensions(const char * /*deviceType*/)
+    const char **BarneyLibrary::getDeviceExtensions(const char *subType)
     {
-      return query_extensions();
+      // return query_extensions();
+      try {
+        BarneyDevice device(this_library(), subType);
+        return device.extensions();
+      } catch (std::exception &e) {
+        std::cout << "could not create barney device '" << TOSTRING(BARNEY_NS)
+                  << ": " << e.what() << std::endl;
+        return 0;
+      }
     }
 
   }
