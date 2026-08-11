@@ -22,17 +22,6 @@ target_include_directories(barney_rtc_optix PUBLIC
 )
 
 
-#add_library(barney_rtc_optix ${HOST_SOURCES})
-#foreach(src  ${DEVICE_PROGRAM_SOURCES})
-#  get_filename_component(basename "${src}" NAME_WE)
-#  embed_ptx(
-#    OUTPUT_TARGET      barney-${basename}-ptx
-#    PTX_LINK_LIBRARIES barney_config_ptx barney_rtc_optix
-#    SOURCES            ${src}
-#  )
-#  target_link_libraries(barney_rtc_optix PRIVATE barney-${basename}-ptx)
-#endforeach()
-
 rtc_library_properties(barney_rtc_optix)
 set_property(
   TARGET barney_rtc_optix 
@@ -42,8 +31,3 @@ set_property(
   TARGET barney_rtc_optix 
   APPEND
   PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
-#if (BARNEY_MPI)
-#  add_library(barney_mpi_optix ${MPI_SOURCES})
-#  target_link_libraries(barney_mpi_optix PUBLIC barney_optix MPI::MPI_C)
-#  rtc_library_properties(barney_mpi_optix)
-#endif()

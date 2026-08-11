@@ -8,10 +8,10 @@
 
 # ----------- enable/disable different devices we can build
 option(BARNEY_USE_HIP        "Use HIP instead of CUDA"     OFF)
+option(BARNEY_BACKEND_CPU    "Build Embree/CPU Backend"    OFF)
 option(BARNEY_BACKEND_CUDA   "Build (native) CUDA Backend" OFF)
 option(BARNEY_BACKEND_OPTIX  "Build OptiX Backend"         ON)
-option(BARNEY_BACKEND_CPU    "Build Embree/CPU Backend"    OFF)
-option(BARNEY_BACKEND_HIP    "Build HIP Backend"           ON)
+option(BARNEY_BACKEND_HIP    "Build HIP Backend"           OFF)
 option(BARNEY_BACKEND_HIPRT  "Build HIPRT Backend"         OFF)
 option(BARNEY_MPI            "Enable MPI Support"          OFF)
 
@@ -19,7 +19,7 @@ option(BARNEY_MPI            "Enable MPI Support"          OFF)
 # cmake project/output config
 # ------------------------------------------------------------------
 set(BARNEY_VERSION_MAJOR 1)
-set(BARNEY_VERSION_MINOR 3)
+set(BARNEY_VERSION_MINOR 4)
 set(BARNEY_VERSION_PATCH 0)
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 
@@ -345,6 +345,16 @@ build_barney(hiprt)
 
 # this installs the MULTI-library (ie, the 'barney' device that
 # internally switches to barney_cuda, barney_optix, etc)
+set_target_properties(anari_library_barney
+  PROPERTIES
+  POSITION_INDEPENDENT_CODE    ON
+  VISIBILITY_INLINES_HIDDEN    ON
+  CUDA_SEPARABLE_COMPILATION   ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+  CUDA_VISIBILITY_PRESET       hidden
+  CXX_VISIBILITY_PRESET        hidden
+)
 install(
   TARGETS
   anari_library_barney

@@ -48,6 +48,7 @@ namespace BARNEY_NS {
                     ANARIStatusCallback defaultStatusCB,
                     const void *statusCBPtr);
 
+      
       ANARIDevice newDevice(const char *subtype) override;
       const char **getDeviceExtensions(const char *deviceType) override;
     };
@@ -75,8 +76,12 @@ namespace BARNEY_NS {
     {
       // return query_extensions();
       try {
-        BarneyDevice device(this_library(), subType);
-        return device.extensions();
+        // BarneyDevice device(this_library(), subType);
+        // return device.extensions();
+        BarneyDevice *device = (BarneyDevice*)newDevice(subType);
+        const char **extensions = device->extensions();
+        delete device;
+        return extensions;
       } catch (std::exception &e) {
         std::cout << "could not create barney device '" << TOSTRING(BARNEY_NS)
                   << ": " << e.what() << std::endl;

@@ -124,6 +124,7 @@ add_library(anari_library_barney_${backend} SHARED SingleDeviceLibrary.cpp)
 target_link_libraries(anari_library_barney_${backend} PUBLIC
   anari_library_barney_${backend}_static
 )
+rtc_library_properties(anari_library_barney_${backend})
 set_target_properties(anari_library_barney_${backend}
   PROPERTIES
   POSITION_INDEPENDENT_CODE    ON
