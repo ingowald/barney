@@ -72,8 +72,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(anari 0.15.0 COMPONENTS code_gen)
 
-option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" OFF)
-
+option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries" ON)
+if (BARNEY_AUTO_GENERATE_QUERIES)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+endif()
 
 # ==================================================================
 # check if there's any compile language conflicts in the
@@ -262,6 +264,29 @@ endif()
 include(CMakePackageConfigHelpers)
 
 
+# ==================================================================
+option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
+#option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
+set(BARNEY_HAVE_NANOVDB ON)
+
+
+# ------------------------------------------------------------------
+# External field plugins
+# ------------------------------------------------------------------
+if(DEFINED BARNEY_EXTERNAL_FIELDS_DIR AND EXISTS "${BARNEY_EXTERNAL_FIELDS_DIR}/CMakeLists.txt")
+  message("#barney: including external fields from ${BARNEY_EXTERNAL_FIELDS_DIR}")
+  add_subdirectory("${BARNEY_EXTERNAL_FIELDS_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external_fields")
+endif()
+
+# ------------------------------------------------------------------
+# cmake install stuff
+# ------------------------------------------------------------------
+
+set(BARNEY_CMAKE_INSTALL_DESTINATION
+  ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}
+)
+
+
 
 
 
@@ -289,13 +314,6 @@ function(build_barney backend)
       anari_library_barney_${backend}_static)
     target_compile_definitions(anari_library_barney PRIVATE
       -DBARNEY_BACKEND_${BACKEND}=1)
-    
-    if (BARNEY_MPI)
-      target_link_libraries(anari_library_barney_mpi PRIVATE
-        anari_library_barney_${backend}_mpi_static)
-      target_compile_definitions(anari_library_barney_mpi PRIVATE
-        -DBARNEY_BACKEND_${BACKEND}=1)
-    endif()
   endif()
 endfunction()
 
@@ -310,17 +328,7 @@ add_library(anari_library_barney SHARED
 target_include_directories(anari_library_barney PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}/)
 target_link_libraries(anari_library_barney PRIVATE
-  barney_config
-)
-if (BARNEY_MPI)
-  add_library(anari_library_barney_mpi SHARED
-    barney/anari/MultiDeviceLibrary.cpp)
-  target_include_directories(anari_library_barney_mpi PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}/)
-  target_link_libraries(anari_library_barney_mpi PRIVATE
-    barney_config
-  )
-endif()
+  barney_config)
 
 # ==================================================================
 # now, build - and link-add to multi-dev 'barney' - all possible
@@ -332,30 +340,6 @@ build_barney(cuda)
 build_barney(optix)
 build_barney(hip)
 build_barney(hiprt)
-
-
-# ==================================================================
-option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
-option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
-option(BARNEY_USE_MULTI_SCATTERING
-  "Enable volumetric multi-scattering (HG phase, volume bounce tracking)"
-  OFF)
-
-# ------------------------------------------------------------------
-# External field plugins
-# ------------------------------------------------------------------
-if(DEFINED BARNEY_EXTERNAL_FIELDS_DIR AND EXISTS "${BARNEY_EXTERNAL_FIELDS_DIR}/CMakeLists.txt")
-  message("#barney: including external fields from ${BARNEY_EXTERNAL_FIELDS_DIR}")
-  add_subdirectory("${BARNEY_EXTERNAL_FIELDS_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external_fields")
-endif()
-
-# ------------------------------------------------------------------
-# cmake install stuff
-# ------------------------------------------------------------------
-
-set(BARNEY_CMAKE_INSTALL_DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}
-)
 
 # this installs the MULTI-library (ie, the 'barney' device that
 # internally switches to barney_cuda, barney_optix, etc)
@@ -369,5 +353,4 @@ install(
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-rtc_library_properties(anari_library_barney)
 

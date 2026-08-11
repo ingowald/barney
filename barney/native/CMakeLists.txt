@@ -152,36 +152,24 @@ set(HOST_SOURCES
 )
 
 # all the source that eventually go into barney_mpi
-set(MPI_SOURCES
-  fb/DistFB.h
-  fb/DistFB.cu
-  MPIContext.h
-  MPIContext.cpp
-  globalTrace/RQSMPI.h
-  globalTrace/RQSMPI.cu
-  globalTrace/TwoStage.h
-  globalTrace/TwoStage.cu
-  globalTrace/All2all.h
-  globalTrace/All2all.cu
-  common/MPIWrappers.h
-  common/MPIWrappers.cpp
-)
-
-# all the source that eventually go into barney_mpi
-set(MPI_SOURCES
-  fb/DistFB.h
-  fb/DistFB.cu
-  MPIContext.h
-  MPIContext.cpp
-  globalTrace/RQSMPI.h
-  globalTrace/RQSMPI.cu
-  globalTrace/TwoStage.h
-  globalTrace/TwoStage.cu
-  globalTrace/All2all.h
-  globalTrace/All2all.cu
-  common/MPIWrappers.h
-  common/MPIWrappers.cpp
-)
+if (BARNEY_MPI)
+  set(MPI_SOURCES
+    fb/DistFB.h
+    fb/DistFB.cu
+    MPIContext.h
+    MPIContext.cpp
+    globalTrace/RQSMPI.h
+    globalTrace/RQSMPI.cu
+    globalTrace/TwoStage.h
+    globalTrace/TwoStage.cu
+    globalTrace/All2all.h
+    globalTrace/All2all.cu
+    common/MPIWrappers.h
+    common/MPIWrappers.cpp
+  )
+else()
+  set(MPI_SOURCES)
+endif()
 
 set(DEVICE_PROGRAM_SOURCES
   geometry/Spheres.dev.cu
@@ -212,29 +200,17 @@ endforeach()
 # ------------------------------------------------------------------
 add_library(barney_${backend}_static STATIC
   ${HOST_SOURCES}
+  # this will be empty if MPI isnt enabled
+  ${MPI_SOURCES}
 )
 target_link_libraries(barney_${backend}_static PUBLIC
   barney_rtc_${backend}  
   $<BUILD_INTERFACE:barney_${backend}_programs>
   $<BUILD_INTERFACE:barney_config_${backend}>
 )
+if (BARNEY_MPI)
+  target_link_libraries(barney_${backend}_static PUBLIC MPI::MPI_CXX)
+endif()
+  
 rtc_library_properties(barney_${backend}_static)
 
-# =============================================================================
-# create frontends for barney_mpi and barney_mpi_static
-# =============================================================================
-if (BARNEY_MPI)
-  # ------------------------------------------------------------------
-  # barney_mpi
-  # ------------------------------------------------------------------
-  add_library(barney_${backend}_mpi_static STATIC
-    ${MPI_SOURCES}
-  )
-  target_link_libraries(barney_${backend}_mpi_static PUBLIC
-    barney_${backend}_static
-  )
-  rtc_library_properties(barney_${backend}_mpi_static) 
-endif()
-
-
-#add_subdirectory(../anari  build_banari_${backend})

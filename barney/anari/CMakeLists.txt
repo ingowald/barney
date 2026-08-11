@@ -37,15 +37,42 @@ set(BANARI_SOURCES
   # properly recognize this as requiring linking with cuda.
   dummy.cu
 )
-set(BANARI_MPI_SOURCES
-  MPIDevice.cpp
-)
+if (BARNEY_MPI)
+  set(BANARI_MPI_SOURCES
+    MPIDevice.cpp)
+else()
+  set(BANARI_MPI_SOURCES )
+endif()
 
 rtc_configure_source(dummy.cu)
 
-if (NOT BARNEY_AUTO_GENERATE_QUERIES)
-  LIST(APPEND BANARI_SOURCES generated/anari_library_barney_queries.cpp)
+
+if (BARNEY_AUTO_GENERATE_QUERIES)
+  # json files that specify configs only valid on specific backends
+  file(GLOB BACKEND_DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend} "*.json")
+  foreach(file ${BACKEND_DEVICE_JSONS} ${COMMON_DEVICE_JSONS})
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
+  endforeach()
+
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.h ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.cpp
+    COMMAND ${Python3_EXECUTABLE} ${ANARI_CODE_GEN_ROOT}/generate_queries.py
+#    --json ${CMAKE_CURRENT_BINARY_DIR}
+    #${EXTRA_JSON_OPTION}
+    --prefix barney_${backend}
+    --json ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend}/
+    --device ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend}/barney_device.json
+    --namespace barney_${backend}
+    --output ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.cpp
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS ${BACKEND_DEVICE_JSONS}
+  )
+  set(QUERIES_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/generated_queries.cpp)
+else()
+  # todo
+  set(QUERIES_SOURCES)
 endif()
+
 
 # helper 'interface-'library that contains common settings for both
 # static and shared anari
@@ -64,23 +91,17 @@ endif()
 # static linkage (so it can be used in possibly multiple shared libraries)
 # ==================================================================
 message("anari_library_barney_${backend}_static ")
-add_library(anari_library_barney_${backend}_static STATIC ${BANARI_SOURCES})
+add_library(anari_library_barney_${backend}_static STATIC
+  ${BANARI_SOURCES}
+  ${QUERIES_SOURCES}
+  ${BANARI_MPI_SOURCES}
+)
 target_link_libraries(anari_library_barney_${backend}_static PUBLIC
   barney_${backend}_static
   anari::helium
 )
 rtc_library_properties(anari_library_barney_${backend}_static)
 
-if (BARNEY_MPI)
-  add_library(anari_library_barney_${backend}_mpi_static STATIC
-    ${BANARI_SOURCE} ${BANARI_MPI_SOURCES}
-  )
-  target_link_libraries(anari_library_barney_${backend}_mpi_static PUBLIC
-    barney_${backend}_mpi_static
-    anari::helium
-  )
-  rtc_library_properties(anari_library_barney_${backend}_mpi_static)
-endif()
 
 # ==================================================================
 # the 'full' barney+anari, as a real shared loadable library, but
@@ -100,71 +121,17 @@ set_target_properties(anari_library_barney_${backend}
   CUDA_VISIBILITY_PRESET       hidden
   CXX_VISIBILITY_PRESET        hidden
 )
-set(BARNEY_INSTALL_TARGETS anari_library_barney_${backend})
 
 
-if (BARNEY_MPI)
-  add_library(anari_library_barney_${backend}_mpi SHARED
-    SingleDeviceLibrary.cpp
-  )
-  target_link_libraries(anari_library_barney_${backend}_mpi PUBLIC
-    anari_library_barney_${backend}_mpi_static
-  )
-  set_target_properties(anari_library_barney_${backend}_mpi
-    PROPERTIES
-    POSITION_INDEPENDENT_CODE    ON
-    VISIBILITY_INLINES_HIDDEN    ON
-    CUDA_SEPARABLE_COMPILATION   ON
-    CUDA_USE_STATIC_CUDA_RUNTIME ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS  ON
-    CUDA_VISIBILITY_PRESET       hidden
-    CXX_VISIBILITY_PRESET        hidden
-  )
-endif()
 
-# json files that specify configs global to all of barney, no matter the backend
-file(GLOB COMMON_DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/json/common "*.json")
 
-# json files that specify configs only valid on specific backends
-file(GLOB BACKEND_DEVICE_JSONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/json/${backend} "*.json")
-foreach(file ${BACKEND_DEVICE_JSONS} ${COMMON_DEVICE_JSONS})
-  file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${file} INPUT ${file})
-endforeach()
-
-if (BARNEY_AUTO_GENERATE_QUERIES)
-  anari_generate_queries(
-    DEVICE_TARGET anari_library_barney_${backend}
-    # CPP_NAMESPACE BARNEY_DEVICE_NAME ${BANARI_NS}
-    CPP_NAMESPACE barney_${backend}::anari
-    JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
-    JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
-    JSON_EXTENSION_FILES ${BACKEND_DEVICE_JSONS} ${COMMON_DEVICE_JSONS}
-  )
-endif()
-
-if (BARNEY_MPI)
-  if (BARNEY_AUTO_GENERATE_QUERIES)
-    anari_generate_queries(
-      DEVICE_TARGET anari_library_barney_${backend}_mpi
-      # CPP_NAMESPACE ${BANARI_NS}
-      CPP_NAMESPACE barney_${backend}::anari
-      JSON_ROOT_LOCATION ${CMAKE_CURRENT_BINARY_DIR}
-      JSON_DEFINITIONS_FILE ${CMAKE_CURRENT_BINARY_DIR}/barney_device.json
-      JSON_EXTENSION_FILES ${DEVICE_JSONS}
-    )
-  endif()
-  list(APPEND BARNEY_INSTALL_TARGETS anari_library_barney_${backend}_mpi)
-endif()
-
-message("anari BARNEY_INSTALL_TARGETS ${BARNEY_INSTALL_TARGETS}")
-set(BARNEY_INSTALL_TARGETS ${BARNEY_INSTALL_TARGETS} PARENT_SCOPE)
- install(
-   TARGETS
-   ${BARNEY_INSTALL_TARGETS}
-   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-   NAMELINK_SKIP
-   # on Windows put the dlls into bin
-   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-   # ... and the import lib into the devel package
-   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
- )
+install(
+  TARGETS
+  anari_library_barney_${backend}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  NAMELINK_SKIP
+  # on Windows put the dlls into bin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  # ... and the import lib into the devel package
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)

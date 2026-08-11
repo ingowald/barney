@@ -14,7 +14,8 @@
 // std
 #include <cstring>
 
-#include "generated/anari_library_barney_queries.h"
+// #include "generated/anari_library_barney_queries.h"
+#include "anari_library_barney_queries.h"
 
 namespace BARNEY_NS {
   namespace anari {

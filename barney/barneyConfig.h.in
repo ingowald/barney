@@ -12,6 +12,9 @@
 #cmakedefine01 BARNEY_OIDN_CPU
 #cmakedefine01 BARNEY_OIDN_GPU
 
+// if enabled, this means we're building with MPI support
+#cmakedefine01 BARNEY_MPI
+
 #cmakedefine01 BARNEY_DISABLE_DENOISING
 
 #cmakedefine01 BARNEY_USE_MULTI_SCATTERING
