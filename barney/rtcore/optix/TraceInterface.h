@@ -10,20 +10,32 @@
 namespace BARNEY_NS {
   namespace rtc {
 
-#ifdef BARNEY_DEVICE_PROGRAM
+#if BARNEY_DEVICE_PROGRAM
+    // launch params should only ever be visible in device programs
+// #ifdef BARNEY_DEVICE_PROGRAM
+# if RTC_DEVICE_CODE      
     inline __device__
     const void *getLaunchParamsPointer();
+    // will be defined below
+# else
+    // define an empty function so we don't get a warning on cuda host
+    // compilation pass
+    inline __device__
+    const void *getLaunchParamsPointer() { return 0; }
+# endif
 #endif
     
+#if BARNEY_DEVICE_PROGRAM
     /*! the interface that pipeline programs use to talk to / query
       data from the ray tracing core */
     struct TraceInterface {
-#ifdef BARNEY_DEVICE_PROGRAM
+#if RTC_DEVICE_CODE      
+// #ifdef BARNEY_DEVICE_PROGRAM
       inline __device__ const void *getLPData() const
       { return getLaunchParamsPointer(); }
 #endif
-#ifdef __CUDACC__
-      
+// #ifdef __CUDACC__
+#if RTC_DEVICE_CODE      
       inline __device__ void ignoreIntersection() const
       { optixIgnoreIntersection(); }
       
@@ -129,16 +141,25 @@ namespace BARNEY_NS {
       }
 #endif
     };
-
+#endif
+    
   }
 }
 
-
+// #if BARNEY_RTC
+#if RTC_DEVICE_CODE
 #define RTC_DECLARE_GLOBALS(Type)                                       \
   extern "C" __constant__ Type optixLaunchParams;                       \
   inline __device__ const void *::BARNEY_NS::rtc::getLaunchParamsPointer() \
-  { return &optixLaunchParams; }                                        \
-    
+  { return &optixLaunchParams; }                                        
+#else
+#define RTC_DECLARE_GLOBALS(Type)                                       \
+  /* define this as empty - this is only for the host-code pass */      \
+  /* anyway (ie this will get filtered out by cuda, anyway), but */     \
+  /* removes the warning about having an undefined function */          \
+  extern "C" __constant__ Type optixLaunchParams;                       \
+  inline __device__ const void *::BARNEY_NS::rtc::getLaunchParamsPointer() { return 0; } 
+#endif
 
 
 #define RTC_EXPORT_USER_GEOM(name,DD,type,has_ah,has_ch)                \

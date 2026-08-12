@@ -11,6 +11,12 @@
 #cmakedefine01 BARNEY_HAVE_CUDA
 #cmakedefine01 BARNEY_OIDN_CPU
 #cmakedefine01 BARNEY_OIDN_GPU
+// define which backends we _have_ (in the multi-library)
+#cmakedefine01 BARNEY_BACKEND_OPTIX
+#cmakedefine01 BARNEY_BACKEND_CPU
+#cmakedefine01 BARNEY_BACKEND_CUDA
+#cmakedefine01 BARNEY_BACKEND_HIP
+#cmakedefine01 BARNEY_BACKEND_HIPRT
 
 // if enabled, this means we're building with MPI support
 #cmakedefine01 BARNEY_MPI
@@ -23,6 +29,15 @@
 #define BARNEY_BACKEND_NAME @BARNEY_BACKEND_NAME@
 #define BARNEY_DEVICE_NAME  barney_@BARNEY_BACKEND_NAME@
 #define BARNEY_NS           barney_@BARNEY_BACKEND_NAME@
+#define BARNEY_NS_OPTIX     barney_optix
+#define BARNEY_NS_CUDA      barney_cuda
+#define BARNEY_NS_CPU       barney_cpu
+#define BARNEY_NS_HIP       barney_hip
+#define BARNEY_NS_HIPRT     barney_hiprt
 #define CREATE_DEVICE_FUNCTION_NAME createDevice_barney_@BARNEY_BACKEND_NAME@
+
+// the symbol anari/helium expects to find for the creator function
+// that creates an instance of the anari library for this backend.
+#define BARNEY_LIBRARY_ENTRYPOINT_NAME anari_library_@BARNEY_LIBRARY_NAME@_new_library
 
 

@@ -12,7 +12,6 @@
 
 namespace BARNEY_NS {
   namespace rtc {
-  // namespace cuda_common {
 
     struct ComputeKernel1D {
       virtual ~ComputeKernel1D() = default;

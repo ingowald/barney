@@ -7,10 +7,11 @@
 #include "rtcore/common/rtcore-common.h"
 #include "rtcore/cudaCommon/cuda-common.h"
 #include "rtcore/optix/AppInterface.h"
-#if RTC_DEVICE_CODE 
-# include "rtcore/optix/ComputeInterface.h"
-# include "rtcore/optix/TraceInterface.h"
-#endif
+#include "rtcore/optix/ComputeInterface.h"
+#include "rtcore/optix/TraceInterface.h"
+// #if RTC_DEVICE_CODE 
+// # include "rtcore/optix/TraceInterface.h"
+// #endif
 
 
 

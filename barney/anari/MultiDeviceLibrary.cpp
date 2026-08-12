@@ -140,9 +140,49 @@ namespace barney {
   
 } // namespace barney
 
+#if BARNEY_BACKEND_OPTIX
+namespace BARNEY_NS_OPTIX { namespace anari {
+    ::anari::LibraryImpl *createAnariLibrary(void *lib,
+                                             ANARIStatusCallback defaultStatusCB,
+                                             const void *statusCBPtr);
+  }}
+#endif
+#if BARNEY_BACKEND_CUDA
+namespace BARNEY_NS_CUDA { namespace anari {
+    ::anari::LibraryImpl *createAnariLibrary(void *lib,
+                                             ANARIStatusCallback defaultStatusCB,
+                                             const void *statusCBPtr);
+  }}
+#endif
+#if BARNEY_BACKEND_CPU
+namespace BARNEY_NS_CPU { namespace anari {
+    ::anari::LibraryImpl *createAnariLibrary(void *lib,
+                                             ANARIStatusCallback defaultStatusCB,
+                                             const void *statusCBPtr);
+  }}
+#endif
+
 extern "C" BARNEY_LIBRARY_INTERFACE
 ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney, handle, scb, scbPtr)
 {
+#if 1
+# if BARNEY_BACKEND_OPTIX
+  if (auto lib = BARNEY_NS_OPTIX::anari::createAnariLibrary(handle,scb,scbPtr))
+    return (ANARILibrary)lib;
+# endif
+# if BARNEY_BACKEND_CUDA
+  if (auto lib = BARNEY_NS_CUDA::anari::createAnariLibrary(handle,scb,scbPtr))
+    return (ANARILibrary)lib;
+# endif
+# if BARNEY_BACKEND_CPU
+  if (auto lib = BARNEY_NS_CPU::anari::createAnariLibrary(handle,scb,scbPtr))
+    return (ANARILibrary)lib;
+# endif
+  std::cout << "#barney - could not create _any_ anari backend library!?"
+            << std::endl;
+  return 0;
+#else
   return (ANARILibrary) new barney::BarneyMultiLibrary(handle, scb, scbPtr);
+#endif
 }
 

@@ -24,8 +24,4 @@
   extern rtc::GeomType *createGeomType_##typeName(rtc::Device *);
 
 
-
-
-
-
   

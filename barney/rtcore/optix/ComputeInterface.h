@@ -10,7 +10,7 @@ namespace BARNEY_NS {
   namespace rtc {
 
 // #ifdef __CUDACC__
-//     using cuda_common::ComputeInterface;
+    // using cuda_common::ComputeInterface;
     
 //     using cuda_common::tex1D;
 //     using cuda_common::tex2D;

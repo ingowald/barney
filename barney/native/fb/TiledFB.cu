@@ -19,6 +19,7 @@ namespace BARNEY_NS {
                                        AccumTile *tiles,
                                        vec2i      numPixels)
     {
+#if RTC_DEVICE_CODE
       int tileIdx = ci.getBlockIdx().x;
       TileDesc desc   = descs[tileIdx];
     
@@ -47,6 +48,7 @@ namespace BARNEY_NS {
     
       if (out_normal)
         out_normal[idx] = tile->normal[subIdx];
+#endif
     }
   
 
@@ -91,6 +93,7 @@ namespace BARNEY_NS {
                                               AuxChannelTile *aux,
                                               TileDesc       *descs)
     {
+#if RTC_DEVICE_CODE
       int        tileIdx = ci.getBlockIdx().x;
       TileDesc   desc    = descs[tileIdx];
       
@@ -104,6 +107,7 @@ namespace BARNEY_NS {
       int idx = ix + numPixels.x*iy;
 
       ((uint32_t*)linearOut)[idx] = aux[tileIdx].ui[subIdx];
+#endif
     }
 
     /*! linearize given array's aux tiles, on given device. this can be
@@ -230,6 +234,7 @@ namespace BARNEY_NS {
                              int globalIndex,
                              int globalIndexStep)
     {
+#if RTC_DEVICE_CODE
       int tid = ci.launchIndex().x;
       if (tid >= numActiveTiles) return;
     
@@ -238,6 +243,7 @@ namespace BARNEY_NS {
       int tile_x = tileID % numTiles.x;
       int tile_y = tileID / numTiles.x;
       tileDescs[tid].lower = vec2i(tile_x*tileSize,tile_y*tileSize);
+#endif
     }
   
     void TiledFB::resize(uint32_t channels,

@@ -60,7 +60,6 @@ namespace BARNEY_NS {
     // ==================================================================
     // INLINE IMPLEMENTATION
     // ==================================================================
-    // #if RTC_DEVICE_CODE
 #if RTC_DEVICE_CODE
     // ------------------------------------------------------------------
     // cuda texturing
@@ -86,7 +85,7 @@ namespace BARNEY_NS {
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       ::float4 v = ::tex1D<::float4>(texObj,x);
-      return load(v);
+      return vec4f(v.x,v.y,v.z,v.w);
     }
     
     template<> inline __device__
@@ -94,7 +93,7 @@ namespace BARNEY_NS {
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       ::float4 v = ::tex2D<::float4>(texObj,x,y);
-      return load(v);
+      return vec4f(v.x,v.y,v.z,v.w);
     }
 
     template<> inline __device__
@@ -102,7 +101,7 @@ namespace BARNEY_NS {
     {
       cudaTextureObject_t texObj = (const cudaTextureObject_t&)to;
       ::float4 v = ::tex3D<::float4>(texObj,x,y,z);
-      return load(v);
+      return vec4f(v.x,v.y,v.z,v.w);
     }
     
     // ------------------------------------------------------------------

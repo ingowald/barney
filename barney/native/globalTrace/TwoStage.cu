@@ -64,6 +64,7 @@ namespace BARNEY_NS {
                                             int nRays,
                                             int reduceFactor)
     {
+#if RTC_DEVICE_CODE
       int tid = ci.launchIndex().x;
       if (tid >= nRays) return;
 
@@ -76,7 +77,7 @@ namespace BARNEY_NS {
         reduced = *hit;
       }
       hitOnly[tid] = reduced;
-    
+#endif
     }
   
     __rtc_global
@@ -86,6 +87,7 @@ namespace BARNEY_NS {
                                              int nRays,
                                              int reduceFactor)
     {
+#if RTC_DEVICE_CODE
       int tid = ci.launchIndex().x;
       if (tid >= nRays) return;
     
@@ -102,6 +104,7 @@ namespace BARNEY_NS {
         ray.N        =  hit->N;
       }
       rayQueueThisRank[tid] = ray;
+#endif
     }
   
   

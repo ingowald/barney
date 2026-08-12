@@ -17,10 +17,16 @@ namespace BARNEY_NS {
     /*! defines all constant global launch parameter data. The struct
       type itself is also defined on the host (so its contents can
       be marshalled there, but the 'get()' method can only be
-      available in device programs */
+      available in device programs
+
+      note: the optixgloals *struct* shuld be visible on the host so
+      host knows how to marshal data for device; but the
+      implementation parts (asking for pointer to globals) should only
+      be able in device programs
+    */
     struct OptixGlobals {
 #if BARNEY_DEVICE_PROGRAM
-      // #if RTC_DEVICE_CODE
+// #if RTC_DEVICE_CODE
       static inline __rtc_device
       const OptixGlobals &get(const rtc::TraceInterface &dev);
 
@@ -55,8 +61,8 @@ namespace BARNEY_NS {
       vec4f            cutPlane{0.f, 0.f, 0.f, -1e30f};
     };
 
-    // #if RTC_DEVICE_CODE
 #if BARNEY_DEVICE_PROGRAM
+// #if RTC_DEVICE_CODE
     inline __rtc_device
     const OptixGlobals &OptixGlobals::get(const rtc::TraceInterface &ti)
     {

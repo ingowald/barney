@@ -56,6 +56,7 @@ namespace BARNEY_NS {
       OWLGeomType gt = 0;
       Device *const device;
     };
+    
     struct TrianglesGeomType : public GeomType
     {
       TrianglesGeomType(Device *device,
@@ -65,6 +66,7 @@ namespace BARNEY_NS {
                         bool has_ah, bool has_ch);
       Geom *createGeom() override;
     };
+    
     struct UserGeomType : public GeomType
     {
       UserGeomType(Device *device,

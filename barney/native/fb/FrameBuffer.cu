@@ -141,6 +141,7 @@ namespace BARNEY_NS {
                                uint32_t *out, vec2i outSize,
                                const uint32_t *in, vec2i inSize)
     {
+#if RTC_DEVICE_CODE
       int tid = ci.getThreadIdx().x + ci.getBlockIdx().x * ci.getBlockDim().x;
       int ox = tid % outSize.x;
       int oy = tid / outSize.x;
@@ -149,6 +150,7 @@ namespace BARNEY_NS {
       int ix = min(ox / 2, inSize.x - 1);
       int iy = min(oy / 2, inSize.y - 1);
       out[tid] = in[ix + inSize.x * iy];
+#endif
     }
 
     /*! 2x nearest-neighbor upscale for vec3f data (normals) */
@@ -157,6 +159,7 @@ namespace BARNEY_NS {
                               vec3f *out, vec2i outSize,
                               const vec3f *in, vec2i inSize)
     {
+#if RTC_DEVICE_CODE
       int tid = ci.getThreadIdx().x + ci.getBlockIdx().x * ci.getBlockDim().x;
       int ox = tid % outSize.x;
       int oy = tid / outSize.x;
@@ -165,6 +168,7 @@ namespace BARNEY_NS {
       int ix = min(ox / 2, inSize.x - 1);
       int iy = min(oy / 2, inSize.y - 1);
       out[tid] = in[ix + inSize.x * iy];
+#endif
     }
 
     /*! 2x nearest-neighbor upscale for vec4f data (color); used when AI
@@ -174,6 +178,7 @@ namespace BARNEY_NS {
                               vec4f *out, vec2i outSize,
                               const vec4f *in, vec2i inSize)
     {
+#if RTC_DEVICE_CODE
       int tid = ci.getThreadIdx().x + ci.getBlockIdx().x * ci.getBlockDim().x;
       int ox = tid % outSize.x;
       int oy = tid / outSize.x;
@@ -182,6 +187,7 @@ namespace BARNEY_NS {
       int ix = min(ox / 2, inSize.x - 1);
       int iy = min(oy / 2, inSize.y - 1);
       out[tid] = in[ix + inSize.x * iy];
+#endif
     }
 
     void FrameBuffer::finalizeTiles()

@@ -61,9 +61,11 @@ namespace BARNEY_NS {
       : ::anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
     {}
 
-    ANARIDevice BarneyLibrary::newDevice(const char *subType)
+    ANARIDevice BarneyLibrary::newDevice(const char *_subType)
     {
+      std::string subType = _subType ? "default" : _subType;
       try {
+        PING; PRINT(subType);
         return (ANARIDevice) new BarneyDevice(this_library(), subType);
       } catch (std::exception &e) {
         std::cout << "could not create barney device '" << TOSTRING(BARNEY_NS)
@@ -89,6 +91,50 @@ namespace BARNEY_NS {
       }
     }
 
+    /*! 'entrypoint' for this anari library that creates and
+        ANARILibrary object. this function is specific to one fixed
+        backend, and will either return a working library object, or a
+        null handle if - for some reason - that library could not be
+        created. The actual library _should_ test in its constructor
+        if it is actually able to create devices on the current system
+        (eg, if the system actually has optix support in the driver),
+        and bail out with an exception if it cannot. */
+    ::anari::LibraryImpl *createAnariLibrary(void *lib,
+                                             ANARIStatusCallback statusCallback,
+                                             const void *scbPtr)
+    {
+      try {
+        ::anari::LibraryImpl *lib
+          = new BarneyLibrary(lib, statusCallback, scbPtr);
+        
+        // for sanity's sake, create a device on this library, to see
+        // if this actually works - eg the system might now have optix
+        // even if it has cuda.
+        BarneyDevice *device
+          = (BarneyDevice*)lib->newDevice("default");
+        // device could be created; all good. kill it, we don't need it.
+        delete device;
+        
+        return lib;
+      } catch (std::exception e) {
+        std::cout << "could not create " << TOSTRING(BARNEY_NS)
+                  << " library: " << e.what() << std::endl;
+        return 0;
+      }
+    }
+
+    /*! the 'official' anari/helium entry point for this library. we
+        simply route that to our C++ namespace'd creator function
+        (which we need, too, because multi-device library relies on
+        that) */
+    extern "C" BARNEY_LIBRARY_INTERFACE
+    ANARILibrary BARNEY_LIBRARY_ENTRYPOINT_NAME(void *lib,
+                                                ANARIStatusCallback statusCallback,
+                                                const void *scbPtr)
+    {
+      return (ANARILibrary)createAnariLibrary(lib,statusCallback,scbPtr);
+    }
+    
   }
 } // namespace BANARI_NS
 
@@ -96,4 +142,5 @@ namespace BARNEY_NS {
 // cmake to insert BARNEY_DEVIEC_NAME - can't do that through #defines
 // because the entrypoint macro is itself a macro so it wont'
 // substitute recursively
-#include "Library_entryPoint.h"
+// #include "Library_entryPoint.h"
+

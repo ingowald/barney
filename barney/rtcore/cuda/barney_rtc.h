@@ -7,8 +7,10 @@
 #include "rtcore/common/rtcore-common.h"
 #include "rtcore/cudaCommon/cuda-common.h"
 #include "rtcore/cuda/AppInterface.h"
-#if RTC_DEVICE_CODE 
-# include "rtcore/cudaCommon/ComputeInterface.h"
+#include "rtcore/cudaCommon/ComputeInterface.h"
+// only pipeline programs should ever see trace functions
+#if BARNEY_DEVICE_PROGRAM
+// #if RTC_DEVICE_CODE 
 # include "rtcore/cuda/TraceInterface.h"
 #endif
 

@@ -15,8 +15,14 @@
 #include <memory>
 #include <sstream>
 
-# if defined(__CUDACC__) || defined(__HIPCC__)
+# if defined(__CUDA_ARCH__) || defined(__HIPCC__)
+// # if defined(__CUDACC__) || defined(__HIPCC__)
 // # ifdef __CUDA_ARCH__
+
+// let's the barney source files know whether they're currently being
+// comiled for 'device' execution, or not. For cuda etc, this means
+// we're in the __CUDA_ARCH__ pass, for cpu this is going to be turned
+// on always.
 #  define RTC_DEVICE_CODE 1
 # endif
 

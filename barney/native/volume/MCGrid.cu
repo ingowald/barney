@@ -63,11 +63,13 @@ namespace BARNEY_NS {
     __rtc_global
     void clearMCs(const rtc::ComputeInterface &ci, MCGrid::DD grid)
     {
+#if RTC_DEVICE_CODE
       int ix = ci.getThreadIdx().x
         +ci.getBlockIdx().x*ci.getBlockDim().x;
       if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
     
       grid.scalarRanges[ix] = { +BARNEY_INF, -BARNEY_INF };
+#endif
     }
   
     /*! re-set all cells' ranges to "infinite empty" */
@@ -97,6 +99,7 @@ namespace BARNEY_NS {
                 TransferFunction::DD xf,
                 PrincipledVolumeParams::DD principled)
     {
+#if RTC_DEVICE_CODE
       int ix = ci.getThreadIdx().x
         +ci.getBlockIdx().x*ci.getBlockDim().x;
       if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
@@ -106,6 +109,7 @@ namespace BARNEY_NS {
         ? principledMajorant(scalarRange, principled) * tfMaj
         : tfMaj;
       grid.majorants[ix] = maj;
+#endif
     }
   
     void MajorantsGrid::computeMajorants(Volume *volume)
