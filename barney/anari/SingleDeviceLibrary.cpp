@@ -99,6 +99,7 @@ namespace BARNEY_NS {
         if it is actually able to create devices on the current system
         (eg, if the system actually has optix support in the driver),
         and bail out with an exception if it cannot. */
+    BARNEY_LIBRARY_INTERFACE
     ::anari::LibraryImpl *createAnariLibrary(void *lib,
                                              ANARIStatusCallback statusCallback,
                                              const void *scbPtr)

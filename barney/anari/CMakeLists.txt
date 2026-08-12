@@ -33,6 +33,8 @@ set(BANARI_SOURCES
   light/Point.h
   light/Point.cpp
 
+  SingleDeviceLibrary.cpp
+  
   # 'force' a single cuda file into the library, so cmake will
   # properly recognize this as requiring linking with cuda.
   dummy.cu
