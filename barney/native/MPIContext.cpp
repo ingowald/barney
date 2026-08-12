@@ -18,7 +18,7 @@
 
 namespace BARNEY_NS {
   namespace native {
-
+    
     size_t getHostNameHash();
 
     int findLocalRank(Comm &comm)
@@ -132,7 +132,7 @@ namespace BARNEY_NS {
       fb->finalizeFrame();
     }
 
-    BARNEY_API
+    // BARNEY_API
     BNContext bnMPIContextCreate(MPI_Comm _comm,
                                  /*! how many data slots this context is to
                                    offer, and which part(s) of the

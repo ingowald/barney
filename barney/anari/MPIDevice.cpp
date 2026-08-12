@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "Device.h"
+#include "MPIDevice.h"
 #include <mpi.h>
 
 #include "Array.h"
@@ -15,25 +16,6 @@
 namespace BARNEY_NS {
   namespace anari {
     
-    struct BarneyMPIDevice : public BarneyDevice {
-      BarneyMPIDevice();
-      BarneyMPIDevice(ANARILibrary library, const std::string &subType = "default");
-      ~BarneyMPIDevice() override;
-    
-      BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
-      void initMPI() override;
-      void deviceCommitParameters() override;
-    
-      /*! communicator to use for barney data-parallel rendering, set as
-        a uint64_t. If set to 0, we'll use local rendering even if mpi
-        support is compiled in, any other value will be interpreted as
-        a MPI_Comm type. If device gets created with subtype "mpi" or
-        "default", the default value for comm is MPI_COMM_WORLD, if it
-        is created with subtype "local" it will default to 0 */
-      MPI_Comm comm = 0;//MPI_COMM_WORLD;
-      bool     commNeedsFree = false;
-    };
-  
     BarneyMPIDevice::BarneyMPIDevice()
       : BarneyDevice()
     { m_enable_multiGPU = 0; }
@@ -110,6 +92,7 @@ namespace BARNEY_NS {
         gpuIDs.push_back(in.x);
         dataRanks.push_back(in.y);
       }
+      std::cout << "createing ****MPI**** context" << std::endl;
       BNContext ctx =
         bnMPIContextCreate(comm,
                            dataRanks.data(),
@@ -117,20 +100,6 @@ namespace BARNEY_NS {
                            gpuIDs.data(),
                            gpuIDs.size());
       return ctx;
-      // // #if BARNEY_MPI
-      // //     if (comm && !forceLocalRendering)
-      //       // state->tether->context =
-      //     return
-      //         bnMPIContextCreate(comm,
-      //                              _dgIDs,_dgCount,
-      //                              _gpuIDs,_gpuCount);
-      //       else
-      // #endif
-      //         state->tether->context
-      //         = bnContextCreate(_dgIDs,_dgCount,
-      //                           _gpuIDs,_gpuCount);
-
-      // #endif
     }
 
   }

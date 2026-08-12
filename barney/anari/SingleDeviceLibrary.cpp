@@ -5,6 +5,9 @@
 #include "anari/Device.h"
 // anari
 #include "anari/backend/LibraryImpl.h"
+#if BARNEY_MPI
+# include "MPIDevice.h"
+#endif
 //#include "generated/anari_library_barney_export.h"
 
 #ifdef ANARI_LIBRARY_BARNEY_STATIC_DEFINE
@@ -63,7 +66,25 @@ namespace BARNEY_NS {
 
     ANARIDevice BarneyLibrary::newDevice(const char *_subType)
     {
-      std::string subType = _subType ? "default" : _subType;
+      std::string subType = _subType ? _subType : "default";
+
+      PING; PRINT(subType);
+      
+      if (subType == "mpi") {
+#if BARNEY_MPI
+      try {
+        PING; PRINT(subType);
+        return (ANARIDevice) new BarneyMPIDevice(this_library(), subType);
+      } catch (std::exception &e) {
+        std::cout << "could not create barney MPI device '" << TOSTRING(BARNEY_NS)
+                  << ": " << e.what() << std::endl;
+        return (ANARIDevice)0;
+      }
+#else
+        throw std::runtime_error("asking for MPI device, but this version of barney was built without MPI support");
+#endif
+      }
+      
       try {
         PING; PRINT(subType);
         return (ANARIDevice) new BarneyDevice(this_library(), subType);

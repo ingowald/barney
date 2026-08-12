@@ -81,6 +81,8 @@ namespace barney {
   
   ANARIDevice BarneyMultiLibrary::newDevice(const char *subType)
   {
+    PING; PRINT(subType);
+    
     ANARILibrary lib = this_library();
 #if BARNEY_BACKEND_OPTIX
     try { return (ANARIDevice)createDevice_barney_optix(lib,subType); }
