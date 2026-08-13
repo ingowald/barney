@@ -4,12 +4,18 @@
 
 #pragma once
 
+#include <anari/anari_cpp.hpp>
+#include <helium/array/Array1D.h>
 #include "anari/barney_math.h"
 #include "anari/common.h"
 // helium
-#include "helium/BaseGlobalDeviceState.h"
 #include <memory>
 #include <map>
+
+#include <helium/array/Array2D.h>
+#include <helium/array/Array3D.h>
+#include <helium/array/ObjectArray.h>
+#include "helium/BaseGlobalDeviceState.h"
 
 #ifndef BARNEY_NS
 # error BARNEY_NS not defined
