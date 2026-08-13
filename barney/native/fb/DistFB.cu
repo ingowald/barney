@@ -4,7 +4,6 @@
 
 #include "barney/native/fb/DistFB.h"
 #include "barney/native/MPIContext.h"
-#include "barney/rtcore/ComputeInterface.h"
 #include "barney/native/common/math.h"
 
 namespace BARNEY_NS {

@@ -6,7 +6,6 @@
 #include "barney/native/globalTrace/TwoStage.h"
 #include "barney/native/DeviceGroup.h"
 #include "barney/native/render/RayQueue.h"
-#include "rtcore/ComputeInterface.h"
 #include "barney/native/FromEnv.h"
 
 namespace BARNEY_NS {
