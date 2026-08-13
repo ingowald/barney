@@ -200,7 +200,7 @@ endforeach()
 # ------------------------------------------------------------------
 add_library(barney_${backend}_static STATIC
   ${HOST_SOURCES}
-  # this will be empty if MPI isnt enabled
+  # this will be empty if MPI isn't enabled
   ${MPI_SOURCES}
 )
 target_link_libraries(barney_${backend}_static PUBLIC
@@ -211,6 +211,11 @@ target_link_libraries(barney_${backend}_static PUBLIC
 if (BARNEY_MPI)
   target_link_libraries(barney_${backend}_static PUBLIC MPI::MPI_CXX)
 endif()
-  
+if (${backend} STREQUAL "cpu")
+  target_link_libraries(barney_${backend}_static PUBLIC cuBQL_cpu_float3)
+else()
+  target_link_libraries(barney_${backend}_static PUBLIC cuBQL_cuda_float3)
+endif()
+
 rtc_library_properties(barney_${backend}_static)
 
