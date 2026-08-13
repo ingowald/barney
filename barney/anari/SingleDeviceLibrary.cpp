@@ -68,12 +68,10 @@ namespace BARNEY_NS {
     {
       std::string subType = _subType ? _subType : "default";
 
-      PING; PRINT(subType);
-      
       if (subType == "mpi") {
 #if BARNEY_MPI
       try {
-        PING; PRINT(subType);
+        PING;
         return (ANARIDevice) new BarneyMPIDevice(this_library(), subType);
       } catch (std::exception &e) {
         std::cout << "could not create barney MPI device '" << TOSTRING(BARNEY_NS)
@@ -86,7 +84,6 @@ namespace BARNEY_NS {
       }
       
       try {
-        PING; PRINT(subType);
         return (ANARIDevice) new BarneyDevice(this_library(), subType);
       } catch (std::exception &e) {
         std::cout << "could not create barney device '" << TOSTRING(BARNEY_NS)

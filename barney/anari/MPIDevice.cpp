@@ -33,6 +33,7 @@ namespace BARNEY_NS {
   
     void BarneyMPIDevice::initMPI() 
     {
+      PING;
       assert(comm
              && "BarneyMPIDevice - comm not set!?");
     
@@ -92,7 +93,8 @@ namespace BARNEY_NS {
         gpuIDs.push_back(in.x);
         dataRanks.push_back(in.y);
       }
-      std::cout << "createing ****MPI**** context" << std::endl;
+      PING;
+      std::cout << "creating ****MPI**** context" << std::endl;
       BNContext ctx =
         bnMPIContextCreate(comm,
                            dataRanks.data(),

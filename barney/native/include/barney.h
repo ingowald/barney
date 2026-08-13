@@ -52,7 +52,7 @@
    the same app (or even .so file) all barney calls are now moved into
    a device-specific namespace, and extern C may no onger get used
    (extern linkage would remove the namespace mangling */
-# define BEGIN_BARNEY_NS namespace BARNEY_NS { 
+# define BEGIN_BARNEY_NS namespace BARNEY_NS {
 # define END_BARNEY_NS   } /* end BARNEY_NS */ 
 # define BARNEY_API /* nothing */
 
