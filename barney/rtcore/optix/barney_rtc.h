@@ -9,9 +9,10 @@
 #include "rtcore/optix/AppInterface.h"
 #include "rtcore/optix/ComputeInterface.h"
 #include "rtcore/optix/TraceInterface.h"
-// #if RTC_DEVICE_CODE 
-// # include "rtcore/optix/TraceInterface.h"
-// #endif
 
+/*! tells the backend that this is the optix backend, so it can
+    enable/disable stuff that should only be applicable to this
+    backend (such as anari nv-framebuffer extensions */
+#define BARNEY_RTC_OPTIX 1
 
 

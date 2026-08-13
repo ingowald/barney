@@ -4,10 +4,11 @@
 
 #pragma once
 
-// tell whoever includes us that we're the CPU backend
-#define BARNEY_RTC_CPU 1
-
 #include "rtcore/cpu/AppInterface.h"
 #define BARNEY_DEVICE_PROGRAM 1
 #include "rtcore/cpu/TraceInterface.h"
 
+
+/*! tells the barney/native/ and barney/anari/ components that use
+    this backend which kind of backend it is */
+#define BARNEY_RTC_CUDA 1

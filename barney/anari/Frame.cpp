@@ -9,9 +9,11 @@
 #include <chrono>
 #include <iostream>
 // cuda
-#if BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX
+#if defined(BARNEY_RTC_CUDA) || defined(BARNEY_RTC_OPTIX)
 # include <cuda_runtime.h>
+# define HAVE_NV_FRAMEBUFFER_EXTENSION 1
 #endif
+
 
 namespace BARNEY_NS {
   namespace anari {
@@ -307,7 +309,7 @@ namespace BARNEY_NS {
         m_didMapChannel.normal = true;
         *pixelType = ANARI_FLOAT32_VEC3;
         return m_channelBuffers.normal;
-#if BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX
+#if HAVE_NV_FRAMEBUFFER_EXTENSION
       } else if (channel == "channel.colorCUDA") {
         if (m_channelBuffers.color)
           throw std::runtime_error
@@ -406,7 +408,7 @@ namespace BARNEY_NS {
         if (m_channelBuffers.normal)
           delete[] m_channelBuffers.normal;
         m_channelBuffers.normal = 0;
-#if BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX
+#if HAVE_NV_FRAMEBUFFER_EXTENSION
       } else if (channel == "channel.colorCUDA") {
         if (m_channelBuffers.color)
           cudaFree(m_channelBuffers.color);

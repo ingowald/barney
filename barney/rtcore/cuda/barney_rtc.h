@@ -14,5 +14,11 @@
 # include "rtcore/cuda/TraceInterface.h"
 #endif
 
+/*! tells the barney/native/ and barney/anari/ components that use
+    this backend which kind of backend it is. this allows downstream
+    layers to enable/disable stuff that should only be applicable to
+    this backend (such as anari nv-framebuffer extensions */
+#define BARNEY_RTC_CUDA 1
+
 
 
