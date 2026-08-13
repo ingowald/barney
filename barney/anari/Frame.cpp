@@ -9,8 +9,8 @@
 #include <chrono>
 #include <iostream>
 // cuda
-#if BARNEY_HAVE_CUDA
-#include <cuda_runtime.h>
+#if BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX
+# include <cuda_runtime.h>
 #endif
 
 namespace BARNEY_NS {
