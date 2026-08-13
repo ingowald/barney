@@ -2,10 +2,28 @@
 # CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-set(BARNEY_VERSION_MAJOR 1)
-set(BARNEY_VERSION_MINOR 1)
-set(BARNEY_VERSION_PATCH 8)
+# ------------------------------------------------------------------
+# global options
+# ------------------------------------------------------------------
 
+# ----------- enable/disable different devices we can build
+option(BARNEY_USE_HIP        "Use HIP instead of CUDA"     OFF)
+option(BARNEY_BACKEND_CPU    "Build Embree/CPU Backend"    OFF)
+option(BARNEY_BACKEND_CUDA   "Build (native) CUDA Backend" OFF)
+option(BARNEY_BACKEND_OPTIX  "Build OptiX Backend"         ON)
+option(BARNEY_BACKEND_HIP    "Build HIP Backend"           OFF)
+option(BARNEY_BACKEND_HIPRT  "Build HIPRT Backend"         OFF)
+option(BARNEY_MPI            "Enable MPI Support"          OFF)
+
+# ------------------------------------------------------------------
+# cmake project/output config
+# ------------------------------------------------------------------
+set(BARNEY_VERSION_MAJOR 1)
+set(BARNEY_VERSION_MINOR 4)
+set(BARNEY_VERSION_PATCH 0)
+set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
+
+# ----------- which versions of owl/cubql we expect for correct build 
 set(EXPECTED_OWL_VERSION "1.2.9")
 set(EXPECTED_CUBQL_VERSION "1.3.1")
 
@@ -18,8 +36,6 @@ cmake_policy(SET CMP0079 NEW)
 cmake_policy(SET CMP0076 NEW)
 cmake_policy(SET CMP0063 NEW)
 
-option(BARNEY_MPI "Enable MPI Support" OFF)
-
 if (NOT (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR}))
   set(BARNEY_IS_SUBPROJECT ON)
 else()
@@ -27,94 +43,18 @@ else()
 endif()
 
 set(CMAKE_BUILD_TYPE_INIT "Release")
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# project command is required to come after cmake_minimum_required command.
-set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
-
 project(Barney VERSION ${BARNEY_VERSION} LANGUAGES C CXX)
-include(GNUInstallDirs)
-
-set(BARNEY_RTC_EXT
-  "" CACHE STRING
-  "Experimental/external rtcore config.")
-mark_as_advanced(USE_EXT)
-
-# barney's own cmake modules (e.g. Findhiprt.cmake for the HIPRT backend)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-# AMD GPU support: compile barney's OptiX-free software ray-tracing backend
-# (rtcore/cuda + rtcore/cudaCommon) through HIP/ROCm. When USE_HIP is ON the
-# .cu sources are compiled with hipcc (LANGUAGE HIP); the CUDA/OptiX build is
-# unaffected (this whole path is inert unless USE_HIP is requested).
-option(USE_HIP "Build GPU code with HIP for AMD GPUs" OFF)
-
-set(BARNEY_DEVICE_NAME
-  "barney" CACHE STRING
-  "Name of device to be built.")
-
-if ((NOT BARNEY_RTC_EXT STREQUAL "") AND (EXISTS "${BARNEY_RTC_EXT}"))
-  set(BARNEY_HAVE_EXT ON)
-  include(${BARNEY_RTC_EXT}/config.cmake)
-elseif (USE_HIP)
-  enable_language(HIP)
-  # enable_language(HIP) above auto-detects the host GPU arch (and errors on a
-  # no-GPU build host); pass -DCMAKE_HIP_ARCHITECTURES=... to override.
-  message("#barney: building GPU code with HIP for CMAKE_HIP_ARCHITECTURES=${CMAKE_HIP_ARCHITECTURES}")
-  # the cuda backend's GPU code is reused under HIP; OptiX is NVIDIA-only.
-  set(BARNEY_HAVE_HIP ON)
-  set(BARNEY_HAVE_CUDA OFF)
-  set(CMAKE_CUDA_ARCHITECTURES)
-  if (WIN32)
-    # On Windows, CMake's Windows-Clang platform module injects -fuse-ld=lld-link
-    # into HIP link commands, but the AMD clang driver rejects it when doing HIP
-    # device-link (--hip-link); lld-link is the default host linker already.
-    set(CMAKE_HIP_USING_LINKER_DEFAULT "")
-  endif()
-
-  # Optional hardware-RT backend on AMD GPUs via AMD HIPRT. HIPRT supplies the
-  # BVH build + ray traversal (hardware-accelerated on RDNA2+, software on CDNA
-  # such as gfx90a); barney keeps its function-pointer shading dispatch. HIPRT
-  # is a discovered dependency (find via hiprt_ROOT / HIPRT_PATH), never
-  # vendored -- mirrors how barney finds OptiX/OIDN.
-  option(BARNEY_BACKEND_HIPRT "Enable HIPRT hardware-RT backend (AMD)?" OFF)
-  if (BARNEY_BACKEND_HIPRT)
-    find_package(hiprt REQUIRED)
-    message("#barney: HIPRT backend enabled (hiprt at ${hiprt_LIBRARY})")
-  endif()
-elseif (NOT BARNEY_DISABLE_CUDA)
-  include(CheckLanguage)
-  check_language(CUDA)
-  if (CMAKE_CUDA_COMPILER)
-    if (WIN32)
-      set(BARNEY_CUDA_ARCHITECTURES_INIT "all-major")
-    else()
-      set(BARNEY_CUDA_ARCHITECTURES_INIT "native")
-    endif()
-    set(CMAKE_CUDA_ARCHITECTURES
-      "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
-      "Which CUDA architecture to build for")
-    
-    enable_language(CUDA)
-    set(BARNEY_HAVE_CUDA ON)
-  else()
-    message(AUTHOR_WARNING "#barney: no CUDA compiler found; disabling cuda/optix backend")
-    set(BARNEY_HAVE_CUDA OFF)
-  endif()
-else()
-  message("explicitly disabling CUDA")
-  set(BARNEY_HAVE_CUDA OFF)
-  set(CMAKE_CUDA_ARCHITECTURES)
-endif()
 
 if (CMAKE_BUILD_TYPE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" 
     "MinSizeRel" "RelWithDebInfo")
 endif()
+include(GNUInstallDirs)
+include(CheckLanguage)
 
-if (BARNEY_HAVE_CUDA)
-  message("#barney: building for CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
-endif()
 if (NOT BARNEY_IS_SUBPROJECT)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
@@ -123,176 +63,162 @@ endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+set(CMAKE_CXX_STANDARD_REQUIRED  TRUE)
+set(CMAKE_CXX_VISIBILITY_PRESET  hidden)
+set(CMAKE_CUDA_VISIBILITY_PRESET hidden)
+
+# barney's own cmake modules (e.g. Findhiprt.cmake for the HIPRT backend)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+find_package(anari 0.15.0 COMPONENTS code_gen)
+
+find_package(Python3 COMPONENTS Interpreter)
+option(BARNEY_AUTO_GENERATE_QUERIES "auto-generate the anari device queries"
+  ${Python3_FOUND})
+#if (BARNEY_AUTO_GENERATE_QUERIES)
+#  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+#endif()
+
+# ==================================================================
+# check if there's any compile language conflicts in the
+# backends. currently we can't build both hip and cuda at the same
+# time (mostly due to this meaning we'd have to build two different
+# versions of cuBQL within the same cmake build dir), so let's disable
+# the respective backends based on whether hip is or isn't enabled
+# ==================================================================
+mark_as_advanced(BARNEY_USE_HIP)
+if (BARNEY_USE_HIP)
+  set(CUBQL_USE_HIP ON)
+  set(BARNEY_BACKEND_OPTIX OFF)
+  set(BARNEY_BACKEND_CUDA  OFF)
+else()
+  set(CUBQL_USE_HIP OFF)
+  set(BARNEY_BACKEND_HIP   OFF)
+  set(BARNEY_BACKEND_HIPRT OFF)
+endif()
+
+# ==================================================================
+# configure language(s): in theory we support either cuda, hip, or
+# cxx, BUT a) hip or cuda might not acutally be installed even if the
+# user requested it (we need to check this, and disable selected
+# backends if that's the case; and b) for the cpu backend we have to
+# know whether cuda/hip are available or not (because if it is the
+# respective 'device' source files have to be tagged as CUDA, and if
+# not, as CXX.
+# ==================================================================
+
+if (BARNEY_BACKEND_CUDA OR BARNEY_BACKEND_OPTIX)
+  check_language(CUDA)
+  if (CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    set(BARNEY_HAVE_CUDA ON)
+    set(CMAKE_CUDA_ARCHITECTURES
+      "${BARNEY_CUDA_ARCHITECTURES_INIT}" CACHE STRING
+      "Which CUDA architecture to build for")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --expt-relaxed-constexpr --extended-lambda")
+    set(BARNEY_DEVICE_LANGUAGE CUDA)
+  else()
+    set(BARNEY_HAVE_CUDA OFF)
+    set(BARNEY_DEVICE_LANGUAGE CXX)
+    set(BARNEY_BACKEND_OPTIX OFF)
+    set(BARNEY_BACKEND_CUDA OFF)
+  endif()
+endif()
+
+if (BARNEY_BACKEND_HIP OR BARNEY_BACKEND_HIPRT)
+  check_language(HIP)
+  if (CMAKE_HIP_COMPILER)
+    enable_language(HIP)
+    set(BARNEY_DEVICE_LANGUAGE HIP)
+    set(BARNEY_HAVE_HIP ON)
+  else()
+    set(BARNEY_HAVE_HIP OFF)
+    set(BARNEY_DEVICE_LANGUAGE CXX)
+    set(BARNEY_BACKEND_HIP OFF)
+    set(BARNEY_BACKEND_HIPRT OFF)
+  endif()
+endif()
+
+macro(rtc_configure_source)
+  foreach(src ${ARGN})
+    get_filename_component(ext "${src}" EXT)
+    if ((${ext} STREQUAL ".cu") OR (${ext} STREQUAL ".dev.cu"))
+      if (BARNEY_HAVE_CUDA)
+        set_source_files_properties(${src} PROPERTIES
+          LANGUAGE CUDA
+          COMPILE_OPTIONS "--expt-relaxed-constexpr;--extended-lambda;-rdc=true"
+        )
+      elseif (BARNEY_HAVE_HIP)
+        set_source_files_properties(${src} PROPERTIES
+          LANGUAGE HIP
+          COMPILE_OPTIONS "-fgpu-rdc"
+        )
+      else ()
+        set_source_files_properties(${src} PROPERTIES
+          LANGUAGE CXX
+          #COMPILE_OPTIONS "--extended-lambda;-rdc=true"
+        )
+      endif()
+    endif()
+  endforeach()
+endmacro()
+
+
+
+
+
+
+# ==================================================================
+# external projects
+# ==================================================================
 
 # ------------------------------------------------------------------
 # owl - even if we build only for cpu (where we wouldn't use the owl
 # _library_) we'd still need the owl common classes ... so this
 # _always_ gets included first
 # ------------------------------------------------------------------
+# if (BARNEY_HAVE_CUDA)
+#   set(OWL_CUDA_STATIC ON)
+#   message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
+#   if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
+#     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
+#   elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
+#     message(" found ${CMAKE_CURRENT_LIST_DIR}/../optix")
+#     set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../optix)
+#   else()
+#   endif()
+#   set(OWL_BUILD_VIEWER OFF)
+#   add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
+#   if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS ${EXPECTED_OWL_VERSION}))
+#     message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
+# endif()
+# else()
+#   add_library(owl-config INTERFACE)
+#   target_include_directories(owl-config INTERFACE
+#     ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
+#   )
+# endif()
+# ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+# cubql
+# ------------------------------------------------------------------
+
 if (BARNEY_HAVE_CUDA)
-  set(OWL_CUDA_STATIC ON)
-  message(" checking ${CMAKE_CURRENT_LIST_DIR}/../optix")
-  if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/submodules/optix/include/optix.h")
-    set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/submodules/optix)
-  elseif (EXISTS "${CMAKE_CURRENT_LIST_DIR}/../optix/include/optix.h")
-    message(" found ${CMAKE_CURRENT_LIST_DIR}/../optix")
-    set(OptiX_INSTALL_DIR ${CMAKE_CURRENT_LIST_DIR}/../optix)
-  else()
-  endif()
-  set(OWL_BUILD_VIEWER OFF)
-  add_subdirectory(submodules/owl EXCLUDE_FROM_ALL)
-  if ((NOT (DEFINED OWL_VERSION)) OR (${OWL_VERSION} VERSION_LESS ${EXPECTED_OWL_VERSION}))
-    message(FATAL_ERROR " OWL version is too old. make sure to update your owl submodule")
-endif()
-else()
-  add_library(owl-config INTERFACE)
-  target_include_directories(owl-config INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include
-  )
-endif()
-# ------------------------------------------------------------------
-
-
-# ------------------------------------------------------------------
-add_library(barney_config INTERFACE)
-target_link_libraries(barney_config
-  INTERFACE
-  owl-config
-  )
-if (BARNEY_HAVE_HIP)
-  # let the host (.cpp) translation units that include the backend's compat
-  # header (cuda_to_hip.h) select the HIP path; the .cu/HIP passes already see
-  # __HIPCC__, but plain-C++ TUs need this define.
-  target_compile_definitions(barney_config INTERFACE USE_HIP=1 BARNEY_HAVE_HIP=1)
-  # hip::host carries the ROCm include dirs and __HIP_PLATFORM_AMD__ so the
-  # host C++ TUs that call the hip runtime (hipMalloc/hipMemcpy/...) build.
-  find_package(hip REQUIRED)
-  target_link_libraries(barney_config INTERFACE hip::host)
-endif()
-target_include_directories(barney_config INTERFACE
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/nanovdb/include/>
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
-)
-if (WIN32)
-  target_compile_definitions(barney_config INTERFACE -DNOMINMAX)
-  target_compile_options(barney_config INTERFACE
-    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
-  )
-endif()
-
-
-# ------------------------------------------------------------------
-# configure which backend(s) to build
-# ------------------------------------------------------------------
-if (BARNEY_HAVE_EXT)
-  # leave it to the external plugins to configure themselves - not
-  # currently working
+  # nothing to config, cuda is default
 elseif (BARNEY_HAVE_HIP)
-  # on AMD GPUs the default is the OptiX-free software tracer (the cuda backend);
-  # OptiX has no HIP equivalent here, embree is the CPU fallback. When the HIPRT
-  # backend is requested it is the GPU backend instead (one rtc backend per
-  # build); cuda_common (textures) is still built because the HIPRT backend
-  # reuses it, exactly as the optix backend does.
-  if (BARNEY_BACKEND_HIPRT)
-    set(BARNEY_BACKEND_CUDA OFF)
-  else()
-    option(BARNEY_BACKEND_CUDA "Enable software-tracer GPU backend?" ON)
-  endif()
-  set(BARNEY_BACKEND_OPTIX OFF)
-  set(BARNEY_BACKEND_EMBREE OFF)
-elseif (BARNEY_HAVE_CUDA)
-  option(BARNEY_BACKEND_CUDA "Enable (native-)CUDA Backend?" OFF)
-  option(BARNEY_BACKEND_OPTIX "Enable OptiX Backend?" ON)
-  option(BARNEY_BACKEND_EMBREE "Enable Embree Backend?" OFF)
+  set(CUBQL_USE_HIP ON)
 else()
-  set(BARNEY_BACKEND_CUDA OFF)
-  set(BARNEY_BACKEND_OPTIX OFF)
-  set(BARNEY_BACKEND_EMBREE ON)
+  set(CUBQL_DISABLE_CUDA ON)
 endif()
-
-# ==================================================================
-option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
-option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
-option(BARNEY_USE_MULTI_SCATTERING
-  "Enable volumetric multi-scattering (HG phase, volume bounce tracking)"
-  OFF)
-
-if (BARNEY_USE_MULTI_SCATTERING)
-  message("#barney: BARNEY_USE_MULTI_SCATTERING=ON")
-endif()
-
-option(BARNEY_USE_EXTERNAL_CUBQL "Use External CuBQL dir" OFF)
-set(BARNEY_EXTERNAL_CUBQL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../cuBQL" CACHE PATH
-  "Path to an external cuBQL source tree (when BARNEY_USE_EXTERNAL_CUBQL is ON)")
-set(BARNEY_CUBQL_BVH_WIDTH 4 CACHE INT "CuBQL BVH width")
-
-# ==================================================================
-if (BARNEY_DISABLE_DENOISING)
-  set(BARNEY_DISABLE_OIDN ON)
-  set(BARNEY_OIDN_CPU OFF)
-  set(BARNEY_OIDN_CPU OFF)
-else()
-  option(BARNEY_DISABLE_OIDN "DISable OIDN even if found?" OFF)
-  if (NOT BARNEY_DISABLE_OIDN)
-    find_package(OpenImageDenoise)
-    if (OIDN_DEVICE_CPU)
-      message("found OIDN *CPU* device")
-      set(BARNEY_OIDN_CPU ON)
-    endif()
-    if (OIDN_DEVICE_GPU)
-      message("found OIDN *GPU* device")
-      set(BARNEY_OIDN_GPU ON)
-    endif()
-  endif()
-  message("BARNEY_OIDN_CPU ${BARNEY_OIDN_CPU}")
-endif()
-
-# ------------------------------------------------------------------
-# rtcore
-# ------------------------------------------------------------------
-
-if (NOT (TARGET cuBQL))
-  if (BARNEY_HAVE_HIP)
-    # build cuBQL's GPU code through HIP for the same arch(s) as barney
-    set(CUBQL_USE_HIP ON)
-  elseif (BARNEY_HAVE_CUDA)
-  else()
-    set(CUBQL_DISABLE_CUDA ON)
-  endif()
-  if (BARNEY_USE_EXTERNAL_CUBQL)
-    add_subdirectory(${BARNEY_EXTERNAL_CUBQL_DIR} EXCLUDE_FROM_ALL builddir_cuBQL)
-  else()
-    add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
-  endif()
-endif()
-
-if (BARNEY_HAVE_CUDA OR BARNEY_HAVE_HIP)
-  option(BARNEY_CUBQL_HOST "Use CUBQL host builder" OFF)
-else()
-  set(BARNEY_CUBQL_HOST ON)
-endif()
-if (BARNEY_CUBQL_HOST)
-  target_compile_definitions(barney_config INTERFACE -DBARNEY_CUBQL_HOST=1)
-  target_link_libraries(barney_config INTERFACE cuBQL)
-endif()
-target_link_libraries(barney_config
-  INTERFACE
-  cuBQL
-)
-
-
-# ------------------------------------------------------------------
-# barney ray tracing core
-# ------------------------------------------------------------------
-add_subdirectory(rtcore)
   
+add_subdirectory(submodules/cuBQL EXCLUDE_FROM_ALL)
 
 # ------------------------------------------------------------------
-# barney system, api, and mpi stuff
+# mpi
 # ------------------------------------------------------------------
+
 if (BARNEY_MPI)
   message("#barney: configuring MPI")
   find_package(MPI)
@@ -304,7 +230,47 @@ if (BARNEY_MPI)
   endif()
 endif()
 
-add_subdirectory(barney)
+
+# ==================================================================
+# actual build config
+# ==================================================================
+
+add_library(barney_config INTERFACE)
+target_link_libraries(barney_config INTERFACE anari::helium)
+target_include_directories(barney_config INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+#  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdParty/glm/include/>
+#  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/barney/include>
+  ${CMAKE_CURRENT_LIST_DIR}
+  ${CMAKE_CURRENT_LIST_DIR}/barney
+  # for any owl::common stuff
+  ${CMAKE_CURRENT_LIST_DIR}/submodules/owl/include/
+  ${CMAKE_CURRENT_LIST_DIR}/3rdParty/nanovdb/include
+)
+if (WIN32)
+  target_compile_definitions(barney_config INTERFACE -DNOMINMAX)
+  target_compile_options(barney_config INTERFACE
+    $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler="/Zc:preprocessor">
+  )
+endif()
+if(MSVC) # That's also clang-cl
+  # /bigobj is needed for bigger binding projects due to the limit to 64k
+  # addressable sections
+  set_property(
+    TARGET barney_config
+    APPEND
+    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+endif()
+
+include(CMakePackageConfigHelpers)
+
+
+# ==================================================================
+option(BARNEY_DISABLE_DENOISING "DISable denoising" OFF)
+#option(BARNEY_HAVE_NANOVDB "Include Support for NanoVDB" ON)
+set(BARNEY_HAVE_NANOVDB ON)
+
 
 # ------------------------------------------------------------------
 # External field plugins
@@ -315,68 +281,83 @@ if(DEFINED BARNEY_EXTERNAL_FIELDS_DIR AND EXISTS "${BARNEY_EXTERNAL_FIELDS_DIR}/
 endif()
 
 # ------------------------------------------------------------------
-# ANARI device
-# ------------------------------------------------------------------
-message("configuring anari")
-add_subdirectory(anari)
-
-
-
-# ------------------------------------------------------------------
 # cmake install stuff
 # ------------------------------------------------------------------
 
 set(BARNEY_CMAKE_INSTALL_DESTINATION
-  ${CMAKE_INSTALL_LIBDIR}/cmake/${BARNEY_DEVICE_NAME}-${BARNEY_VERSION}#${PROJECT_VERSION}
+  ${CMAKE_INSTALL_LIBDIR}/cmake/barney-${BARNEY_VERSION}
 )
 
-include(CMakePackageConfigHelpers)
 
-configure_package_config_file(
-  "${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.cmake.in"
-  "${PROJECT_BINARY_DIR}/${BARNEY_DEVICE_NAME}Config.cmake"
-  INSTALL_DESTINATION
-  ${BARNEY_CMAKE_INSTALL_DESTINATION}
+
+
+
+
+# build_barney(config device) -> tests if config exists as a target,
+# and if so build device (and mpi device, if enabled) with this
+# config. This builds only one device, specific to the given
+# ${backend}, and named barney_{backend}. in addition to the
+# respective 'full' anari library for that backend this also creates
+# some statically linkable library that contains only the anari
+# device, not the anari library or entrypoint,t hus allowing us to
+# link those same devices also the multi-device 'barney' library
+function(build_barney backend)
+  string(TOUPPER ${backend} BACKEND)
+  if (NOT (${BARNEY_BACKEND_${BACKEND}}))
+    message("#barney: backend '${backend}' disabled by user request")
+  else()
+    add_subdirectory(barney build_barney_${backend})
+    # ==================================================================
+    # now finally, link the respective single-backend
+    # 'barney_{backend}' device to the multi-device 'barney' library,
+    # and use a compile defitnion to tell it which ones are available
+    # ==================================================================
+    target_link_libraries(anari_library_barney PRIVATE
+      anari_library_barney_${backend}_static)
+    target_compile_definitions(anari_library_barney PRIVATE
+      -DBARNEY_BACKEND_${BACKEND}=1)
+  endif()
+endfunction()
+
+# ==================================================================
+# this is the MULTI-device library; the ANARILibrary created by that
+# will link to each individual device built in this repo, and select
+# the best at runtime. The 'build_barney()' function will
+# automatically link each generated device to this multi-library
+# ==================================================================
+add_library(anari_library_barney SHARED
+  barney/anari/MultiDeviceLibrary.cpp)
+target_include_directories(anari_library_barney PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/)
+target_link_libraries(anari_library_barney PRIVATE
+  barney_config)
+
+# ==================================================================
+# now, build - and link-add to multi-dev 'barney' - all possible
+# devices. those that lack dependencies or are disblaed by used will
+# simply exit-and-ignore.
+# ==================================================================
+build_barney(cpu)
+build_barney(cuda)
+build_barney(optix)
+build_barney(hip)
+build_barney(hiprt)
+
+# this installs the MULTI-library (ie, the 'barney' device that
+# internally switches to barney_cuda, barney_optix, etc)
+set_target_properties(anari_library_barney
+  PROPERTIES
+  POSITION_INDEPENDENT_CODE    ON
+  VISIBILITY_INLINES_HIDDEN    ON
+  CUDA_SEPARABLE_COMPILATION   ON
+  CUDA_USE_STATIC_CUDA_RUNTIME ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS  ON
+  CUDA_VISIBILITY_PRESET       hidden
+  CXX_VISIBILITY_PRESET        hidden
 )
-
-message("BARNEY_VERSION ${BARNEY_VERSION}")
-write_basic_package_version_file(
-"${BARNEY_DEVICE_NAME}ConfigVersion.cmake"
-    VERSION ${BARNEY_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/${BARNEY_DEVICE_NAME}Config.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/${BARNEY_DEVICE_NAME}ConfigVersion.cmake
-  DESTINATION
-  ${BARNEY_CMAKE_INSTALL_DESTINATION}
-  )
-
-
-install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/cmake
-  DESTINATION
-    ${BARNEY_CMAKE_INSTALL_DESTINATION}
-  FILES_MATCHING
-    PATTERN *.cmake
-    PATTERN Findbarney.cmake EXCLUDE
-)
-
-set(BARNEY_INSTALL_TARGETS ${BARNEY_DEVICE_NAME} ${BARNEY_DEVICE_NAME}_static)
-if (TARGET barney_mpi)
-  list(APPEND BARNEY_INSTALL_TARGETS ${BARNEY_DEVICE_NAME}_mpi ${BARNEY_DEVICE_NAME}_mpi_static)
-endif()
-if (TARGET anari_library_${BARNEY_DEVICE_NAME})
-  list(APPEND BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME})
-endif()
-if (TARGET anari_library_${BARNEY_DEVICE_NAME}_mpi)
-  list(APPEND BARNEY_INSTALL_TARGETS anari_library_${BARNEY_DEVICE_NAME}_mpi)
-endif()
-
 install(
   TARGETS
-  ${BARNEY_INSTALL_TARGETS}
-  EXPORT barney-config
+  anari_library_barney
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   NAMELINK_SKIP
   # on Windows put the dlls into bin
@@ -384,32 +365,4 @@ install(
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-install(EXPORT barney-config
-  DESTINATION ${BARNEY_CMAKE_INSTALL_DESTINATION}
-  NAMESPACE ${BARNEY_DEVICE_NAME}::
-  )
-
-# configures the public api
-configure_file(
-  ${PROJECT_SOURCE_DIR}/barney/include/barney.h
-  include/barney/barney.h
-)
-if (BARNEY_MPI)
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/barney/include/barney_mpi.h
-    include/barney/barney_mpi.h
-  )
-endif()
-# internal configurations that shoudln't be visible in external api
-configure_file(
-  ${PROJECT_SOURCE_DIR}/barney/common/barneyConfig.h.in
-  # we put this into builddir/include where build will find it - but
-  # this will *not* get installed
-  include/barney/barneyConfig.h
-  )
-
-install(
-  DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/barney
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}
-  )
 

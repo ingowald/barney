@@ -1,0 +1,79 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#include "native/common/barney-common.h"
+#include "native/packedBSDF/PackedBSDF.h"
+#include "native/packedBSDF/NVisii.h"
+#include "native/render/HitAttributes.h"
+#include "native/material/HostMaterial.h"
+
+namespace BARNEY_NS {
+  namespace native {
+      
+    struct AnariMatte : public HostMaterial {      
+      struct DD {
+#if RTC_DEVICE_CODE
+        inline __rtc_device
+        PackedBSDF createBSDF(const HitAttributes &hitData,
+                              const Sampler::DD *samplers,
+                              bool dbg) const;
+#endif
+        PossiblyMappedParameter::DD color;
+        PossiblyMappedParameter::DD opacity;
+      };
+      AnariMatte(SlotContext *context);
+      virtual ~AnariMatte() = default;
+
+      bool setString(const std::string &member,
+                     const std::string &value) override;
+      bool set1f(const std::string &member,
+                 const float &value) override;
+      bool set3f(const std::string &member,
+                 const vec3f &value) override;
+      bool set4f(const std::string &member,
+                 const vec4f &value) override;
+      bool setObject(const std::string &member,
+                     const Object::SP &value) override;
+      
+      std::string toString() const override { return "AnariMatte"; }
+      
+      DeviceMaterial getDD(Device *device) override;
+      
+      PossiblyMappedParameter color   = vec3f(.8f);
+      PossiblyMappedParameter opacity = 1.f;
+    };
+      
+#if RTC_DEVICE_CODE
+    inline __rtc_device
+    PackedBSDF AnariMatte::DD::createBSDF(const HitAttributes &hitData,
+                                          const Sampler::DD *samplers,
+                                          bool dbg) const
+    {
+      vec4f baseColor = this->color.eval(hitData,samplers,dbg);
+      vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
+# if 1
+      float reflectance = .85f;
+      packedBSDF::Lambertian bsdf;
+      (vec3f&)bsdf.albedo = reflectance * (const vec3f&)baseColor
+        * (ONE_OVER_PI)
+        ;
+      bsdf.alpha = baseColor.w * opacity.x;
+# else
+      packedBSDF::NVisii bsdf;
+      bsdf.setDefaults();
+
+      bsdf.baseColor = (const vec3f&)baseColor;
+
+      bsdf.specular = 0.f;
+      bsdf.metallic = 0.0f;
+      bsdf.roughness = 1.f;
+      bsdf.ior = 1.f;
+# endif
+      return bsdf;
+    }
+#endif    
+  }
+}

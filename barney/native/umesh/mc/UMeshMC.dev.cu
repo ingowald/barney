@@ -1,0 +1,98 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+/*! \file UMeshMC.dev.cu implements a macro-cell accelerated
+  unstructured mesh data type.
+
+  This particular volume type:
+
+  - uses cubql to accelerate point-in-element queries (for the
+  scalar field evaluation)
+
+  - uses macro cells and DDA traversal for domain traversal
+*/
+
+#include "native/umesh/mc/UMeshCuBQLSampler.h"
+#include "native/volume/DDA.h"
+
+RTC_DECLARE_GLOBALS(BARNEY_NS::native::OptixGlobals);
+
+namespace BARNEY_NS {
+  namespace native {
+    
+    struct UMeshMC_Programs {
+    
+      static inline __rtc_device
+      void bounds(const rtc::TraceInterface &ti,
+                  const void *geomData,
+                  owl::common::box3f &bounds,  
+                  const int32_t primID)
+      {
+#if RTC_DEVICE_CODE
+        MCVolumeAccel<UMeshCuBQLSampler>::boundsProg(ti,geomData,bounds,primID);
+#endif
+      }
+
+      static inline __rtc_device
+      void intersect(rtc::TraceInterface &ti)
+      {
+#if RTC_DEVICE_CODE
+        MCVolumeAccel<UMeshCuBQLSampler>::isProg(ti);
+#endif
+      }
+    
+      static inline __rtc_device
+      void closestHit(rtc::TraceInterface &ti)
+      { /* nothing to do */ }
+    
+      static inline __rtc_device
+      void anyHit(rtc::TraceInterface &ti)
+      { /* nothing to do */ }
+    };
+
+
+    struct MCIsoAccel_UMesh_Programs {
+      static inline __rtc_device
+      void bounds(const rtc::TraceInterface &ti,
+                  const void *geomData,
+                  owl::common::box3f &bounds,  
+                  const int32_t primID)
+      {
+#if RTC_DEVICE_CODE
+        MCIsoSurfaceAccel<UMeshCuBQLSampler>
+          ::boundsProg(ti,geomData,bounds,primID);
+#endif
+      }
+    
+      static inline __rtc_device
+      void intersect(rtc::TraceInterface &ti)
+      {
+#if RTC_DEVICE_CODE
+        MCIsoSurfaceAccel<UMeshCuBQLSampler>
+          ::isProg(ti);
+#endif
+      }
+    
+      static inline __rtc_device
+      void closestHit(rtc::TraceInterface &ti)
+      { /* nothing to do */ }
+    
+      static inline __rtc_device
+      void anyHit(rtc::TraceInterface &ti)
+      { /* nothing to do */ }
+    };
+  
+  
+  
+    using UMeshMC = MCVolumeAccel<UMeshCuBQLSampler>;
+    using UMeshMC_Iso = MCIsoSurfaceAccel<UMeshCuBQLSampler>;
+
+    RTC_EXPORT_USER_GEOM(UMeshMC,UMeshMC::DD,UMeshMC_Programs,false,false);
+    RTC_EXPORT_USER_GEOM(UMeshMC_Iso,UMeshMC_Iso::DD,
+                         MCIsoAccel_UMesh_Programs,false,false);
+  }
+}
+
+
+

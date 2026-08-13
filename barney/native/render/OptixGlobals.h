@@ -1,0 +1,74 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#include "native/material/DeviceMaterial.h"
+#include "native/render/Sampler.h"
+#include "native/render/HitAttributes.h"
+#include "barney_rtc.h"
+#include "native/render/World.h"
+#include "native/render/HitIDs.h"
+
+namespace BARNEY_NS {
+  namespace native {
+
+    /*! defines all constant global launch parameter data. The struct
+      type itself is also defined on the host (so its contents can
+      be marshalled there, but the 'get()' method can only be
+      available in device programs
+
+      note: the optixgloals *struct* shuld be visible on the host so
+      host knows how to marshal data for device; but the
+      implementation parts (asking for pointer to globals) should only
+      be able in device programs
+    */
+    struct OptixGlobals {
+#if BARNEY_DEVICE_PROGRAM
+// #if RTC_DEVICE_CODE
+      static inline __rtc_device
+      const OptixGlobals &get(const rtc::TraceInterface &dev);
+
+      /*! Returns true if a hit at parameter hit_t is on the invisible
+        side of the cutting plane and should be rejected. */
+      static inline __rtc_device
+      bool hitOnInvisibleSide(const OptixGlobals &globals,
+                              float hit_t,
+                              const rtc::TraceInterface &ti)
+      {
+        const vec4f &cp = globals.cutPlane;
+        if (cp.w <= -1e28f) return false;
+        vec3f hitPos = (vec3f)ti.getWorldRayOrigin()
+          + hit_t * (vec3f)ti.getWorldRayDirection();
+        return dot(vec3f(cp.x, cp.y, cp.z), hitPos) + cp.w < 0.f;
+      }
+#endif
+
+      /*! the current ray queue for the traceRays() kernel */
+      Ray             *rays;
+      /*! info for primid/geomid/instid info; may be null if not required */
+      HitIDs          *hitIDs;
+
+      /*! number of ryas in the queue */
+      int              numRays;
+
+      /*! this device's world to trace rays into */
+      rtc::AccelHandle accel;
+      World::DD        world;
+
+      /*! cutting plane (nx,ny,nz,d); disabled when w <= -1e28 */
+      vec4f            cutPlane{0.f, 0.f, 0.f, -1e30f};
+    };
+
+#if BARNEY_DEVICE_PROGRAM
+// #if RTC_DEVICE_CODE
+    inline __rtc_device
+    const OptixGlobals &OptixGlobals::get(const rtc::TraceInterface &ti)
+    {
+      return *(OptixGlobals*)ti.getLPData();
+    }
+#endif
+    
+  }
+}

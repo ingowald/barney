@@ -1,0 +1,43 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#define BARNEY_VERSION_MAJOR @BARNEY_VERSION_MAJOR@
+#define BARNEY_VERSION_MINOR @BARNEY_VERSION_MINOR@
+#define BARNEY_VERSION_PATCH @BARNEY_VERSION_PATCH@
+
+#cmakedefine01 BARNEY_HAVE_CUDA
+#cmakedefine01 BARNEY_OIDN_CPU
+#cmakedefine01 BARNEY_OIDN_GPU
+// define which backends we _have_ (in the multi-library)
+#cmakedefine01 BARNEY_BACKEND_OPTIX
+#cmakedefine01 BARNEY_BACKEND_CPU
+#cmakedefine01 BARNEY_BACKEND_CUDA
+#cmakedefine01 BARNEY_BACKEND_HIP
+#cmakedefine01 BARNEY_BACKEND_HIPRT
+
+// if enabled, this means we're building with MPI support
+#cmakedefine01 BARNEY_MPI
+
+#cmakedefine01 BARNEY_DISABLE_DENOISING
+
+#cmakedefine01 BARNEY_USE_MULTI_SCATTERING
+
+#define BARNEY_LIBRARY_NAME barney
+#define BARNEY_BACKEND_NAME @BARNEY_BACKEND_NAME@
+#define BARNEY_DEVICE_NAME  barney_@BARNEY_BACKEND_NAME@
+#define BARNEY_NS           barney_@BARNEY_BACKEND_NAME@
+#define BARNEY_NS_OPTIX     barney_optix
+#define BARNEY_NS_CUDA      barney_cuda
+#define BARNEY_NS_CPU       barney_cpu
+#define BARNEY_NS_HIP       barney_hip
+#define BARNEY_NS_HIPRT     barney_hiprt
+#define CREATE_DEVICE_FUNCTION_NAME createDevice_barney_@BARNEY_BACKEND_NAME@
+
+// the symbol anari/helium expects to find for the creator function
+// that creates an instance of the anari library for this backend.
+#define BARNEY_LIBRARY_ENTRYPOINT_NAME anari_library_@BARNEY_LIBRARY_NAME@_new_library
+
+

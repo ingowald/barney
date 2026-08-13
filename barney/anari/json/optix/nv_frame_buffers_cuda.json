@@ -1,0 +1,8 @@
+{
+  "info": {
+    "name": "NV_FRAME_BUFFERS_CUDA",
+    "type": "extension",
+    "dependencies": []
+  },
+  "objects": []
+}

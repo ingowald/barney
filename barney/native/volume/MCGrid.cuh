@@ -1,0 +1,127 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+/*! \file MCGrid.cuh Helper functions for building macro-cell grids,
+  basically to allow for atomic min/max updates when 'rasterizing'
+  primitives into a grid */
+#pragma once
+
+#include "native/volume/MCGrid.h"
+#include "native/common/barney-common.h"
+#include "barney_rtc.h"
+
+namespace BARNEY_NS {
+  namespace native {
+    
+#if RTC_DEVICE_CODE
+    // -----------------------------------------------------------------------------
+    // INTERFACE
+    // -----------------------------------------------------------------------------
+
+    inline __rtc_device
+    int project(float f,
+                const range1f range,
+                int dim);
+
+    /*! projects a given position into a grid defined by world-space
+      'bounds' and dimensions 'dims', and return the cell that this
+      world-space point projects to */
+    inline __rtc_device
+    vec3i project(const vec3f &pos,
+                  const box3f &bounds,
+                  const vec3i &dims);
+
+    /*! rasters a given 4D-(space-and-value)-primitive into the given
+      grid; computing all grid cells that this prim covers, and doing,
+      for each cell, an atomin min/max based on the prim's value range
+      (its min/max .w values) */
+    inline __rtc_device
+    void rasterBox(MCGrid::DD grid,
+                   const box3f worldBounds,
+                   const box4f primBounds4);
+
+    // -----------------------------------------------------------------------------
+    // IMPLEMENTATION
+    // -----------------------------------------------------------------------------
+
+    inline __rtc_device
+    int project(float f,
+                const range1f range,
+                int dim)
+    {
+      return max(0,min(dim-1,int(dim*(f-range.lower)/(range.upper-range.lower))));
+    }
+
+    inline __rtc_device
+    vec3i project(const vec3f &pos,
+                  const box3f &bounds,
+                  const vec3i &dims)
+    {
+      return vec3i(project(pos.x,{bounds.lower.x,bounds.upper.x},dims.x),
+                   project(pos.y,{bounds.lower.y,bounds.upper.y},dims.y),
+                   project(pos.z,{bounds.lower.z,bounds.upper.z},dims.z));
+    }
+
+    inline __rtc_device
+    void rasterBox(MCGrid::DD grid,
+                   const box3f worldBounds,
+                   const box4f primBounds4)
+    {
+      box3f pb = box3f(vec3f(primBounds4.lower),
+                       vec3f(primBounds4.upper));
+      if (pb.lower.x > pb.upper.x) return;
+      if (pb.lower.y > pb.upper.y) return;
+      if (pb.lower.z > pb.upper.z) return;
+
+      vec3i lo = vec3i((pb.lower-grid.gridOrigin)*rcp(grid.gridSpacing));
+      vec3i hi = vec3i((pb.upper-grid.gridOrigin)*rcp(grid.gridSpacing));
+
+      lo = min(max(lo,vec3i(0)),grid.dims-vec3i(1));
+      hi = min(max(hi,vec3i(0)),grid.dims-vec3i(1));
+
+      for (int iz=lo.z;iz<=hi.z;iz++)
+        for (int iy=lo.y;iy<=hi.y;iy++)
+          for (int ix=lo.x;ix<=hi.x;ix++) {
+            const size_t cellID
+              = ix
+              + iy * (size_t)grid.dims.x
+              + iz * (size_t)grid.dims.x * (size_t)grid.dims.y;
+            auto &cell = grid.scalarRanges[cellID];
+            rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
+            rtc::fatomicMax(&cell.upper,primBounds4.upper.w);
+          }
+    }
+
+    inline __rtc_device
+    void rasterBox(MCGrid::DD grid,
+                   const box4f primBounds4)
+    {
+      box3f pb = box3f(vec3f(primBounds4.lower),
+                       vec3f(primBounds4.upper));
+      if (pb.lower.x >= pb.upper.x) return;
+      if (pb.lower.y >= pb.upper.y) return;
+      if (pb.lower.z >= pb.upper.z) return;
+
+      vec3i lo = vec3i((pb.lower-grid.gridOrigin)*rcp(grid.gridSpacing));
+      vec3i hi = vec3i((pb.upper-grid.gridOrigin)*rcp(grid.gridSpacing));
+
+      lo = min(max(lo,vec3i(0)),grid.dims-vec3i(1));
+      hi = min(max(hi,vec3i(0)),grid.dims-vec3i(1));
+
+      for (int iz=lo.z;iz<=hi.z;iz++)
+        for (int iy=lo.y;iy<=hi.y;iy++)
+          for (int ix=lo.x;ix<=hi.x;ix++) {
+            const size_t cellID
+              = ix
+              + iy * (size_t)grid.dims.x
+              + iz * (size_t)grid.dims.x * (size_t)grid.dims.y;
+            auto &cell = grid.scalarRanges[cellID];
+            rtc::fatomicMin(&cell.lower,primBounds4.lower.w);
+            rtc::fatomicMax(&cell.upper,primBounds4.upper.w);
+          }
+    }
+#endif
+
+  }
+}
