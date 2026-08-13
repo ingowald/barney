@@ -442,7 +442,6 @@ namespace BARNEY_NS {
 
     BNContext BarneyDevice::createContext(std::vector<vec2i> &gpuIDsAndDataRank)
     {
-      PING;
       std::vector<int> dataRanks;
       std::vector<int> gpuIDs;
       for (auto in : gpuIDsAndDataRank) {
@@ -459,17 +458,8 @@ namespace BARNEY_NS {
 
     const char **BarneyDevice::extensions() 
     {
-      PING; return nullptr;
+      return query_extensions();
     }
-    
-
-// #define MAKE_EP(name)                                                   \
-//     extern "C" barney::BarneyBaseDevice *                               \
-//     createDevice_barney_##name                           \
-//     (ANARILibrary library, const char *subType)                         \
-//     { return new BarneyDevice(library,subType); }       
-    
-//     MAKE_EP(BARNEY_BACKEND_NAME)
     
     extern "C" barney::BarneyBaseDevice *                               
     CREATE_DEVICE_FUNCTION_NAME                           

@@ -86,7 +86,6 @@ namespace BARNEY_NS {
                                         gpuIDs,
                                         numGPUs);
     if (!ctx) throw std::runtime_error("could not create barney context");
-    PRINT(ctx);
     return ctx;
   }  
   
