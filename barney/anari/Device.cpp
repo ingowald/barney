@@ -4,23 +4,16 @@
 
 #include "barneyDeviceConfig.h"
 #include "anari/Device.h"
-// #if BARNEY_MPI
-// #include <mpi.h>
-// #endif
-
 #include "anari/Array.h"
 #include "anari/Frame.h"
 #include "anari/BaseDevice.h"
 // std
 #include <cstring>
 
-// #include "generated/anari_library_barney_queries.h"
-// #include "anari_library_barney_queries.h"
 #include "generated_queries.h"
 
 namespace BARNEY_NS {
   namespace anari {
-    // using ::barney_device::query_extensions;
   
     // Data Arrays ////////////////////////////////////////////////////////////////
 
@@ -249,55 +242,13 @@ namespace BARNEY_NS {
     BarneyDevice::BarneyDevice(ANARILibrary l, const std::string &subType)
       : barney::BarneyBaseDevice(l), deviceType(subType)
     {
-      //     std::vector<std::string> subTypeFlags = splitString(subType, ',');
-      //     for (auto flag : subTypeFlags) {
-      //       if (flag == "cpu") {
-      //         m_cudaDevice = -1;
-      //         continue;
-      //       }
-      //       if (flag == "default") {
-      // #if BARNEY_MPI
-      //         comm = MPI_COMM_WORLD;
-      // #endif
-      //         continue;
-      //       }
-      // #if BARNEY_MPI
-      //       if (flag == "local") {
-      //         comm = 0;
-      //         continue;
-      //       }
-      //       if (flag == "mpi") {
-      //         comm = MPI_COMM_WORLD;
-      //         continue;
-      //       }
-      // #endif
-      //       std::cout << "un-recognized feature '" << flag << "' on device subtype"
-      //                 << std::endl;
-      // }
-
-      // #if BARNEY_MPI
-      //     if (comm) {
-      //       int initialized = false;
-      //       MPI_Initialized(&initialized);
-      //       if (!initialized) {
-      //         std::cout << "#barney: anari_barney device created in MPI mode (loaded from barney_mpi device in either mpi or default mode), but MPI not yet initialized. Doing so now, but this is not how it should be."
-      //                   << std::endl;
-      //         int required = MPI_THREAD_MULTIPLE;
-      //         int provided = 0;
-      //         MPI_Init_thread(nullptr,nullptr,required,&provided);
-      //       }
-      //     }
-      // #endif
-    
       m_state = std::make_unique<BarneyGlobalState>(this_device());
     }
 
     BarneyDevice::BarneyDevice()
       : barney::BarneyBaseDevice(default_statusFunc, nullptr)
     {
-      PING;
       m_state = std::make_unique<BarneyGlobalState>(this_device());
-      PING;
     }
 
 

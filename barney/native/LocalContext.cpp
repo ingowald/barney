@@ -165,7 +165,6 @@ namespace BARNEY_NS {
                                   const int *gpuIDs,
                                   int  numGPUs)
     {
-      PING;
       assert(numDataRanksOnThisContext > 0);
       std::vector<int> dgIDs;
       for (int i = 0;i < numDataRanksOnThisContext;i++)
@@ -198,7 +197,6 @@ namespace BARNEY_NS {
       }
 #endif
 
-      PING;
       if (numGPUs < numDGs)
         throw std::runtime_error
           ("not enough CUDA GPUs for requested number of data groups!");

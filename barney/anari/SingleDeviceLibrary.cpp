@@ -71,7 +71,6 @@ namespace BARNEY_NS {
       if (subType == "mpi") {
 #if BARNEY_MPI
       try {
-        PING;
         return (ANARIDevice) new BarneyMPIDevice(this_library(), subType);
       } catch (std::exception &e) {
         std::cout << "could not create barney MPI device '" << TOSTRING(BARNEY_NS)

@@ -11,7 +11,6 @@ namespace BARNEY_NS {
     GlobalModel::GlobalModel(Context *context)
       : Object(context)
     {
-      PING; PRINT(context);
       for (int slot=0;slot<context->perSlot.size();slot++) {
         assert(context->perSlot[slot].devices);
         ModelSlot::SP modelSlot
