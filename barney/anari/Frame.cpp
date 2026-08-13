@@ -307,7 +307,7 @@ namespace BARNEY_NS {
         m_didMapChannel.normal = true;
         *pixelType = ANARI_FLOAT32_VEC3;
         return m_channelBuffers.normal;
-#if BARNEY_HAVE_CUDA
+#if BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX
       } else if (channel == "channel.colorCUDA") {
         if (m_channelBuffers.color)
           throw std::runtime_error
@@ -406,38 +406,28 @@ namespace BARNEY_NS {
         if (m_channelBuffers.normal)
           delete[] m_channelBuffers.normal;
         m_channelBuffers.normal = 0;
+#if BARNEY_BACKEND_CUDA || BARNEY_BACKEND_OPTIX
       } else if (channel == "channel.colorCUDA") {
-#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.color)
           cudaFree(m_channelBuffers.color);
         m_channelBuffers.color = 0;
-#endif
       } else if (channel == "channel.depthCUDA") {
-#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.depth)
           cudaFree(m_channelBuffers.depth);
         m_channelBuffers.depth = 0;
-#endif
       } else if (channel == "channel.primitiveIdCUDA") {
-#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.primID)
           cudaFree(m_channelBuffers.primID);
         m_channelBuffers.primID = 0;
-#endif
       } else if (channel == "channel.objectIdCUDA") {
-#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.objID)
           cudaFree(m_channelBuffers.objID);
         m_channelBuffers.objID = 0;
-#endif
       } else if (channel == "channel.instanceIdCUDA") {
-#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.instID)
           cudaFree(m_channelBuffers.instID);
         m_channelBuffers.instID = 0;
-#endif
       } else if (channel == "channel.normalCUDA") {
-#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.normal)
           cudaFree(m_channelBuffers.normal);
         m_channelBuffers.normal = 0;
