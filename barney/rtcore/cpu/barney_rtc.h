@@ -11,4 +11,4 @@
 
 /*! tells the barney/native/ and barney/anari/ components that use
     this backend which kind of backend it is */
-#define BARNEY_RTC_CUDA 1
+#define BARNEY_RTC_CPU 1

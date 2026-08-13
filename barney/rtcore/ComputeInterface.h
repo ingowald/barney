@@ -6,7 +6,7 @@
    but not programs like intersect or anyhit) can talk to rtcore */
 
 #pragma once
-
+#if 0
 #if BARNEY_RTC_CUDA
 # include "cuda/ComputeInterface.h"
 namespace rtc {
@@ -31,3 +31,5 @@ namespace rtc { using namespace rtc::optix; }
 # include "embree/ComputeInterface.h"
 namespace rtc { using namespace rtc::embree; }
 #endif
+#endif
+
