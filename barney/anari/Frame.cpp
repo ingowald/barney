@@ -9,7 +9,7 @@
 #include <chrono>
 #include <iostream>
 // cuda
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
 #include <cuda_runtime.h>
 #endif
 
@@ -307,7 +307,7 @@ namespace BARNEY_NS {
         m_didMapChannel.normal = true;
         *pixelType = ANARI_FLOAT32_VEC3;
         return m_channelBuffers.normal;
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
       } else if (channel == "channel.colorCUDA") {
         if (m_channelBuffers.color)
           throw std::runtime_error
@@ -407,37 +407,37 @@ namespace BARNEY_NS {
           delete[] m_channelBuffers.normal;
         m_channelBuffers.normal = 0;
       } else if (channel == "channel.colorCUDA") {
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.color)
           cudaFree(m_channelBuffers.color);
         m_channelBuffers.color = 0;
 #endif
       } else if (channel == "channel.depthCUDA") {
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.depth)
           cudaFree(m_channelBuffers.depth);
         m_channelBuffers.depth = 0;
 #endif
       } else if (channel == "channel.primitiveIdCUDA") {
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.primID)
           cudaFree(m_channelBuffers.primID);
         m_channelBuffers.primID = 0;
 #endif
       } else if (channel == "channel.objectIdCUDA") {
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.objID)
           cudaFree(m_channelBuffers.objID);
         m_channelBuffers.objID = 0;
 #endif
       } else if (channel == "channel.instanceIdCUDA") {
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.instID)
           cudaFree(m_channelBuffers.instID);
         m_channelBuffers.instID = 0;
 #endif
       } else if (channel == "channel.normalCUDA") {
-#if BANARI_HAVE_CUDA
+#if BARNEY_HAVE_CUDA
         if (m_channelBuffers.normal)
           cudaFree(m_channelBuffers.normal);
         m_channelBuffers.normal = 0;
@@ -488,7 +488,7 @@ namespace BARNEY_NS {
       m_channelBuffers.normal = nullptr;
     }
 
-  }
-} // namespace barney_device
+  } // namespace anari
+} // namespace BARNEY_NS
 
 BARNEY_ANARI_TYPEFOR_DEFINITION(BARNEY_NS::anari::Frame *);
