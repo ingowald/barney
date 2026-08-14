@@ -292,12 +292,18 @@ namespace BARNEY_NS {
         // (tethered) anari device for each gpu), which in turn means
         // we're an independent device that didn't have any cuda gpu
         // explicitly attached to it.... which means we could in theory
-        // use multiple GPU
+        // use multiple GPU" << 
         if (m_enable_multiGPU) {
           int numGPUs = rtc::physicalDeviceCount();
+          std::cout << "#ba: no GPUs selected, but multi-gpu enabled"
+                    << " -> picking all " << numGPUs << " rtc devices"
+                    << std::endl;
           for (int i=0;i<numGPUs;i++)
             gpuIDs.push_back(i);
         } else {
+          std::cout << "#ba: no GPUs selected, and multi-gpu disabled"
+                    << " -> picking gpu 0"
+                    << std::endl;
           gpuIDs = {0};
         }
       }
