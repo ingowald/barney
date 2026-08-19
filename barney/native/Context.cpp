@@ -163,13 +163,13 @@ namespace BARNEY_NS {
       // iw - todo: add wave-front-merging here.
       for (int p=0;p<renderer->pathsPerPixel;p++) {
 
-        if (FromEnv::get()->logQueues) 
+        if (FromEnv::logQueues) 
           std::cout << "#################### RENDER ######################" << std::endl;
-        if (FromEnv::get()->logQueues) 
+        if (FromEnv::logQueues) 
           std::cout << "==================== new pixel wave ======================" << std::endl;
         generateRays(camera,renderer,fb);
         for (int generation=0;true;generation++) {
-          if (FromEnv::get()->logQueues) 
+          if (FromEnv::logQueues) 
             std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
 
           bool needHitIDs = fb->needHitIDs() && (generation==0);
@@ -179,7 +179,7 @@ namespace BARNEY_NS {
           shadeRaysLocally(renderer, model, fb, generation, rngSeed);
 
           const int numActiveGlobally = numRaysActiveGlobally();
-          if (FromEnv::get()->logQueues)
+          if (FromEnv::logQueues)
             printf("#generation %i num active %s after bounce\n",
                    generation,prettyNumber(numActiveGlobally).c_str());
           if (numActiveGlobally > 0)
@@ -198,7 +198,7 @@ namespace BARNEY_NS {
     void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
     {
       // if (myRank() == 0) printf("globaltrace....\n");
-      if (FromEnv::get()->logQueues) 
+      if (FromEnv::logQueues) 
         printf("(mr%i) traceRaysGlobally\n",myRank());
       globalTraceImpl->traceRays(model,rngSeed,needHitIDs);
     }

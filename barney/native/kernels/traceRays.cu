@@ -53,7 +53,7 @@ namespace BARNEY_NS {
           dd.accel     = model->getInstanceAccel(device);
           dd.cutPlane  = activeCutPlane;
 
-          if (FromEnv::get()->logQueues) {
+          if (FromEnv::logQueues) {
             std::stringstream ss;
             ss << "#bn(" << device->globalRank() << "): ## ray queue kernel TRACE rays " << dd.rays << std::endl;
             ss << "#bn(" << device->globalRank() << "): ## ray queue kernel TRACE hit ids " << dd.hitIDs << " need = " << int(needHitIDs) << std::endl;
@@ -98,7 +98,7 @@ namespace BARNEY_NS {
         t_synched[which] = std::chrono::high_resolution_clock::now();
       }
       which = -1;
-      if (FromEnv::get()->logQueues) {
+      if (FromEnv::logQueues) {
         std::stringstream ss;
         ss << "#bn(" << myRank() << "): ## ray queue kernel TRACE DONE" << std::endl;
         std::cout << ss.str();

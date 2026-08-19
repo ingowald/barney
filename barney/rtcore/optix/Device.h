@@ -10,6 +10,8 @@
 namespace BARNEY_NS {
   namespace rtc {
 
+    int physicalDeviceCount();
+    
     struct Device;
     struct Denoiser;
     struct Group;

@@ -86,13 +86,6 @@ namespace BARNEY_NS {
       return ((props.pciDomainID * 256 + props.pciBusID) * 256) + props.pciDeviceID;
     }
 
-    int physicalDeviceCount() 
-    {
-      int count = 0;
-      BARNEY_CUDA_CALL(GetDeviceCount(&count));
-      return count;
-    }
-      
     SetActiveGPU::SetActiveGPU(const CudaDeviceBase *device)
     {
       if (device)  {

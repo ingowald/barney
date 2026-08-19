@@ -228,18 +228,6 @@ struct BNGridlet {
   bn_int3   dims;
 };
 
-
-struct BNHardwareInfo {
-  int numRanks;
-  int numHosts;
-  int numGPUsThisRank;
-  int numGPUsThisHost;
-  int numRanksThisHost;
-  int localRank;
-};
-
-
-
 // ==================================================================
 // creators for CONTEXT-owned objects
 // ==================================================================
@@ -270,6 +258,9 @@ BNRenderer    bnRendererCreate(BNContext ctx,
 // ==================================================================
 // general set/commit semantics
 // ==================================================================
+
+BARNEY_API
+int bnPhysicalDeviceCount();
 
 BARNEY_API
 void bnCommit(BNObject target);

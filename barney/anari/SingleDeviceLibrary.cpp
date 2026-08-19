@@ -67,10 +67,14 @@ namespace BARNEY_NS {
     ANARIDevice BarneyLibrary::newDevice(const char *_subType)
     {
       std::string subType = _subType ? _subType : "default";
-
+      PING; PRINT(subType);
+      
       if (subType == "mpi") {
+        PING;
 #if BARNEY_MPI
+        PING;
       try {
+        PING;
         return (ANARIDevice) new BarneyMPIDevice(this_library(), subType);
       } catch (std::exception &e) {
         std::cout << "could not create barney MPI device '" << TOSTRING(BARNEY_NS)
@@ -121,17 +125,19 @@ namespace BARNEY_NS {
                                              ANARIStatusCallback statusCallback,
                                              const void *scbPtr)
     {
+      if (bnPhysicalDeviceCount() < 1) 
+        return nullptr;
       try {
         ::anari::LibraryImpl *lib
           = new BarneyLibrary(lib, statusCallback, scbPtr);
-        
-        // for sanity's sake, create a device on this library, to see
-        // if this actually works - eg the system might now have optix
-        // even if it has cuda.
-        BarneyDevice *device
-          = (BarneyDevice*)lib->newDevice("default");
-        // device could be created; all good. kill it, we don't need it.
-        delete device;
+
+        // // for sanity's sake, create a device on this library, to see
+        // // if this actually works - eg the system might now have optix
+        // // even if it has cuda.
+        // BarneyDevice *device
+        //   = (BarneyDevice*)lib->newDevice("default");
+        // // device could be created; all good. kill it, we don't need it.
+        // delete device;
         
         return lib;
       } catch (std::exception e) {

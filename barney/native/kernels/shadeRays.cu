@@ -1075,7 +1075,7 @@ namespace BARNEY_NS {
             = world->getDD(device);
           Renderer::DD devRenderer
             = renderer->getDD(device);
-          if (FromEnv::get()->logQueues) {
+          if (FromEnv::logQueues) {
             std::stringstream ss;
             ss << "#bn" << myRank() << ": ## ray queue kernel SHADE " << std::endl
                << "  from " << rayQueue->traceAndShadeReadQueue.rays

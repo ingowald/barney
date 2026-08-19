@@ -3,12 +3,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "native/FromEnv.h"
+#include <map>
 
 namespace BARNEY_NS {
   namespace native {
+
+    namespace fromEnv {
+      std::map<std::string,bool> boolValues;
+    }
     
-    FromEnv::FromEnv()
+    bool FromEnv::logQueues     = false;
+    bool FromEnv::skipDenoising = false;
+    bool FromEnv::logConfig     = false;
+    bool FromEnv::logBackend    = false;
+    bool FromEnv::logTopo       = false;
+
+    void FromEnv::init()
     {
+      static bool alreadyDone = false;
+      if (alreadyDone) return;
+      alreadyDone = true;
+      
+      auto &boolValues = fromEnv::boolValues;
       const char *e = getenv("BARNEY_CONFIG");
       if (!e) return;
       std::vector<std::string> components;
@@ -56,14 +72,22 @@ namespace BARNEY_NS {
           std::cerr << "Warning: unknown or unrecognized BARNEY_CONFIG key '" << key << "'" << std::endl;
       }
     }
-    const FromEnv *FromEnv::get()
-    {
-      static std::mutex mutex;
-      std::lock_guard<std::mutex> lock(mutex);
-      static FromEnv *singleton = 0;
-      if (!singleton) singleton = new FromEnv;
-      return singleton;
-    }
 
+    bool FromEnv::enabled(const std::string &key)
+    {
+      auto &boolValues = fromEnv::boolValues;
+      auto it = boolValues.find(key);
+      if (it == boolValues.end()) return false;
+      return it->second;
+    }
+    
+    bool FromEnv::explicitlyDisabled(const std::string &key)
+    {
+      auto &boolValues = fromEnv::boolValues;
+      auto it = boolValues.find(key);
+      if (it == boolValues.end()) return false;
+      return !it->second;
+    }
+    
   }
 }

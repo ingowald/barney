@@ -123,8 +123,8 @@ namespace BARNEY_NS {
         context(context),
         world(context->world),
         topo(context->topo.get()),
-        logTopo(FromEnv::get()->logTopo),
-        logQueues(FromEnv::get()->logQueues),
+        logTopo(FromEnv::logTopo),
+        logQueues(FromEnv::logQueues),
         opt_mpi(FromEnv::enabled("opt_mpi"))
     {
       prof_rank = world.rank;

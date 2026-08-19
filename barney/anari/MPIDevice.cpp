@@ -13,17 +13,46 @@
 
 #include "barney/native/include/barney_mpi.h"
 
+
 namespace BARNEY_NS {
+  namespace native {
+    size_t getHostNameHash();
+  }
   namespace anari {
+
+    /*! checks whether all the ranks on the communicator are on
+        different physical hosts (based on hostname */
+    bool allOnDifferentHosts(MPI_Comm comm)
+    {
+      int size = 0;
+      MPI_Comm_size(comm,&size);
+      size_t myHash = native::getHostNameHash();
+      std::vector<size_t> allHashes(size);
+      MPI_Allgather(&myHash,
+                    1,MPI_LONG_LONG,allHashes.data(),
+                    1,MPI_LONG_LONG,comm);
+      std::map<size_t,bool> alreadyFound;
+      for (auto hash: allHashes) {
+        if (alreadyFound[hash]) return false;
+        alreadyFound[hash] = true;
+      }
+      return true;
+    }
     
     BarneyMPIDevice::BarneyMPIDevice()
       : BarneyDevice()
-    { m_enable_multiGPU = 0; }
+    {
+      m_enable_multiGPU = 0;
+      PING; PRINT(m_enable_multiGPU);
+    }
   
     BarneyMPIDevice::BarneyMPIDevice(ANARILibrary library,
                                      const std::string &subType)
       : BarneyDevice(library,subType)
-    {}
+    {
+      PING;
+      m_enable_multiGPU = 0;
+    }
   
     BarneyMPIDevice::~BarneyMPIDevice()
     {

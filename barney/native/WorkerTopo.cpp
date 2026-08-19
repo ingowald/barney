@@ -67,7 +67,7 @@ namespace BARNEY_NS {
       for (auto &island : islands) assert(island.size() == islands[0].size());
 
       std::string tag = "#bn.topo("+std::to_string(_worldRank)+")";
-      if (FromEnv::get()->logTopo) {
+      if (FromEnv::logTopo) {
         std::stringstream ss; 
 
         ss << tag << "computed topology as follows:" << std::endl;

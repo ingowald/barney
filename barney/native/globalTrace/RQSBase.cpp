@@ -66,7 +66,7 @@ namespace BARNEY_NS {
         pld.recvPartner = &topo->allDevices[myPrev];
       }
   
-      if (FromEnv::get()->logTopo) {
+      if (FromEnv::logTopo) {
         std::stringstream ss;
         for (int localIdx=0;localIdx<context->devices->size();localIdx++) {
           auto device = context->devices->get(localIdx);
@@ -90,7 +90,7 @@ namespace BARNEY_NS {
                             bool needHitIDs)
     {
       while (true) {
-        if (FromEnv::get()->logQueues) 
+        if (FromEnv::logQueues) 
           std::cout << "----- glob-trace -> locally) "
                     << " -----------" << std::endl;
 

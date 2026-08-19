@@ -11,6 +11,13 @@
 namespace BARNEY_NS {
   namespace rtc {
     
+    int physicalDeviceCount() 
+    {
+      int count = 0;
+      BARNEY_CUDA_CALL(GetDeviceCount(&count));
+      return count;
+    }
+      
     rtc::AccelHandle getAccelHandle(Group *ig)
     { return ig->getDD(); }
     

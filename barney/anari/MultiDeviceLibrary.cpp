@@ -110,6 +110,7 @@ namespace barney {
     static std::map<std::string,const char **> alreadyFound;
     if (alreadyFound.find(deviceType) != alreadyFound.end())
       return alreadyFound[deviceType];
+    PING;
     ANARIDevice dev = newDevice(deviceType.c_str());
     if (!dev) {
       alreadyFound[deviceType] = nullptr;
@@ -167,6 +168,7 @@ namespace BARNEY_NS_CPU { namespace anari {
 extern "C" BARNEY_LIBRARY_INTERFACE
 ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney, handle, scb, scbPtr)
 {
+  PING;
 #if 1
 # if BARNEY_BACKEND_OPTIX
   if (auto lib = BARNEY_NS_OPTIX::anari::createAnariLibrary(handle,scb,scbPtr))

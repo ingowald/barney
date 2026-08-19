@@ -51,7 +51,7 @@ namespace BARNEY_NS {
       rtc->copyAsync(h_numActive,_d_nextWritePos,sizeof(int));
       rtc->sync();
       numActive = *h_numActive;
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         printf("#bn: ## ray queue read numactive %i\n",numActive);
       return *h_numActive;
     }
@@ -72,7 +72,7 @@ namespace BARNEY_NS {
     
     void RayQueue::swapAfterGeneration()
     {
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         printf("#bn(%i): ## ray queue swap (after generation)\n",
                device->globalRank());
       std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
@@ -82,7 +82,7 @@ namespace BARNEY_NS {
 
     void RayQueue::swapAfterCycle(int cycleID, int numCycles)
     {
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         printf("#bn(%i): ## ray queue swap after cycle (cycle %i/%i)\n",
                device->globalRank(),cycleID,numCycles);
       std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);
@@ -90,7 +90,7 @@ namespace BARNEY_NS {
     }
     void RayQueue::swapAfterShade()
     {
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         printf("#bn(%i): ## ray queue swap after cycle (after shade)\n",
                device->globalRank());
       std::swap(receiveAndShadeWriteQueue.rays, traceAndShadeReadQueue.rays);

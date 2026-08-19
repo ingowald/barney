@@ -17,19 +17,3 @@
 #include "rtcore/cudaCommon/Texture.h"
 #include "rtcore/optix/Denoiser.h"
 
-namespace BARNEY_NS {
-  namespace rtc {
-
-    // using rtc::cuda_common::enablePeerAccess;
-    // using rtc::cuda_common::getPhysicalDeviceHash;
-    
-    // using rtc::cuda_common::ComputeKernel1D;
-    // using rtc::cuda_common::ComputeKernel2D;
-    // using rtc::cuda_common::ComputeKernel3D;
-    
-    // using rtc::cuda_common::Texture;
-    // using rtc::cuda_common::TextureData;
-
-  }
-}
-

@@ -7,9 +7,9 @@
 #include "native/common/Data.h"
 #include "native/fb/FrameBuffer.h"
 #include "native/FromEnv.h"
-#if BARNEY_HAVE_OIDN
-# include <OpenImageDenoise/oidn.h>
-#endif
+// #if BARNEY_HAVE_OIDN
+// # include <OpenImageDenoise/oidn.h>
+// #endif
 
 namespace BARNEY_NS {
   namespace native {
@@ -23,7 +23,7 @@ namespace BARNEY_NS {
         isOwner(isOwner),
         devices(devices)
     {
-      if (FromEnv::get()->explicitlyDisabled("denoise")) {
+      if (FromEnv::explicitlyDisabled("denoise")) {
         if (context->myRank() == 0)
           std::cout << "#bn: denoising explicitly disabled in env-config." << std::endl;
         enableDenoising = false;

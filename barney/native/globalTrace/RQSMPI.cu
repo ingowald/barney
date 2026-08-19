@@ -25,7 +25,7 @@ namespace BARNEY_NS {
       int numDevices = context->devices->size();
       std::vector<MPI_Request> allRequests;
 
-      if (FromEnv::get()->logQueues) 
+      if (FromEnv::logQueues) 
         std::cout << "----- forwardRays (islandSize = "
                   << topo->islandSize() << ")"
                   << " -----------" << std::endl;
@@ -56,7 +56,7 @@ namespace BARNEY_NS {
         numOutgoing[device->localRank()] = device->rayQueue->numActive;
 
 
-        if (FromEnv::get()->logQueues) {
+        if (FromEnv::logQueues) {
           std::stringstream ss;
           ss << "#" << context->myRank() << "." << device->localRank() << ":" << std::endl;
           ss << "  sends " << numOutgoing[device->localRank()] << " to "
@@ -78,10 +78,10 @@ namespace BARNEY_NS {
 
       // allStatuses.resize(allRequests.size());
       // BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),allStatuses.data()));
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         std::cout << "bn(" << context->myRank() << ") before waitall" << std::endl;
       BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         std::cout << "bn(" << context->myRank() << ") after waitall" << std::endl;
     
       // barrier(false);
@@ -104,7 +104,7 @@ namespace BARNEY_NS {
         int recvWorkerLocal = pld.recvPartner->local;
 
         numOutgoing[device->localRank()] = device->rayQueue->numActive;
-        if (FromEnv::get()->logQueues)
+        if (FromEnv::logQueues)
           std::cout << context->myRank() << ": numOutgoing[" << device->localRank()
                     << "] = " << device->rayQueue->numActive << std::endl;
         MPI_Request sendReq, recvReq;
@@ -135,10 +135,10 @@ namespace BARNEY_NS {
           allRequests.push_back(recvReq);
         }
       }
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         std::cout << "bn(" << context->myRank() << ") 2nd waitall" << std::endl;
       BN_MPI_CALL(Waitall(allRequests.size(),allRequests.data(),MPI_STATUSES_IGNORE));
-      if (FromEnv::get()->logQueues)
+      if (FromEnv::logQueues)
         std::cout << "bn(" << context->myRank() << ") after 2nd waitall" << std::endl; 
       allRequests.clear();
 

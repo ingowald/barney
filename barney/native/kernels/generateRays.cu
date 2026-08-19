@@ -266,7 +266,7 @@ namespace BARNEY_NS {
         TiledFB *devFB = fb->getFor(device);
         device->rayQueue->resetWriteQueue();
 
-        if (FromEnv::get()->logQueues) {
+        if (FromEnv::logQueues) {
           std::stringstream ss;
           ss  << "#bn(" << myRank() << "): ## ray queue op GENERATE "
               << device->rayQueue->receiveAndShadeWriteQueue.rays

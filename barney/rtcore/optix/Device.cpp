@@ -15,6 +15,21 @@
 namespace BARNEY_NS {
   namespace rtc {
 
+    int physicalDeviceCount() 
+    {
+      /* iw - this isn't entirely correct - there are some machines
+         that do have working CUDA, but still do not have optix
+         support in the driver, in which case you cannot actually use
+         all cuda devices for optix. We _should_ be checking for this
+         here by trying to do optixInit() on each device, but for now
+         let's assume that optix is support, and if not, the user
+         can/will manually select `barney_cuda` as anari device */
+      int count = 0;
+      BARNEY_CUDA_CALL(GetDeviceCount(&count));
+      return count;
+    }
+      
+    
     rtc::AccelHandle getAccelHandle(Group *ig)
     { return ig->getDD(); }
     

@@ -9,6 +9,8 @@
 namespace BARNEY_NS {
   namespace rtc {
 
+    int physicalDeviceCount();
+    
     struct Buffer;
     struct Device;
     struct Geom;

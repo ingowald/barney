@@ -13,12 +13,7 @@ namespace BARNEY_NS {
     {
       for (auto &ldg : context->perLDG)
         modelSlots.push_back
-          (std::make_shared<ModelSlot>(this,ldg
-                                       //,ldg.devices
-                                       // ,
-                                       //  slot
-                                       ));
-      
+          (std::make_shared<ModelSlot>(this,ldg));
     }
 
     GlobalModel::~GlobalModel()
@@ -30,7 +25,7 @@ namespace BARNEY_NS {
                              Camera      *_camera,
                              FrameBuffer *_fb)
     {
-      if (context->myRank() == 0 && FromEnv::get()->logQueues) 
+      if (context->myRank() == 0 && FromEnv::logQueues) 
         std::cout << "============================================ new frame\n";
       assert(context);
       FrameBuffer *fb = (FrameBuffer *)_fb;

@@ -6,6 +6,7 @@
 
 #include "native/common/barney-common.h"
 #include "native/WorkerTopo.h"
+#include <map>
 
 namespace BARNEY_NS {
   namespace native {

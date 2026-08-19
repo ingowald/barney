@@ -21,19 +21,19 @@ namespace BARNEY_NS {
     
     size_t getHostNameHash();
 
-    int findLocalRank(Comm &comm)
-    {
-      size_t myHash = getHostNameHash();
-      std::vector<size_t> allHashes(comm.size);
-      comm.allGather(allHashes.data(),
-                     &myHash,1,
-                     sizeof(size_t));
-      int count = 0;
-      for (int i=0;i<comm.rank;i++)
-        if (allHashes[i] == myHash)
-          ++count;
-      return count;
-    }
+    // int findLocalRank(Comm &comm)
+    // {
+    //   size_t myHash = getHostNameHash();
+    //   std::vector<size_t> allHashes(comm.size);
+    //   comm.allGather(allHashes.data(),
+    //                  &myHash,1,
+    //                  sizeof(size_t));
+    //   int count = 0;
+    //   for (int i=0;i<comm.rank;i++)
+    //     if (allHashes[i] == myHash)
+    //       ++count;
+    //   return count;
+    // }
   
     MPIContext::~MPIContext()
     {}
@@ -83,7 +83,7 @@ namespace BARNEY_NS {
         world(worldComm),
         workers(workerComm)
     {
-      bool dbg = FromEnv::get()->logConfig;
+      bool dbg = FromEnv::logConfig;
       if (FromEnv::enabled("two-stage") || FromEnv::enabled("two_stage")) {
         std::cout << "ENABLING TwoStage!" << std::endl;
         globalTraceImpl = new TwoStage(this);
@@ -163,6 +163,7 @@ namespace BARNEY_NS {
     assert(numGPUs >= numDataGroupsOnThisContext);
     assert(gpuIDs);
     assert((numGPUs % numDataGroupsOnThisContext) == 0);
+    FromEnv::init();
     for (int i=0;i<numGPUs;i++)
       assert(gpuIDs[i] >= 0);
 

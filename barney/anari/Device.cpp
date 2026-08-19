@@ -360,8 +360,10 @@ namespace BARNEY_NS {
       m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
       m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 
+      PING; PRINT((int)m_enable_multiGPU);
       m_enable_multiGPU
         = getParam<int>("enable_multiGPU",m_enable_multiGPU);
+      PING; PRINT((int)m_enable_multiGPU);
       // #if BARNEY_MPI
       //     uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
       //     if (pointerToComm) {

@@ -76,6 +76,7 @@ namespace BARNEY_NS {
                           const int *gpuIDs)
   {
     LOG_API_ENTRY;
+    FromEnv::init();
     assert(dataRanksOnThisContext);
     assert(gpuIDs);
     PING; PRINT(numGPUs);
@@ -711,6 +712,12 @@ namespace BARNEY_NS {
     *sizeY = np.y;
   }
 
+  BARNEY_API
+  int bnPhysicalDeviceCount()
+  {
+    return rtc::physicalDeviceCount();
+  }
+  
   BARNEY_API
   void bnAccumReset(BNFrameBuffer fb)
   {
