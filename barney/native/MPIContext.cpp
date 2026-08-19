@@ -21,20 +21,6 @@ namespace BARNEY_NS {
     
     size_t getHostNameHash();
 
-    // int findLocalRank(Comm &comm)
-    // {
-    //   size_t myHash = getHostNameHash();
-    //   std::vector<size_t> allHashes(comm.size);
-    //   comm.allGather(allHashes.data(),
-    //                  &myHash,1,
-    //                  sizeof(size_t));
-    //   int count = 0;
-    //   for (int i=0;i<comm.rank;i++)
-    //     if (allHashes[i] == myHash)
-    //       ++count;
-    //   return count;
-    // }
-  
     MPIContext::~MPIContext()
     {}
   

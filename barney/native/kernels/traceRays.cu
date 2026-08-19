@@ -14,34 +14,35 @@
 
 namespace BARNEY_NS {
   namespace native {
+
+#define PROFILE 0
     
     void Context::traceRaysLocally(GlobalModel *globalModel,
                                    uint32_t rngSeed,
                                    bool needHitIDs)
     {
-      std::cout << "==================================================================" << std::endl;
-      PING;
       // ------------------------------------------------------------------
       // launch all in parallel ...
       // ------------------------------------------------------------------
       OptixGlobals dd;
       int slotIdx = 0;
 
+#if PROFILE
       typedef  std::chrono::time_point<std::chrono::high_resolution_clock> time_t;
-
+      
       static time_t t_launch[2];
       static time_t t_launched[2];
       static time_t t_sync[2]; 
       static time_t t_synched[2];
-      int which = 0;
+      auto t0 = std::chrono::high_resolution_clock::now();
+#endif
       
-      auto t0 = std::chrono::high_resolution_clock::now();;
+      int which = 0;
       which = -1;
       for (auto model : globalModel->modelSlots) {
         for (auto device : *model->devices) {
-          ++which; PRINT(which);
+          ++which; 
           SetActiveGPU forDuration(device);
-          PRINT(device->toString());
           auto ctx     = model->ldgContext;
           dd.rays      = device->rayQueue->traceAndShadeReadQueue.rays;
           dd.hitIDs
@@ -60,27 +61,27 @@ namespace BARNEY_NS {
             std::cout << ss.str();
           }
 
-          PRINT(dd.numRays); PRINT(dd.accel);
           if (dd.numRays == 0 || dd.accel == 0) {
             /* iw - it's perfectly valid for an app to 'render' a model
                that's empty, so it's possible that dd.world is 0. Just
                skip calling the trace kernel, which may not like getting
                called with size 0 */
           } else {
-            int bs = 64;
+            int bs = 256;
             int nb = divRoundUp(dd.numRays,bs);
 
-            // if (myRank() == 0)
-            //   printf(" -> tracing %i\n",dd.numRays);
+#if PROFILE
             t_launch[which] = std::chrono::high_resolution_clock::now();
+#endif
 
-            PRINT(nb);
             if (nb)
               device->traceRays->launch(/* bs,nb intentionally inverted:
                                            always have 1024 in width: */
                                         vec2i(bs,nb),
                                         &dd);
+#if PROFILE
             t_launched[which] = std::chrono::high_resolution_clock::now();
+#endif
           }
         }
         slotIdx++;
@@ -92,18 +93,22 @@ namespace BARNEY_NS {
       which = -1;
       for (auto device : *devices) {
         ++which;
+#if PROFILE
         t_sync[which] = std::chrono::high_resolution_clock::now();
+#endif
         SetActiveGPU forDuration(device);
         device->rtc->sync();
+#if PROFILE
         t_synched[which] = std::chrono::high_resolution_clock::now();
+#endif
       }
-      which = -1;
       if (FromEnv::logQueues) {
         std::stringstream ss;
         ss << "#bn(" << myRank() << "): ## ray queue kernel TRACE DONE" << std::endl;
         std::cout << ss.str();
       }
 
+#if PROFILE
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launch[0]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launch[1]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launched[0]-t0));
@@ -112,6 +117,7 @@ namespace BARNEY_NS {
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_sync[1]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_synched[0]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_synched[1]-t0));
+#endif
     }
 
   }

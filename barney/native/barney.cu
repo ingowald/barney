@@ -79,7 +79,6 @@ namespace BARNEY_NS {
     FromEnv::init();
     assert(dataRanksOnThisContext);
     assert(gpuIDs);
-    PING; PRINT(numGPUs);
     BNContext ctx
       = (BNContext)LocalContext::create(numDataGroupsOnThisContext,
                                         dataRanksInDataGroup,

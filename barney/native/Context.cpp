@@ -29,14 +29,6 @@ namespace BARNEY_NS {
           assert(gpu >= 0);
       }
       
-      PING; PRINT(localDataGroups.size());
-      for (auto &slot : localDataGroups)
-        PRINT(slot.dataRank);
-      for (auto &ldg : localDataGroups) {
-        PRINT(ldg.gpuIDs.size());
-        for (auto gpu : ldg.gpuIDs) PRINT(gpu);
-      }
-      
       assert(!localDataGroups.empty());
       for (int i=0;i<(int)localDataGroups.size();i++) {
         assert(localDataGroups[i].dataRank >= 0 ||
@@ -90,8 +82,6 @@ namespace BARNEY_NS {
       }
       devices = std::make_shared<DevGroup>
         (allLocalDevices,(int)allLocalDevices.size());
-      PRINT(devices->numLogical);
-      PRINT(devices->size());
       if (!havePeerAccess) {
         std::cout << "don't have peer access between GPUs ... this is going to get interesting" << std::endl;
         deviceWeNeedToCopyToForFBMap = allLocalDevices[0];

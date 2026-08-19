@@ -360,30 +360,8 @@ namespace BARNEY_NS {
       m_cudaDevice = getParam<int>("cudaDevice", m_cudaDevice);
       m_dataGroupID = getParam<int>("dataGroupID", m_dataGroupID);
 
-      PING; PRINT((int)m_enable_multiGPU);
       m_enable_multiGPU
         = getParam<int>("enable_multiGPU",m_enable_multiGPU);
-      PING; PRINT((int)m_enable_multiGPU);
-      // #if BARNEY_MPI
-      //     uint64_t pointerToComm = getParam<uint64_t>("pointer_to_mpi_communicator", 0ull);
-      //     if (pointerToComm) {
-      //       printf("#banari.mpi: got passed a pointer to a MPI "
-      //              "communicator, going to use this.\n");
-      //       comm = *(MPI_Comm *)pointerToComm;
-      //       commNeedsFree = false;
-      //     } else {
-      //       std::cout << "#banari: Device started in MPI mode, but no MPI Communicator passed to it; started with a MPI_Comm_dup() of MPI_COMM_WORLD" << std::endl;
-      //       MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-      //       commNeedsFree = true;
-      //     }
-      //     if (comm) {
-      //       int rank, size;
-      //       MPI_Comm_rank(comm,&rank);
-      //       MPI_Comm_size(comm,&size);
-      //       printf("#banari.mpi: running banari mpi device on rank %i size %i\n",
-      //              rank,size);
-      //     }
-      // #endif
       if (m_cudaDevice != -2)
         std::cout << "#banari: found 'cudaDevice' = " << m_cudaDevice << std::endl;
 

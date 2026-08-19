@@ -110,7 +110,6 @@ namespace BARNEY_NS {
                                   int numGPUs,
                                   const int *gpuIDs)
     {
-      std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
       assert(dataRanksInDataGroup);
       assert(gpuIDs);
       assert(gpuIDs >= numDataGroupsOnThisContext);

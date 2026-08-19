@@ -470,6 +470,7 @@ namespace BARNEY_NS {
                         uint32_t channels)
     {
       freeChannelData();
+      
       FrameBuffer::resize(colorFormat, size, channels);
 
       // ------------------------------------------------------------------
@@ -477,7 +478,7 @@ namespace BARNEY_NS {
          owner), and communicate this to all workers */
       // ------------------------------------------------------------------
       if (isOwner) {
-        this->needNormals = denoiser != 0;
+        this->needNormals = (denoiser != 0);
         context->world.bc_send(&this->needNormals,sizeof(this->needNormals));
       } else {
         context->world.bc_recv(&this->needNormals,sizeof(this->needNormals));
@@ -517,12 +518,6 @@ namespace BARNEY_NS {
           context->world.recv(thisDev->worldRank,thisDev->local,
                               &ownerGather.numTilesOnGPU[ggID],1,
                               recv_requests[ggID]);
-          // int rankOfGPU = ggID / context->gpusPerWorker;
-          // int localID   = ggID % context->gpusPerWorker;
-
-          // context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-          //                     &ownerGather.numTilesOnGPU[ggID],1,
-          //                     recv_requests[ggID]);
         }
       }
 
@@ -534,19 +529,15 @@ namespace BARNEY_NS {
                               &tiledFB->numActiveTilesThisGPU,1,
                               send_requests[localID]);
         }
-        // for (int localID=0;localID<tilesOnGPU.size();localID++) {
-        //   context->world.send(owningRank,localID,
-        //                       &tilesOnGPU[localID],1,
-        //                       send_requests[localID]);
-        // }
       }    
 
       // ------------------------------------------------------------------
       // and wait for those to complete
       // ------------------------------------------------------------------
-      if (isOwner)
+      if (isOwner) {
         for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) 
           context->world.wait(recv_requests[ggID]);
+      }
     
       if (context->isActiveWorker)
         for (int localID=0;localID<tilesOnGPU.size();localID++)
@@ -603,12 +594,6 @@ namespace BARNEY_NS {
                               gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
                               ownerGather.numTilesOnGPU[ggID],
                               recv_requests[ggID]);
-          // int rankOfGPU = ggID / context->gpusPerWorker;
-          // int localID   = ggID % context->gpusPerWorker;
-          // context->world.recv(context->worldRankOfWorker[rankOfGPU],localID,
-          //                     gatheredTilesOnOwner.tileDescs+ownerGather.firstTileOnGPU[ggID],
-          //                     ownerGather.numTilesOnGPU[ggID],
-          //                     recv_requests[ggID]);
         }
       }
 
@@ -618,7 +603,6 @@ namespace BARNEY_NS {
                               device->contextRank(),
                               getFor(device)->tileDescs,
                               getFor(device)->numActiveTilesThisGPU,
-                              // tilesOnGPU[device->contextRank()],
                               send_requests[device->contextRank()]);
         }
 

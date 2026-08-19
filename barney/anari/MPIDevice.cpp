@@ -43,14 +43,12 @@ namespace BARNEY_NS {
       : BarneyDevice()
     {
       m_enable_multiGPU = 0;
-      PING; PRINT(m_enable_multiGPU);
     }
   
     BarneyMPIDevice::BarneyMPIDevice(ANARILibrary library,
                                      const std::string &subType)
       : BarneyDevice(library,subType)
     {
-      PING;
       m_enable_multiGPU = 0;
     }
   

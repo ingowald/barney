@@ -60,67 +60,67 @@ barney::BarneyBaseDevice *createDevice_barney_cpu(ANARILibrary,const char *);
 
 namespace barney {
 
-  struct BarneyMultiLibrary : public ::anari::LibraryImpl
-  {
-    BarneyMultiLibrary(void *lib,
-                       ANARIStatusCallback defaultStatusCB,
-                       const void *statusCBPtr);
+//   struct BarneyMultiLibrary : public ::anari::LibraryImpl
+//   {
+//     BarneyMultiLibrary(void *lib,
+//                        ANARIStatusCallback defaultStatusCB,
+//                        const void *statusCBPtr);
 
-    ANARIDevice newDevice(const char *subtype) override;
-    const char **getDeviceExtensions(const char *deviceType) override;
-  };
+//     ANARIDevice newDevice(const char *subtype) override;
+//     const char **getDeviceExtensions(const char *deviceType) override;
+//   };
 
-  // Definitions ////////////////////////////////////////////////////////////////
+//   // Definitions ////////////////////////////////////////////////////////////////
 
-  BarneyMultiLibrary::BarneyMultiLibrary(void *lib,
-                               ANARIStatusCallback defaultStatusCB,
-                               const void *statusCBPtr)
-    : ::anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
-  {}
+//   BarneyMultiLibrary::BarneyMultiLibrary(void *lib,
+//                                ANARIStatusCallback defaultStatusCB,
+//                                const void *statusCBPtr)
+//     : ::anari::LibraryImpl(lib, defaultStatusCB, statusCBPtr)
+//   {}
 
   
-  ANARIDevice BarneyMultiLibrary::newDevice(const char *subType)
-  {
-    PING; PRINT(subType);
+//   ANARIDevice BarneyMultiLibrary::newDevice(const char *subType)
+//   {
+//     PING; PRINT(subType);
     
-    ANARILibrary lib = this_library();
-#if BARNEY_BACKEND_OPTIX
-    try { return (ANARIDevice)createDevice_barney_optix(lib,subType); }
-    catch (...) {};
-#endif
-#if BARNEY_BACKEND_CUDA
-    try { return (ANARIDevice)createDevice_barney_cuda(lib,subType); }
-    catch (...) {};
-#endif
-#if BARNEY_BACKEND_CPU
-    try { return (ANARIDevice)createDevice_barney_cpu(lib,subType); }
-    catch (...) {};
-#endif
-    std::cout << "Warning- couldn't create _any_ barney backend device!?"
-              << std::endl;
-    return (ANARIDevice)0;
-  }
+//     ANARILibrary lib = this_library();
+// #if BARNEY_BACKEND_OPTIX
+//     try { return (ANARIDevice)createDevice_barney_optix(lib,subType); }
+//     catch (...) {};
+// #endif
+// #if BARNEY_BACKEND_CUDA
+//     try { return (ANARIDevice)createDevice_barney_cuda(lib,subType); }
+//     catch (...) {};
+// #endif
+// #if BARNEY_BACKEND_CPU
+//     try { return (ANARIDevice)createDevice_barney_cpu(lib,subType); }
+//     catch (...) {};
+// #endif
+//     std::cout << "Warning- couldn't create _any_ barney backend device!?"
+//               << std::endl;
+//     return (ANARIDevice)0;
+//   }
 
-  const char **BarneyMultiLibrary::getDeviceExtensions(const char *_deviceType)
-  {
-    const std::string deviceType
-      = _deviceType
-      ? _deviceType
-      : "default";
-    static std::map<std::string,const char **> alreadyFound;
-    if (alreadyFound.find(deviceType) != alreadyFound.end())
-      return alreadyFound[deviceType];
-    PING;
-    ANARIDevice dev = newDevice(deviceType.c_str());
-    if (!dev) {
-      alreadyFound[deviceType] = nullptr;
-      return nullptr;
-    }
-    BarneyBaseDevice *base = (BarneyBaseDevice*)dev;
-    alreadyFound[deviceType] = base->extensions();
+//   const char **BarneyMultiLibrary::getDeviceExtensions(const char *_deviceType)
+//   {
+//     const std::string deviceType
+//       = _deviceType
+//       ? _deviceType
+//       : "default";
+//     static std::map<std::string,const char **> alreadyFound;
+//     if (alreadyFound.find(deviceType) != alreadyFound.end())
+//       return alreadyFound[deviceType];
+//     PING;
+//     ANARIDevice dev = newDevice(deviceType.c_str());
+//     if (!dev) {
+//       alreadyFound[deviceType] = nullptr;
+//       return nullptr;
+//     }
+//     BarneyBaseDevice *base = (BarneyBaseDevice*)dev;
+//     alreadyFound[deviceType] = base->extensions();
 
-    return alreadyFound[deviceType];
-  }
+//     return alreadyFound[deviceType];
+//   }
 
     // /*! helper entry-point for _directly_ creating a banari device
     //   without having to go through the dynamic-library
@@ -168,8 +168,7 @@ namespace BARNEY_NS_CPU { namespace anari {
 extern "C" BARNEY_LIBRARY_INTERFACE
 ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney, handle, scb, scbPtr)
 {
-  PING;
-#if 1
+// #if 1
 # if BARNEY_BACKEND_OPTIX
   if (auto lib = BARNEY_NS_OPTIX::anari::createAnariLibrary(handle,scb,scbPtr))
     return (ANARILibrary)lib;
@@ -185,8 +184,8 @@ ANARI_DEFINE_LIBRARY_ENTRYPOINT(barney, handle, scb, scbPtr)
   std::cout << "#barney - could not create _any_ anari backend library!?"
             << std::endl;
   return 0;
-#else
-  return (ANARILibrary) new barney::BarneyMultiLibrary(handle, scb, scbPtr);
-#endif
+// #else
+//   return (ANARILibrary) new barney::BarneyMultiLibrary(handle, scb, scbPtr);
+// #endif
 }
 
