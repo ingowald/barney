@@ -12,6 +12,9 @@
 namespace BARNEY_NS {
   namespace native {
   
+    enum { tileSize = 32 };
+    enum { pixelsPerTile = tileSize*tileSize };
+
     struct FrameBuffer;
   
     struct AuxChannelTile {

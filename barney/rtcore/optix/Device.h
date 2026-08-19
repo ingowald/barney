@@ -37,8 +37,7 @@ namespace BARNEY_NS {
       Device(int physicalGPU);
       ~Device() override;
 
-      std::string toString() const
-      { return "optix::Device(physical="+std::to_string(physicalID)+")"; }
+      std::string toString() const;
       
       void destroy();
 
@@ -54,15 +53,6 @@ namespace BARNEY_NS {
       // denoiser
       // ==================================================================
       Denoiser *createDenoiser();
-
-      // ==================================================================
-      // kernels
-      // ==================================================================
-      // rtc::Compute *
-      // createCompute(const std::string &);
-      
-      // rtc::Trace *
-      // createTrace(const std::string &, size_t);
 
       // ==================================================================
       // buffer stuff
@@ -81,7 +71,6 @@ namespace BARNEY_NS {
       // ray tracing pipeline related stuff
       // ==================================================================
 
-
       // ------------------------------------------------------------------
       // rt pipeline/sbtstuff
       // ------------------------------------------------------------------
@@ -92,21 +81,6 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
       // geomtype stuff
       // ------------------------------------------------------------------
-      
-      // rtc::GeomType *
-      // createUserGeomType(const char *ptxName,
-      //                    const char *typeName,
-      //                    size_t sizeOfDD,
-      //                    bool has_ah,
-      //                    bool has_ch) 
-      //  ;
-      
-      // rtc::GeomType *
-      // createTrianglesGeomType(const char *ptxName,
-      //                         const char *typeName,
-      //                         size_t sizeOfDD,
-      //                         bool has_ah,
-      //                         bool has_ch);
       
       void freeGeomType(GeomType *);
 

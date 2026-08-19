@@ -63,7 +63,7 @@ namespace BARNEY_NS {
       attribute = parseAttribute(attributeName);
     }
     
-    HostMaterial::HostMaterial(SlotContext *slotContext)
+    HostMaterial::HostMaterial(LDGContext *slotContext)
       : Object(slotContext->context),
         devices(slotContext->devices),
         materialRegistry(slotContext->materialRegistry),
@@ -79,17 +79,9 @@ namespace BARNEY_NS {
       materialRegistry->release(materialID);
     }
     
-    HostMaterial::SP HostMaterial::create(SlotContext *slotContext,
+    HostMaterial::SP HostMaterial::create(LDGContext *slotContext,
                                           const std::string &type)
     {
-// #ifndef NDEBUG
-//       static std::set<std::string> alreadyCreated;
-//       if (alreadyCreated.find(type) == alreadyCreated.end()) {
-//         alreadyCreated.insert(type);
-//         if (Context::logging())
-//           std::cout << "#bn: creating (at least one of) material type '" << type << "'" << std::endl;
-//       }
-// #endif
       if (type == "AnariMatte" || type == "matte")
         return std::make_shared<AnariMatte>(slotContext); 
       if (type == "physicallyBased" || type == "AnariPBR")

@@ -13,8 +13,6 @@
 namespace BARNEY_NS {
   namespace native {
   
-    enum { tileSize = 32 };
-    enum { pixelsPerTile = tileSize*tileSize };
     enum { rayQueueSize = 4*1024*1024 };
 
     struct Geometry;
@@ -35,18 +33,39 @@ namespace BARNEY_NS {
     struct SamplerRegistry;
     struct MaterialRegistry;
     struct DeviceMaterial;    
-    
-    struct LocalSlot {
+
+    /*! each context can store one or more 'data groups' of data. For
+        data-parallel rendering each data group refers to one of the N
+        paritions of the data, and each such partition is referenced
+        by its 'data rank' in the same way an MPI process (ie dataRank
+        is always 0<=dataRank<Npartitions), and any group of GPUs that
+        have one instance/copy of each data group is guaranteed to
+        'see' all the data there is. It is possible for different
+        ranks (or even the same process) to have multiple data groups
+        with the same data rank; this is perfectly valid, but it is
+        the app's job to ensure that different data groups with same
+        data rank contain essentially the same data ('essential' here
+        meaning that any ray traced through that would essentially
+        'see' the same data - it may have different memory addresses
+        or different API handles, groups may contain their obejcts in
+        different order, etc, but the actual geometries and volumes in
+        those data groups with same dataRank would have to be
+        interchangeable). For non-parallel rendering we simply have
+        numParittions=1 and dataRank==0 in all data groups (and in all
+        processes).  */
+    struct DataGroupDescriptor {
+      /* the data rank stored in this local data group */
       int dataRank;
+      /*! the GPU(s) to use for this data group */
       std::vector<int> gpuIDs;
     };
 
-    struct SlotContext {
+    /*! a 'local data group context' - all the devices that store a
+        copy of this data group, and all the 'global' data structures
+        that this data group needs */
+    struct LDGContext {
       Context *context;
-      int modelRankInThisSlot;//dataGroupID;
-      /*! device(s) inside this data group; will be a subset of
-        Context::devices */
-      std::vector<int>     gpuIDs;
+      int modelRankInThisSlot;
       DevGroup::SP         devices;
       std::shared_ptr<HostMaterial>     defaultMaterial = 0;
       std::shared_ptr<SamplerRegistry>  samplerRegistry = 0;
@@ -55,20 +74,9 @@ namespace BARNEY_NS {
 
     struct GlobalTraceImpl;
 
-    // struct LogicalDevice {
-    //   /* the worker rank that this device lives on - '0' if local
-    //      rendering, and mpi rank in 'workers' mpi goup if mpi */
-    //   int worker;
-    //   /*! the local device index for the worker that this device is
-    //     on */
-    //   int local;
-    //   /*! the data rank that this gpu holds */
-    //   int dataRank;
-    // };
-
     struct Context
     {
-      Context(const std::vector<LocalSlot> &localSlots,
+      Context(const std::vector<DataGroupDescriptor> &dataGroupsOnThisContext,
               WorkerTopo::SP topo);
       virtual ~Context();
 
@@ -83,8 +91,6 @@ namespace BARNEY_NS {
       virtual std::shared_ptr<FrameBuffer>
       createFrameBuffer() = 0;
       
-      /*! create a frame buffer object suitable to this context */
-      // virtual FrameBuffer *createFB(int owningRank) = 0;
       std::shared_ptr<GlobalModel>
       createModel();
     
@@ -156,12 +162,16 @@ namespace BARNEY_NS {
                         FrameBuffer *fb);
     
       /*! have each *local* GPU trace its current wave-front of rays */
-      void traceRaysLocally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
+      void traceRaysLocally(GlobalModel *model,
+                            uint32_t rngSeed,
+                            bool needHitIDs);
     
       /*! trace all rays currently in a ray queue, including forwarding
         if and where applicable, untile every ray in the ray queue as
         found its intersection */
-      void traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs);
+      void traceRaysGlobally(GlobalModel *model,
+                             uint32_t rngSeed,
+                             bool needHitIDs);
 
       void shadeRaysLocally(Renderer *renderer,
                             GlobalModel *model,
@@ -212,8 +222,8 @@ namespace BARNEY_NS {
         GPUs (eg, to allow tiledFB to write to gpu 0 linear fb */
       bool havePeerAccess = false;
     
-      SlotContext *getSlot(int slot);
-      std::vector<SlotContext> perSlot;
+      LDGContext *getLDG(int localDataGroupIndex);
+      std::vector<LDGContext *> perLDG;
       DevGroup::SP devices;
       /*! 'usually' we can rely on all GPUs having peer-(write-)access
         to the memory location that the app wants to have the frame

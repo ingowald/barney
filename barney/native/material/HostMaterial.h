@@ -12,7 +12,7 @@
 namespace BARNEY_NS {
   namespace native {
 
-    struct SlotContext;
+    struct LDGContext;
     struct DeviceMaterial;
     
     struct PossiblyMappedParameter {
@@ -71,7 +71,7 @@ namespace BARNEY_NS {
         (and even worse, its type) if the assigned material's type
         changes */
 
-      HostMaterial(SlotContext *slotContext);
+      HostMaterial(LDGContext *slotContext);
       virtual ~HostMaterial();
 
       // ------------------------------------------------------------------
@@ -79,7 +79,7 @@ namespace BARNEY_NS {
       void commit() override;
       /*! @} */
       // ------------------------------------------------------------------
-      static HostMaterial::SP create(SlotContext *context,
+      static HostMaterial::SP create(LDGContext *context,
                                      const std::string &type);
     
       virtual DeviceMaterial getDD(Device *device) = 0;

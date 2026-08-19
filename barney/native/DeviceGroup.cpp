@@ -35,6 +35,9 @@ namespace BARNEY_NS {
       return geomTypes[callBack];
     }
 
+    std::string Device::toString() const
+    { return "barney::native::Device{"+rtc->toString()+"}"; }
+    
     void Device::syncPipelineAndSBT()
     {
       rtc->buildPipeline();

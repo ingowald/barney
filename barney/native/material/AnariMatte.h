@@ -24,7 +24,7 @@ namespace BARNEY_NS {
         PossiblyMappedParameter::DD color;
         PossiblyMappedParameter::DD opacity;
       };
-      AnariMatte(SlotContext *context);
+      AnariMatte(LDGContext *context);
       virtual ~AnariMatte() = default;
 
       bool setString(const std::string &member,

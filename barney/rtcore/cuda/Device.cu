@@ -17,6 +17,9 @@ namespace BARNEY_NS {
     Device::~Device()
     {}
     
+    std::string Device::toString() const
+    { return "rtc::cuda::Device(physical="+std::to_string(physicalID)+")"; }
+    
     void Device::freeGroup(Group *g)
     { delete g; }
 

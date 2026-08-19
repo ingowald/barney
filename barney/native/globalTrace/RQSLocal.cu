@@ -17,7 +17,7 @@ namespace BARNEY_NS {
 
     bool RQSLocal::forwardRays(bool needHitIDs)
     {
-      const int numSlots = (int)context->perSlot.size();
+      const int numSlots = (int)context->perLDG.size();
       if (numSlots == 1) {
         // do NOT copy or swap. rays are in trace queue, which is also
         // the shade read queue, so nothing to do.

@@ -30,16 +30,16 @@ namespace BARNEY_NS {
     }
   
     WorkerTopo::SP
-    LocalContext::makeTopo(const std::vector<LocalSlot> &localSlots)
+    LocalContext::makeTopo(const std::vector<DataGroupDescriptor> &localDataGroups)
     {
       std::vector<WorkerTopo::Device> devices;
-      for (auto ls : localSlots) {
-        for (auto gpuID : ls.gpuIDs) {
+      for (auto &ldg : localDataGroups) {
+        for (auto gpuID : ldg.gpuIDs) {
           WorkerTopo::Device dev;
           dev.local = (int)devices.size();
           dev.worker = 0;
           dev.worldRank = 0;
-          dev.dataRank = ls.dataRank;
+          dev.dataRank = ldg.dataRank;
           dev.hostNameHash = getHostNameHash();
           dev.physicalDeviceHash = rtc::getPhysicalDeviceHash(gpuID);
           devices.push_back(dev);
@@ -48,76 +48,11 @@ namespace BARNEY_NS {
       return std::make_shared<WorkerTopo>(devices,0,(int)devices.size());
     }
 
-    LocalContext::LocalContext(const std::vector<LocalSlot> &localSlots)
-      : Context(localSlots,
-                makeTopo(localSlots))
+    LocalContext::LocalContext
+    (const std::vector<DataGroupDescriptor> &dataGroupsOnThisContext)
+      : Context(dataGroupsOnThisContext,
+                makeTopo(dataGroupsOnThisContext))
     {
-#if 0
-      std::map<int,int> numGPUsInIsland;
-      std::map<int,int> numUsesOfDG;
-
-      for (int i=0;i<(int)devices->size();i++) {
-        auto dev = (*devices)[i]; assert(dev);
-        dev->allGPUsGlobally.rank = i;
-        dev->allGPUsGlobally.size = devices->size();
-        dev->gpuInNode.rank = i;
-        dev->gpuInNode.size = devices->size();
-        const int myDG = dataGroupIDs[i % dataGroupIDs.size()];
-        const int myIsland = numUsesOfDG[myDG]++;
-        dev->islandInWorld.rank = myIsland;
-        const int rankInMyIsland = numGPUsInIsland[dev->islandInWorld.rank]++;
-        dev->gpuInIsland.rank   = rankInMyIsland;
-      }
-      // now we know how often every DG and island got used, so now we
-      // know num islands, and thus the size of each island.
-      for (int i=0;i<(int)devices->size();i++) {
-        auto dev = (*devices)[i]; assert(dev);
-        int myDG           = dataGroupIDs[i % dataGroupIDs.size()];
-        int numIslands     = numUsesOfDG[myDG];
-        int myIsland       = dev->islandInWorld.rank;
-        int sizeOfMyIsland = numGPUsInIsland[myIsland];
-        dev->gpuInIsland.size   = sizeOfMyIsland;
-        dev->islandInWorld.size = numIslands;
-      }
-
-      // now assign, for each device, it's recv and send devices
-      for (int myID=0;myID<(int)devices->size();myID++) {
-        auto myDev = (*devices)[myID]; assert(myDev);
-        auto &rqs = myDev->rqs;
-        const int myIsland = myDev->islandInWorld.rank;
-        const int sizeOfIsland = myDev->gpuInIsland.size;
-        const int myRankInIsland = myDev->gpuInIsland.rank;
-        const int intendedSendRank = (myRankInIsland+sizeOfIsland-1)%sizeOfIsland;
-        const int intendedRecvRank = (myRankInIsland+1)%sizeOfIsland;
-
-        // we're all the same 'mpi'-rank 0
-        rqs.sendWorkerRank = 0;
-        rqs.recvWorkerRank = 0;
-          
-        for (int otherID=0;otherID<devices->size();otherID++) {
-          auto otherDev = (*devices)[otherID]; assert(myDev);
-          const int otherIsland = otherDev->islandInWorld.rank;
-          const int otherRankInIsland = otherDev->gpuInIsland.rank;
-          if (myIsland != otherIsland)
-            // different islands, cannot match
-            continue;
-          if (otherRankInIsland == intendedSendRank) rqs.sendWorkerLocal = otherID;
-          if (otherRankInIsland == intendedRecvRank) rqs.recvWorkerLocal = otherID;
-        }
-      }
-    
-      // do some sanity checking here:
-      auto dev0 = (*devices)[0];
-      for (auto dev : *devices) {
-        const int sizeOfIsland = dev->gpuInIsland.size;
-        // - all islands have to have the same num GPUs
-        assert(dev->gpuInIsland.size == dev0->gpuInIsland.size);
-        // - every gpu has to have a send peer in rqs.sendlocal
-        assert(dev->rqs.sendWorkerLocal >= 0);
-        // - every gpu has to have a recv peer in rqs.recvlocal
-        assert(dev->rqs.recvWorkerLocal >= 0);
-      }
-#endif
       globalTraceImpl = new RQSLocal(this);
     }
 
@@ -152,65 +87,55 @@ namespace BARNEY_NS {
       fb->finalizeFrame();
     }
 
-    Context *LocalContext::create(/*! how many data slots this context is to
-                                    offer, and which part(s) of the
-                                    distributed model data these slot(s)
-                                    will hold */
-                                  const int *dataRanksOnThisContext,
-                                  int        numDataRanksOnThisContext,
+    Context *LocalContext::create(/*! this is the NUMBER of different data
+                                    groups/slots inthat context. a data
+                                    *group* is one or more GPUs that share a
+                                    common set of geometric/volumetric
+                                    objects. */
+                                  int        numDataGroupsOnThisContext,
+                                  /*! tells which data rank / 'color' of data
+                                    will be stored in each of the
+                                    `numDataGroupsOnThisContext` data groups
+                                    of this context. This array *must* have
+                                    `numDataGroupsOnThisContext` entries */
+                                  const int *dataRanksInDataGroup,
                                   /*! which gpu(s) to use for this
-                                    process. default is to distribute
-                                    node's GPUs equally over all ranks on
-                                    that given node */
-                                  const int *gpuIDs,
-                                  int  numGPUs)
+                                    process. GPUs will be assigned to
+                                    data groups on a round-robin
+                                    basis, so the i'th GPU listed here
+                                    will get assigned to data group
+                                    'i%numDataGroupsOnThisContext'. if
+                                    passed as null, this means 'pick
+                                    what you find' */
+                                  int numGPUs,
+                                  const int *gpuIDs)
     {
-      assert(numDataRanksOnThisContext > 0);
-      std::vector<int> dgIDs;
-      for (int i = 0;i < numDataRanksOnThisContext;i++)
-        dgIDs.push_back
-          (dataRanksOnThisContext
-           ? dataRanksOnThisContext[i]
-           : i);
+      std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
+      assert(dataRanksInDataGroup);
+      assert(gpuIDs);
+      assert(gpuIDs >= numDataGroupsOnThisContext);
+      assert((numDataGroupsOnThisContext % gpuIDs) == 0);
+      for (int i=0;i<numGPUs;i++) assert(gpuIDs[i] >= 0);
 
-      int numDGs = (int)dgIDs.size();
-      // if (numGPUs == -1) {
-      //   BARNEY_CUDA_CALL(GetDeviceCount(&numGPUs));
-      // }
-      if (numGPUs == -1)
-        numGPUs = rtc::physicalDeviceCount();
-    
-#define ALLOW_OVERSUBSCRIBE 1
-#if ALLOW_OVERSUBSCRIBE
-      std::vector<int> fakeIDs;
-      if (numGPUs < numDGs) {
-        for (int i=0;i<numDGs;i++)  {
-          int ID
-            = gpuIDs
-            ? gpuIDs[i%numGPUs]
-            : (i%numGPUs)
-            ;
-          fakeIDs.push_back(ID);
-        }
-        gpuIDs = (const int *)fakeIDs.data();
-        numGPUs = numDGs;
-      }
-#endif
+      // build local data group descriptors:
 
-      if (numGPUs < numDGs)
-        throw std::runtime_error
-          ("not enough CUDA GPUs for requested number of data groups!");
-      int gpusPerDG = numGPUs / numDGs;
-      std::vector<LocalSlot> localSlots(dgIDs.size());
-      for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
-        LocalSlot &slot = localSlots[lsIdx];
-        slot.dataRank = dgIDs[lsIdx];
-        for (int j=0;j<gpusPerDG;j++) {
-          int idx = lsIdx*gpusPerDG+j;
-          slot.gpuIDs.push_back(gpuIDs?gpuIDs[idx]:idx);
-        }
+      // 1) create descriptors and fill in data ranks
+      assert(numDataGroupsOnThisContext > 0);
+      std::vector<DataGroupDescriptor>
+        dataGroupsOnThisContext(numDataGroupsOnThisContext);
+      for (int ldgIdx=0;ldgIdx<numDataGroupsOnThisContext;ldgIdx++) {
+        auto &ldg = dataGroupsOnThisContext[ldgIdx];
+        ldg.dataRank = dataRanksInDataGroup[ldgIdx];
       }
-      Context *ctx = new LocalContext(localSlots);
+
+      for (int i=0;i<numGPUs;i++) {
+        auto &ldg = dataGroupsOnThisContext[i%numDataGroupsOnThisContext];
+        int gpuID = gpuIDs[i];
+        assert(gpuID >= 0);
+        ldg.gpuIDs.push_back(gpuID);
+      }
+
+      Context *ctx = new LocalContext(dataGroupsOnThisContext);
       assert(ctx);
       return ctx;
     }

@@ -12,9 +12,9 @@
 namespace BARNEY_NS {
   namespace native {
 
-    World::World(SlotContext *slotContext)
-      : devices(slotContext->devices),
-        slotContext(slotContext)
+    World::World(LDGContext *ldgContext)
+      : devices(ldgContext->devices),
+        ldgContext(ldgContext)
     {
       perLogical.resize(devices->numLogical);
       for (auto device : *devices) {
@@ -64,10 +64,10 @@ namespace BARNEY_NS {
         = envMapLight.light
         ? envMapLight.light->getDD(device,envMapLight.xfm)
         : EnvMapLight::DD{};
-      dd.rank = slotContext->context->myRank();
+      dd.rank = ldgContext->context->myRank();
       
-      dd.samplers  = slotContext->samplerRegistry->getDD(device);
-      dd.materials = slotContext->materialRegistry->getDD(device);
+      dd.samplers  = ldgContext->samplerRegistry->getDD(device);
+      dd.materials = ldgContext->materialRegistry->getDD(device);
       
       for (int i=0;i<5;i++)
         dd.instanceAttributes[i]

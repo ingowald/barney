@@ -295,13 +295,13 @@ namespace BARNEY_NS {
         // use multiple GPU" << 
         if (m_enable_multiGPU) {
           int numGPUs = rtc::physicalDeviceCount();
-          std::cout << "#ba: no GPUs selected, but multi-gpu enabled"
+          std::cout << "#banari: no GPUs selected, but multi-gpu enabled"
                     << " -> picking all " << numGPUs << " rtc devices"
                     << std::endl;
           for (int i=0;i<numGPUs;i++)
             gpuIDs.push_back(i);
         } else {
-          std::cout << "#ba: no GPUs selected, and multi-gpu disabled"
+          std::cout << "#banari: no GPUs selected, and multi-gpu disabled"
                     << " -> picking gpu 0"
                     << std::endl;
           gpuIDs = {0};
@@ -312,12 +312,19 @@ namespace BARNEY_NS {
       for (auto dev : state->tether->devices) {
         int dgID = dev->m_dataGroupID;
         if (dgID == -1)
-          // not set by user, use default of different data group ID per device
-          dgID = multiNode.rank * state->tether->devices.size() + dev->tetherIndex;
+          // not set by user, use default of different data group per
+          // MPI rank. note we do not consider the number of tehtered
+          // devices here - if the app _did_ know how to tether it
+          // should also have been able to set the data rank, so the
+          // only tiem we have to worry about this is if somebody
+          // starts an anari MPI device (which means he _does_ want to
+          // render data parallel) withotu even knowing how to specify
+          // data ranks or tethering... which only makes sense if what
+          // that user is trying to do is data parallel rendering with
+          // one data group per rank.
+          dgID = multiNode.rank;
         dgIDs.push_back(dgID);
       }
-      int *_dgIDs   = dgIDs.data();
-      int  _dgCount = (int)dgIDs.size();
 
       if (1 || multiNode.size > 1) {
         std::stringstream ss;
@@ -334,11 +341,7 @@ namespace BARNEY_NS {
         reportMessage(ANARI_SEVERITY_DEBUG, ss.str().c_str());
       }
 
-      assert(dgIDs.size() == gpuIDs.size());
-      std::vector<vec2i> gpuIDsAndDataRanks;
-      for (int i=0;i<dgIDs.size();i++)
-        gpuIDsAndDataRanks.push_back(vec2i{gpuIDs[i],dgIDs[i]});
-      state->tether->context = createContext(gpuIDsAndDataRanks);
+      state->tether->context = createContext(dgIDs,gpuIDs);
       
       m_initialized = true;
     }
@@ -446,19 +449,14 @@ namespace BARNEY_NS {
       return state;
     }
 
-    BNContext BarneyDevice::createContext(std::vector<vec2i> &gpuIDsAndDataRank)
+    BNContext BarneyDevice::createContext(const std::vector<int> &dataRanks,
+                                          const std::vector<int> &gpuIDs)
     {
-      std::vector<int> dataRanks;
-      std::vector<int> gpuIDs;
-      for (auto in : gpuIDsAndDataRank) {
-        gpuIDs.push_back(in.x);
-        dataRanks.push_back(in.y);
-      }
       BNContext ctx =
-        bnContextCreate(dataRanks.data(),
-                        dataRanks.size(),
-                        gpuIDs.data(),
-                        gpuIDs.size());
+        bnContextCreate(dataRanks.size(),
+                        dataRanks.data(),
+                        gpuIDs.size(),
+                        gpuIDs.data());
       return ctx;
     }
 

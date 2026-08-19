@@ -14,13 +14,18 @@
 namespace BARNEY_NS {
   namespace native {
 
-    struct SlotContext;
+    struct LDGContext;
     struct DeviceMaterial;
     struct HostMaterial;
 
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
-      etc */
+      etc
+
+      iw - TODO probably want to mege this into LDGContext; this
+      already has per-LDG sampler registry etc, so could/should also
+      keep this data, too
+    */
     struct World {
       typedef std::shared_ptr<World> SP;
       
@@ -45,7 +50,7 @@ namespace BARNEY_NS {
         affine3f        xfm;
       } envMapLight;
 
-      World(SlotContext *slotContext);
+      World(LDGContext *ldgContext);
       virtual ~World();
 
       void set(const std::vector<QuadLight::DD> &quadLights);
@@ -71,7 +76,7 @@ namespace BARNEY_NS {
       
       std::vector<PLD> perLogical;
       DevGroup::SP const devices;
-      SlotContext *const slotContext;
+      LDGContext *const ldgContext;
     };
 
   }

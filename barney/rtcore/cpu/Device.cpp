@@ -15,6 +15,9 @@
 namespace BARNEY_NS {
   namespace rtc {
 
+    std::string Device::toString() const
+    { return "rtc::cpu::Device()"; }
+
     int physicalDeviceCount() { return 1; }
     
     /*! get a unique hash for a given physical device. */

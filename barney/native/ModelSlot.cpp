@@ -21,14 +21,12 @@ namespace BARNEY_NS {
     }
 
     ModelSlot::ModelSlot(GlobalModel *_model,
-                         const DevGroup::SP &devices,
-                         int slotID)
+                         LDGContext *ldgContext)
       : SlottedObject((Context *)_model->context,
-                      devices),
+                      ldgContext->devices),
         model(_model),
-        slotID(slotID),
-        slotContext(((Context *)_model->context)->getSlot(slotID)),
-        world(std::make_shared<World>(slotContext))
+        ldgContext(ldgContext),
+        world(std::make_shared<World>(ldgContext))
     {
       perLogical.resize(devices->numLogical);
     }
@@ -132,6 +130,8 @@ namespace BARNEY_NS {
                                               std::vector<affine3f> &rtcTransforms,
                                               std::vector<int> *inputInstIDs)
     {
+      PING;
+      
       for (int i = 0; i < (int)instances.groups.size(); i++) {
         Group *group = instances.groups[i].get();
         if (!group)
@@ -159,6 +159,8 @@ namespace BARNEY_NS {
     void ModelSlot::updateInstanceTransforms(const affine3f *xfms,
                                              int numInstances)
     {
+      std::cout << "#######################################################" << std::endl;
+      PING;
       if (numInstances != (int)instances.groups.size()) {
         std::cout << "#barney: ignoring transform-only update with mismatched instance count"
                   << std::endl;
@@ -168,6 +170,8 @@ namespace BARNEY_NS {
 
       updateWorldLightsFromInstances();
 
+      std::cout << "=======================================================" << std::endl;
+      PING; PRINT(numInstances);
       for (auto device : *devices) {
         PLD *pld = getPLD(device);
         if (!pld->instanceGroup)
@@ -176,6 +180,9 @@ namespace BARNEY_NS {
         std::vector<affine3f> rtcTransforms;
         flattenInstancesForDevice(device, nullptr, rtcTransforms, nullptr);
 
+        PRINT(device->toString());
+        PRINT(rtcTransforms.size());
+        
         pld->instanceGroup->setTransforms(rtcTransforms);
         pld->instanceGroup->refitAccel();
       }
@@ -183,6 +190,8 @@ namespace BARNEY_NS {
 
     void ModelSlot::build()
     {
+      std::cout << "#######################################################" << std::endl;
+      PING;
       // Keep light extraction identical to transform-only updates.
       updateWorldLightsFromInstances();
   
@@ -194,7 +203,9 @@ namespace BARNEY_NS {
       // ==================================================================
     
       std::vector<int>          inputInstIDs;
+      PRINT(devices->size());
       for (auto device : *devices) {
+        PRINT(device->toString());
         PLD *pld = getPLD(device);
         std::vector<affine3f>     rtcTransforms;
         std::vector<rtc::Group *> rtcGroups;

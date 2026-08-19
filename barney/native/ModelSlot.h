@@ -17,16 +17,23 @@ namespace BARNEY_NS {
     struct Texture;
     struct Light;
 
-    struct SlotContext;
+    struct LDGContext;
 
+    /* iw - TODO merge this with LDGContext - 'old' native barney had
+       the concept of having multiple models, but anari doesn't have
+       that (it's closest equivalent is multiple 'frame' objects), so
+       this does't make any sense to keep around any more */
     struct ModelSlot : public SlottedObject {
       typedef std::shared_ptr<ModelSlot> SP;
 
       ModelSlot(GlobalModel *model,
-                const DevGroup::SP &devices,
-                /*! index with which the given rank's context will refer
-                  to this _locally_; not the data rank in it */
-                int slotID);
+                LDGContext *ldgContext);
+                // const DevGroup::SP &devices
+                // // ,
+                // // /*! index with which the given rank's context will refer
+                // //   to this _locally_; not the data rank in it */
+                // // int slotID
+                // );
       virtual ~ModelSlot();
 
       /*! pretty-printer for printf-debugging */
@@ -68,9 +75,10 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
       // do not change order of these:
       // ------------------------------------------------------------------
-      int            const slotID;
+      // int            const slotID;
       GlobalModel   *const model;
-      SlotContext   *const slotContext;
+      // SlotContext   *const slotContext;
+      LDGContext    *const ldgContext;
       World::SP    world;
 
     };

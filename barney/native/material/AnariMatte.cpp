@@ -8,7 +8,7 @@
 namespace BARNEY_NS {
   namespace native {
 
-    AnariMatte::AnariMatte(SlotContext *context)
+    AnariMatte::AnariMatte(LDGContext *context)
       : HostMaterial(context)
     {}
     

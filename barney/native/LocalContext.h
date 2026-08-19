@@ -12,23 +12,32 @@ namespace BARNEY_NS {
     /*! a barney context for "local"-node rendering - no MPI */
     struct LocalContext : public Context {
     
-      LocalContext(const std::vector<LocalSlot> &localSlots);
+      LocalContext(const std::vector<DataGroupDescriptor> &dataGroupsOnThisContext);
 
       virtual ~LocalContext();
 
-      static WorkerTopo::SP makeTopo(const std::vector<LocalSlot> &localSlots);
-      static Context *create(/*! how many data slots this context is to
-                               offer, and which part(s) of the
-                               distributed model data these slot(s)
-                               will hold */
-                             const int *dataRanksOnThisContext,
-                             int        numDataRanksOnThisContext,
+      static WorkerTopo::SP
+      makeTopo(const std::vector<DataGroupDescriptor> &localDataGroups);
+      
+      static Context *create(/*! this is the NUMBER of different data
+                               groups/slots inthat context. a data
+                               *group* is one or more GPUs that share a
+                               common set of geometric/volumetric
+                               objects. */
+                             int        numDataGroupsOnThisContext,
+                             /*! tells which data rank / 'color' of data
+                               will be stored in each of the
+                               `numDataGroupsOnThisContext` data groups
+                               of this context. This array *must* have
+                               `numDataGroupsOnThisContext` entries */
+                             const int *dataRanksInDataGroup,
                              /*! which gpu(s) to use for this
-                               process. default is to distribute
-                               node's GPUs equally over all ranks on
-                               that given node */
-                             const int *gpuIDs,
-                             int  numGPUs);
+                               process. GPUs will be assigned to data
+                               groups on a round-robin basis, so the i'th
+                               GPU listed here will get assigned to data
+                               group 'i%numDataGroupsOnThisContext' */
+                             int numGPUs,
+                             const int *gpuIDs);
     
       /*! pretty-printer for printf-debugging */
       std::string toString() const override

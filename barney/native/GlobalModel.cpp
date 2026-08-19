@@ -11,13 +11,14 @@ namespace BARNEY_NS {
     GlobalModel::GlobalModel(Context *context)
       : Object(context)
     {
-      for (int slot=0;slot<context->perSlot.size();slot++) {
-        assert(context->perSlot[slot].devices);
-        ModelSlot::SP modelSlot
-          = std::make_shared<ModelSlot>(this,context->perSlot[slot].devices,
-                                        slot);
-        modelSlots.push_back(modelSlot);
-      }
+      for (auto &ldg : context->perLDG)
+        modelSlots.push_back
+          (std::make_shared<ModelSlot>(this,ldg
+                                       //,ldg.devices
+                                       // ,
+                                       //  slot
+                                       ));
+      
     }
 
     GlobalModel::~GlobalModel()

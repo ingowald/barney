@@ -8,7 +8,7 @@
 namespace BARNEY_NS {
   namespace native {
 
-    AnariPBR::AnariPBR(SlotContext *context)
+    AnariPBR::AnariPBR(LDGContext *context)
       : HostMaterial(context)
     {}
     

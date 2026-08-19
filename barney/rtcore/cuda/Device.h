@@ -24,8 +24,7 @@ namespace BARNEY_NS {
       {}
       virtual ~Device();
 
-      std::string toString() const
-      { return "rtc::cuda::Device(physical="+std::to_string(physicalID)+")"; }
+      std::string toString() const;
       
       void destroy();
 

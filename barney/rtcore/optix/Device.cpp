@@ -29,6 +29,9 @@ namespace BARNEY_NS {
       destroy();
     }
 
+    std::string Device::toString() const
+    { return "optix::Device(physical="+std::to_string(physicalID)+")"; }
+
     Denoiser *Device::createDenoiser()
     {
 #if !OPTIX_DISABLE_DENOISING && OPTIX_VERSION >= 80000

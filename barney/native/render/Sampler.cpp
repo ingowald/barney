@@ -32,7 +32,7 @@ namespace BARNEY_NS {
                                +attributeName+"'");
     }
 
-    Sampler::Sampler(SlotContext *slotContext)
+    Sampler::Sampler(LDGContext *slotContext)
       : Object(slotContext->context),
         devices(slotContext->devices),
         samplerRegistry(slotContext->samplerRegistry),
@@ -46,7 +46,7 @@ namespace BARNEY_NS {
       samplerRegistry->release(samplerID);
     }
 
-    Sampler::SP Sampler::create(SlotContext *context,
+    Sampler::SP Sampler::create(LDGContext *context,
                                 const std::string &type)
     {
       if (type == "texture1D" || type == "image1D")
@@ -104,7 +104,7 @@ namespace BARNEY_NS {
       }
     }
 
-    TextureSampler::TextureSampler(SlotContext *slotContext,
+    TextureSampler::TextureSampler(LDGContext *slotContext,
                                    int numDims)
       : Sampler(slotContext),
         numDims(numDims)
@@ -255,7 +255,7 @@ namespace BARNEY_NS {
 
 
 
-    PrimitiveSampler::PrimitiveSampler(SlotContext *slotContext)
+    PrimitiveSampler::PrimitiveSampler(LDGContext *slotContext)
       : Sampler(slotContext)
     {
     }

@@ -17,7 +17,8 @@ namespace BARNEY_NS {
       BarneyMPIDevice(ANARILibrary library, const std::string &subType = "default");
       ~BarneyMPIDevice() override;
     
-      BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
+      BNContext createContext(const std::vector<int> &dataRanks,
+                              const std::vector<int> &gpuIDs);
       void initMPI() override;
       void deviceCommitParameters() override;
     

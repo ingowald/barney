@@ -41,16 +41,16 @@ namespace BARNEY_NS {
     WorkerTopo::SP
     MPIContext::makeTopo(const Comm &worldComm,
                          const Comm &workerComm,
-                         const std::vector<LocalSlot> &localSlots)
+                         const std::vector<DataGroupDescriptor> &dataGroups)
     {
       std::vector<WorkerTopo::Device> devices;
-      for (auto ls : localSlots) {
-        for (auto gpuID : ls.gpuIDs) {
+      for (auto dg : dataGroups) {
+        for (auto gpuID : dg.gpuIDs) {
           WorkerTopo::Device dev;
           dev.local = devices.size();
           dev.worker = workerComm.rank;
           dev.worldRank = worldComm.rank;
-          dev.dataRank = ls.dataRank;
+          dev.dataRank = dg.dataRank;
           dev.hostNameHash = getHostNameHash();
           dev.physicalDeviceHash = rtc::getPhysicalDeviceHash(gpuID);
           devices.push_back(dev);
@@ -73,13 +73,13 @@ namespace BARNEY_NS {
     }
 
   
-    inline bool isPassiveNode(const std::vector<LocalSlot> &localSlots)
-    { return localSlots.size() == 1 && localSlots[0].dataRank == -1; }
+    inline bool isPassiveNode(const std::vector<DataGroupDescriptor> &dataGroups)
+    { return dataGroups.size() == 1 && dataGroups[0].dataRank == -1; }
   
     MPIContext::MPIContext(const Comm &worldComm,
                            const Comm &workerComm,
-                           const std::vector<LocalSlot> &localSlots)
-      : Context(localSlots,makeTopo(worldComm,workerComm,localSlots)),
+                           const std::vector<DataGroupDescriptor> &dataGroups)
+      : Context(dataGroups,makeTopo(worldComm,workerComm,dataGroups)),
         world(worldComm),
         workers(workerComm)
     {
@@ -145,117 +145,72 @@ namespace BARNEY_NS {
   
   // BARNEY_API
   BNContext bnMPIContextCreate(MPI_Comm _comm,
-                               /*! how many data slots this context is to
-                                 offer, and which part(s) of the
-                                 distributed model data these slot(s)
-                                 will hold */
+                               int        numDataGroupsOnThisContext,
+                               /*! tells which data rank / 'color' of data
+                                 will be stored in each of the
+                                 `numDataGroupsOnThisContext` data groups
+                                 of this context. This array *must* have
+                                 `numDataGroupsOnThisContext` entries */
                                const int *dataRanksOnThisContext,
-                               int        numDataRanksOnThisContext,
                                /*! which gpu(s) to use for this
-                                 process. default is to distribute
-                                 node's GPUs equally over all ranks on
-                                 that given node */
-                               const int *_gpuIDs,
-                               int  numGPUs
-                               )
+                                 process. GPUs will be assigned to data
+                                 groups on a round-robin basis, so the i'th
+                                 GPU listed here will get assigned to data
+                                 group 'i%numDataGroupsOnThisContext' */
+                               int numGPUs,
+                               const int *gpuIDs)
   {
-    LOG_API_ENTRY;
-    int mpiIsAlreadyInitialized = false;
-    BN_MPI_CALL(Initialized(&mpiIsAlreadyInitialized));
-    if (!mpiIsAlreadyInitialized) {
-      throw std::runtime_error("barney initialized in MPI mode, but MPI not yet initialized");
-      // {
-      // std::cerr << "#barney: barney initialized in MPI mode, but MPI itself isn't initialized yet; falling back to local rendering" << std::endl;
-      // return bnContextCreate(dataRanksOnThisContext,
-      //                        numDataRanksOnThisContext == 0
-      //                        ? 1 : numDataRanksOnThisContext,
-      //                        /*! which gpu(s) to use for this
-      //                          process. default is to distribute
-      //                          node's GPUs equally over all ranks on
-      //                          that given node */
-      //                        _gpuIDs,
-      //                        numGPUs);
-    }
+    assert(numGPUs >= numDataGroupsOnThisContext);
+    assert(gpuIDs);
+    assert((numGPUs % numDataGroupsOnThisContext) == 0);
+    for (int i=0;i<numGPUs;i++)
+      assert(gpuIDs[i] >= 0);
 
+    LOG_API_ENTRY;
+    // iw - no need to check if MPI is already initialized, this only
+    // gets called through anari MPI device, which already initilaized
+    // MPI
+    
     Comm world(_comm);
     if (world.size == 1) {
       std::cout << "#bn: MPIContextInit, but only one rank - using local context" << std::endl;
-      if (_gpuIDs == nullptr && numGPUs == 1) {
-        static const int const_zero = 0;
-        _gpuIDs = &const_zero;
-      }
-      return bnContextCreate(dataRanksOnThisContext,
-                             numDataRanksOnThisContext == 0
-                             ? 1 : numDataRanksOnThisContext,
-                             /*! which gpu(s) to use for this
-                               process. default is to distribute
-                               node's GPUs equally over all ranks on
-                               that given node */
-                             _gpuIDs,
-                             numGPUs);
+      // if (_gpuIDs == nullptr && numGPUs == 1) {
+      //   static const int const_zero = 0;
+      //   _gpuIDs = &const_zero;
+      // }
+      return bnContextCreate(numDataGroupsOnThisContext,
+                             dataRanksOnThisContext,
+                             numGPUs,
+                             gpuIDs);
     }
 
     // ------------------------------------------------------------------
-    // create vector of data groups; if actual specified by user we
+    // create vector of data groups; if actually specified by user we
     // use those; otherwise we use IDs
     // [0,1,...numModelSlotsOnThisHost)
     // ------------------------------------------------------------------
-    assert(numDataRanksOnThisContext
-           ==
-           numGPUs);
-    std::vector<LocalSlot> localSlots(numDataRanksOnThisContext);
-    for (int i=0;i<localSlots.size();i++) {
-      localSlots[i].dataRank = dataRanksOnThisContext[i];
-      localSlots[i].gpuIDs.push_back(_gpuIDs[i]);
+    int numPhysicalGPUs = rtc::physicalDeviceCount();
+    if (numPhysicalGPUs == 0)
+      throw std::runtime_error
+        ("no phyical devices for this type of rtc backend");
+    assert(numPhysicalGPUs > 0);
+    
+    std::vector<DataGroupDescriptor>
+      dataGroupsOnThisContext(numDataGroupsOnThisContext);
+    for (int ldgIdx=0;ldgIdx<numDataGroupsOnThisContext;ldgIdx++) {
+      auto &ldg = dataGroupsOnThisContext[ldgIdx];
+      ldg.dataRank = dataRanksOnThisContext[ldgIdx];
     }
-      
-      
-    // assert(/* data groups == 0 is allowed for passive nodes*/
-    //        numDataRanksOnThisContext >= 0);
-    // std::vector<int> dataGroupIDs;
-    // int rank;
-    // MPI_Comm_rank(world, &rank);
-    // for (int i=0;i<numDataRanksOnThisContext;i++)
-    //   dataGroupIDs.push_back
-    //     (dataRanksOnThisContext
-    //      ? dataRanksOnThisContext[i]
-    //      : rank*numDataRanksOnThisContext+i);
-    // std::vector<int> gpuIDs;
-    // for (int i=0;i<numGPUs;i++)
-    //   gpuIDs.push_back(_gpuIDs[i]);
-      
-    // // ------------------------------------------------------------------
-    // // create list of GPUs to use for this rank. if specified by user
-    // // we use this; otherwise we use GPUs in order, split into groups
-    // // according to how many ranks there are on this host. Ie, if host
-    // // has four GPUs the first rank will take 0 and 1; and the second
-    // // one will take 2 and 3.
-    // // ------------------------------------------------------------------
-    // auto &dgIDs = dataGroupIDs;
-      
-    // int numDGs = dgIDs.size();
-    // int localRankGPU = 0;
 
-    // if (numGPUs < numDGs)
-    //   throw std::runtime_error
-    //     ("not enough CUDA GPUs for requested number of data groups!");
-    // if (numGPUs % numDGs != 0)
-    //   throw std::runtime_error
-    //     ("num GPUs not a multiple of num data groups on this rank!");
-    // int gpusPerDG = numGPUs / numDGs;
-    // std::vector<LocalSlot> localSlots(dgIDs.size());
-    // for (int lsIdx=0;lsIdx<dgIDs.size();lsIdx++) {
-    //   LocalSlot &slot = localSlots[lsIdx];
-    //   slot.dataRank = dgIDs[lsIdx];
-    //   for (int j=0;j<gpusPerDG;j++) {
-    //     int idx = lsIdx*gpusPerDG+j;
-    //     slot.gpuIDs.push_back(_gpuIDs?gpuIDs[idx]:idx);
-    //   }
-    // }
-
+    for (int i=0;i<numGPUs;i++) {
+      auto &ldg = dataGroupsOnThisContext[i%numDataGroupsOnThisContext];
+      int gpuID = gpuIDs[i];
+      assert(gpuID >= 0);
+      ldg.gpuIDs.push_back(gpuID);
+    }
     Comm workers
-      = world.split(!isPassiveNode(localSlots));
-    return (BNContext)new MPIContext(world,workers,localSlots);
+      = world.split(!isPassiveNode(dataGroupsOnThisContext));
+    return (BNContext)new MPIContext(world,workers,dataGroupsOnThisContext);
   }
 
 }

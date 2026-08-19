@@ -487,6 +487,10 @@ namespace BARNEY_NS {
 
       const bool  hadNoIntersection  = !ray.hadHit();
       const vec3f incomingThroughput = state.throughput;
+
+      if (rayID == 0) printf("RAY numdiff %i\n",state.numDiffuseBounces);
+      if (state.numDiffuseBounces > MAX_DIFFUSE_BOUNCES)
+        printf("TOO MANY DIFFUSE BOUNCES!?\n");
       
       bool dbg = 0 && ray.dbg();
       if (dbg)
@@ -548,6 +552,8 @@ namespace BARNEY_NS {
         ?   Ng
         : - Ng;
 
+      if (rayID == 0) printf("RAY hadisec %i\n",(int)!hadNoIntersection);
+      
       if (hadNoIntersection) {
         // ==================================================================
         // regular ray that did NOT hit ANYTHING 
@@ -749,6 +755,8 @@ namespace BARNEY_NS {
       // now, let's decide what to do with the ray itself
       // ==================================================================
 
+      if (rayID == 0) printf("RAY pathDepth %i\n",(int)pathDepth);
+      
       // if we exceeded max depth we die, one way or another.
       if (pathDepth >= MAX_PATH_DEPTH) {
         ray.tMax = -1.f;
@@ -760,6 +768,9 @@ namespace BARNEY_NS {
       
       ScatterResult scatterResult;
       bsdf.scatter(scatterResult,dg,random,dbg);
+
+      if (rayID == 0) printf("RAY scatterresult %i\n",(int)scatterResult.type);
+      
 #ifndef NDEBUG
       if (scatterResult.type == ScatterResult::INVALID)
         printf("broken BSDF, doesn't set scatter type!\n");
@@ -1046,6 +1057,7 @@ namespace BARNEY_NS {
                                    int generation,
                                    uint32_t rngSeed)
     {
+      PING; PRINT(generation);
       int slotIdx = 0;
       for (auto slotModel : model->modelSlots) {
         World *world = slotModel->world.get();

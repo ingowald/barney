@@ -17,12 +17,13 @@ namespace BARNEY_NS {
     {
       MPIContext(const Comm &worldComm,
                  const Comm &workersComm,
-                 const std::vector<LocalSlot> &localSlots);
+                 const std::vector<DataGroupDescriptor> &dataGroupsOnThisContext);
       virtual ~MPIContext();
     
-      static WorkerTopo::SP makeTopo(const Comm &worldComm,
-                                     const Comm &workersComm,
-                                     const std::vector<LocalSlot> &localSlots);
+      static WorkerTopo::SP
+      makeTopo(const Comm &worldComm,
+               const Comm &workersComm,
+               const std::vector<DataGroupDescriptor> &dataGroups);
     
       /*! create a frame buffer object suitable to this context */
       std::shared_ptr<FrameBuffer>

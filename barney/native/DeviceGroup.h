@@ -53,7 +53,9 @@ namespace BARNEY_NS {
       int  setActive() const { return rtc->setActive(); }
       void restoreActive(int old) const  { rtc->restoreActive(old); }
       void syncPipelineAndSBT();
-    
+
+      std::string toString() const;
+      
       bool sbtDirty = true;
     
       GeomTypeRegistry geomTypes;

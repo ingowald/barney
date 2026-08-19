@@ -19,6 +19,7 @@ static_assert(sizeof(size_t) == 8, "Trying to compile in 32-bit mode ... this is
 # define LOG_API_ENTRY /**/ 
 #endif
 
+
 #ifdef NDEBUG 
 # define BARNEY_ENTER(fct) /* nothing */
 # define BARNEY_LEAVE(fct,retValue) /* nothing */
@@ -54,37 +55,35 @@ namespace BARNEY_NS {
                      int  numGPUs);
   
   BARNEY_API
-  BNContext bnContextCreate(/*! how many data slots this context is to
-                              offer, and which part(s) of the
-                              distributed model data these slot(s)
-                              will hold */
-                            const int *dataRanksOnThisContext,
-                            int        numDataRanksOnThisContext,
-                            /*! which gpu(s) to use for this
-                              process. default is to distribute
-                              node's GPUs equally over all ranks on
-                              that given node */
-                            const int *gpuIDs,
-                            int  numGPUs)
+  BNContext bnContextCreate(/*! this is the NUMBER of different data
+                              groups/slots inthat context. a data
+                              *group* is one or more GPUs that share a
+                              common set of geometric/volumetric
+                              objects. */
+                          int        numDataGroupsOnThisContext,
+                          /*! tells which data rank / 'color' of data
+                            will be stored in each of the
+                            `numDataGroupsOnThisContext` data groups
+                            of this context. This array *must* have
+                            `numDataGroupsOnThisContext` entries */
+                          const int *dataRanksInDataGroup,
+                          /*! which gpu(s) to use for this
+                            process. GPUs will be assigned to data
+                            groups on a round-robin basis, so the i'th
+                            GPU listed here will get assigned to data
+                            group 'i%numDataGroupsOnThisContext' */
+                          int numGPUs,
+                          const int *gpuIDs)
   {
     LOG_API_ENTRY;
     assert(dataRanksOnThisContext);
     assert(gpuIDs);
-    // if (FromEnv::get()->logBackend) {
-    //   std::cout << "#bn. creating context over numGPUs = " << numGPUs << " gpu IDs ";
-    //   if (gpuIDs == nullptr)
-    //     std::cout << "<null>" << std::endl;
-    //   else {
-    //     for (int i=0;i<numGPUs;i++)
-    //       std::cout << gpuIDs[i] << " ";
-    //     std::cout << std::endl;
-    //   }
-    // }
+    PING; PRINT(numGPUs);
     BNContext ctx
-      = (BNContext)LocalContext::create(dataRanksOnThisContext,
-                                        numDataRanksOnThisContext,
-                                        gpuIDs,
-                                        numGPUs);
+      = (BNContext)LocalContext::create(numDataGroupsOnThisContext,
+                                        dataRanksInDataGroup,
+                                        numGPUs,
+                                        gpuIDs);
     if (!ctx) throw std::runtime_error("could not create barney context");
     return ctx;
   }  

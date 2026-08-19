@@ -31,7 +31,7 @@ namespace BARNEY_NS {
         PossiblyMappedParameter::DD emission;
       };
       
-      AnariPBR(SlotContext *context);
+      AnariPBR(LDGContext *context);
       virtual ~AnariPBR() = default;
       
       std::string toString() const override { return "AnariPBR"; }

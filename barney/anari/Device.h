@@ -105,7 +105,8 @@ namespace BARNEY_NS {
       BarneyDevice(ANARILibrary library, const std::string &subType = "default");
       ~BarneyDevice() override;
 
-      virtual BNContext createContext(std::vector<vec2i> &gpuIDsAndDataRank);
+      virtual BNContext createContext(const std::vector<int> &dataRanks,
+                                      const std::vector<int> &gpuIDs);
       virtual void initMPI() { /* nothing by default, mpidev can override */};
 
       const char **extensions() override;

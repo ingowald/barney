@@ -83,20 +83,15 @@ namespace BARNEY_NS {
       BarneyDevice::deviceCommitParameters();
     }
 
-    BNContext BarneyMPIDevice::createContext(std::vector<vec2i> &gpuIDsAndDataRank)
+    BNContext BarneyMPIDevice::createContext(const std::vector<int> &dataRanks,
+                                             const std::vector<int> &gpuIDs)
     {
-      std::vector<int> dataRanks;
-      std::vector<int> gpuIDs;
-      for (auto in : gpuIDsAndDataRank) {
-        gpuIDs.push_back(in.x);
-        dataRanks.push_back(in.y);
-      }
       BNContext ctx =
         bnMPIContextCreate(comm,
-                           dataRanks.data(),
                            dataRanks.size(),
-                           gpuIDs.data(),
-                           gpuIDs.size());
+                           dataRanks.data(),
+                           gpuIDs.size(),
+                           gpuIDs.data());
       return ctx;
     }
 

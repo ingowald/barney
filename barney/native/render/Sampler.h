@@ -14,7 +14,7 @@ namespace BARNEY_NS {
   namespace native {
     
     struct TextureData;
-    struct SlotContext;
+    struct LDGContext;
     struct SamplerRegistry;
     
     struct AttributeTransform {
@@ -80,10 +80,10 @@ namespace BARNEY_NS {
       { return "Sampler<>"; }
 
       
-      static Sampler::SP create(SlotContext *context,
+      static Sampler::SP create(LDGContext *context,
                                 const std::string &type);
 
-      Sampler(SlotContext *slotContext);
+      Sampler(LDGContext *slotContext);
       virtual ~Sampler();
       
       // ------------------------------------------------------------------
@@ -112,7 +112,7 @@ namespace BARNEY_NS {
     };
 
     struct TransformSampler : public Sampler {
-      TransformSampler(SlotContext *slotContext)
+      TransformSampler(LDGContext *slotContext)
         : Sampler(slotContext)
       {}
       std::string toString() const override
@@ -121,7 +121,7 @@ namespace BARNEY_NS {
     };
 
     struct PrimitiveSampler : public Sampler {
-      PrimitiveSampler(SlotContext *slotContext);
+      PrimitiveSampler(LDGContext *slotContext);
       ~PrimitiveSampler() override;
       
       // ------------------------------------------------------------------
@@ -147,7 +147,7 @@ namespace BARNEY_NS {
         operate on 1D (for ANARI IMAGE1D sampler), 2D (ANARI IMAGE2D)
         and 3D (ANARI IMAGE3D) textures */
     struct TextureSampler : public Sampler {
-      TextureSampler(SlotContext *slotContext,
+      TextureSampler(LDGContext *slotContext,
                      int numDims);
       ~TextureSampler() override;
 

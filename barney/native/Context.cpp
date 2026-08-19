@@ -17,14 +17,29 @@
 namespace BARNEY_NS {
   namespace native {
     
-    Context::Context(const std::vector<LocalSlot> &localSlots,
+    Context::Context(const std::vector<DataGroupDescriptor> &localDataGroups,
                      WorkerTopo::SP topo)
-      : isActiveWorker(!localSlots.empty() && localSlots[0].dataRank >= 0),
+      : isActiveWorker(!localDataGroups.empty() && localDataGroups[0].dataRank >= 0),
         topo(topo)
     {
-      assert(!localSlots.empty());
-      for (int i=0;i<(int)localSlots.size();i++) {
-        assert(localSlots[i].dataRank >= 0 ||
+      assert(!localDataGroups.empty());
+      for (auto &ldg : localDataGroups) {
+        assert(!ldg.gpuIDs.empty());
+        for (auto gpu : ldg.gpuIDs)
+          assert(gpu >= 0);
+      }
+      
+      PING; PRINT(localDataGroups.size());
+      for (auto &slot : localDataGroups)
+        PRINT(slot.dataRank);
+      for (auto &ldg : localDataGroups) {
+        PRINT(ldg.gpuIDs.size());
+        for (auto gpu : ldg.gpuIDs) PRINT(gpu);
+      }
+      
+      assert(!localDataGroups.empty());
+      for (int i=0;i<(int)localDataGroups.size();i++) {
+        assert(localDataGroups[i].dataRank >= 0 ||
                i == 0 && localSlots[i].dataRank == -1);
         assert(!localSlots[i].gpuIDs.empty());
       }
@@ -37,75 +52,57 @@ namespace BARNEY_NS {
         return;
       }
 
-      std::vector<Device *> allLocalDevices;
-      int numSlots = (int)localSlots.size();
-      perSlot.resize(numSlots);
-
-      havePeerAccess = true;
-#if 1
-      std::vector<int> allGPUs;
-      for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
-        auto &ls = localSlots[lmsIdx];
-        auto &dg = perSlot[lmsIdx];
-        dg.context = this;
-        dg.modelRankInThisSlot = ls.dataRank;
-        for (auto g : ls.gpuIDs) allGPUs.push_back(g);
-        // havePeerAccess
-        //   = havePeerAccess & rtc::enablePeerAccess(ls.gpuIDs);
-
-        std::vector<Device *> slotDevices;
-        for (auto gpuID : ls.gpuIDs) {
-          rtc::Device *rtc = new rtc::Device(gpuID);
-          int numDevs = (int)allLocalDevices.size();
-          Device *device 
-            = new Device(rtc,topo.get(),numDevs);
-          
-          slotDevices.push_back(device);
-          allLocalDevices.push_back(device);
-          dg.gpuIDs.push_back(gpuID);
-        }
-        dg.devices
-          = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
-      }
-      havePeerAccess
-        = havePeerAccess & rtc::enablePeerAccess(allGPUs);
-#else
-      for (int lmsIdx=0;lmsIdx<numSlots;lmsIdx++) {
-        auto &ls = localSlots[lmsIdx];
-        auto &dg = perSlot[lmsIdx];
-        dg.context = this;
-        dg.modelRankInThisSlot = ls.dataRank;
+      { // try to enable peer access across all GPUs across all of
+        // this context's data groups
+        havePeerAccess = true;
+        std::vector<int> allGPUs;
+        for (auto &dg : localDataGroups)
+          for (auto gpu : dg.gpuIDs)
+            allGPUs.push_back(gpu);
         havePeerAccess
-          = havePeerAccess & rtc::enablePeerAccess(ls.gpuIDs);
+          = havePeerAccess && rtc::enablePeerAccess(allGPUs);
+      }
+      
+      std::vector<Device *> allLocalDevices;
+      int numLDGs = (int)localDataGroups.size();
+      for (int i=0;i<numLDGs;i++)
+        perLDG.push_back(new LDGContext);
 
-        std::vector<Device *> slotDevices;
-        for (auto gpuID : ls.gpuIDs) {
+      for (int ldgIdx=0;ldgIdx<numLDGs;ldgIdx++) {
+        auto &ldgSpec = localDataGroups[ldgIdx];
+        auto &dg = *perLDG[ldgIdx];
+        dg.context = this;
+        dg.modelRankInThisSlot = ldgSpec.dataRank;
+
+        std::vector<Device *> devicesForThisLDG;
+        for (auto gpuID : ldgSpec.gpuIDs) {
           rtc::Device *rtc = new rtc::Device(gpuID);
-          int nextLocal = allLocalDevices.size();
+          int localDeviceRank = (int)allLocalDevices.size();
           Device *device 
-            = new Device(rtc,topo.get(),nextLocal);
+            = new Device(rtc,topo.get(),localDeviceRank);
           
-          slotDevices.push_back(device);
+          devicesForThisLDG.push_back(device);
           allLocalDevices.push_back(device);
-          dg.gpuIDs.push_back(gpuID);
         }
         dg.devices
-          = std::make_shared<DevGroup>(slotDevices,(int)allLocalDevices.size());
+          = std::make_shared<DevGroup>(devicesForThisLDG,
+                                       (int)allLocalDevices.size());
       }
-#endif
       devices = std::make_shared<DevGroup>
         (allLocalDevices,(int)allLocalDevices.size());
+      PRINT(devices->numLogical);
+      PRINT(devices->size());
       if (!havePeerAccess) {
         std::cout << "don't have peer access between GPUs ... this is going to get interesting" << std::endl;
         deviceWeNeedToCopyToForFBMap = allLocalDevices[0];
       }
     
-      for (auto &dg : perSlot)
-        dg.materialRegistry
-          = std::make_shared<MaterialRegistry>(dg.devices);
-      for (auto &dg : perSlot)
-        dg.samplerRegistry
-          = std::make_shared<SamplerRegistry>(dg.devices);
+      for (auto &dg : perLDG) {
+        dg->materialRegistry
+          = std::make_shared<MaterialRegistry>(dg->devices);
+        dg->samplerRegistry
+          = std::make_shared<SamplerRegistry>(dg->devices);
+      }
     }
   
     Context::~Context()
@@ -115,7 +112,9 @@ namespace BARNEY_NS {
       delete globalTraceImpl;
       globalTraceImpl = 0;
 
-      perSlot.clear();
+      for (auto dg : perLDG) delete dg;
+      perLDG.clear();
+      
       for (auto &device : *devices) {
         delete device;
         device = 0;
@@ -241,11 +240,11 @@ namespace BARNEY_NS {
       return (int)devices->size();
     }
   
-    SlotContext *Context::getSlot(int slot)
+    LDGContext *Context::getLDG(int localDataGroupIndex)
     {
-      assert(slot >= 0);
-      assert(slot < perSlot.size());
-      return &perSlot[slot];
+      assert(localDataGroupIndex >= 0);
+      assert(localDataGroupIndex < perLDG.size());
+      return perLDG[localDataGroupIndex];
     }
 
     bool Context::logging() 
@@ -338,13 +337,13 @@ namespace BARNEY_NS {
     std::shared_ptr<HostMaterial>
     Context::createMaterial(int slot, const std::string &type) 
     {
-      return HostMaterial::create(getSlot(slot),type);
+      return HostMaterial::create(getLDG(slot),type);
     }
 
     std::shared_ptr<Sampler>
     Context::createSampler(int slot, const std::string &type) 
     {
-      return Sampler::create(getSlot(slot),type);
+      return Sampler::create(getLDG(slot),type);
     }
 
     std::shared_ptr<Light>
@@ -385,7 +384,7 @@ namespace BARNEY_NS {
       if (slot < 0)
         return this->devices;
       else 
-        return getSlot(slot)->devices;
+        return getLDG(slot)->devices;
     }
 
     void *Context::initReference(Object *object)

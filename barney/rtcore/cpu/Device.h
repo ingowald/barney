@@ -59,6 +59,7 @@ namespace BARNEY_NS {
       Denoiser *createDenoiser();
 
       void destroy();
+      std::string toString() const;
  
       // ==================================================================
       // basic compute stuff

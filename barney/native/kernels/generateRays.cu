@@ -71,6 +71,9 @@ namespace BARNEY_NS {
       int tileID   = rt.getBlockIdx().x;
       int lPixelID = rt.getThreadIdx().x;
 
+      // if (tileID == 0 && lPixelID == 0)
+      //   printf("pixel 0/0, accum %i\n",accumID);
+
       vec2i tileOffset = tileDescs[tileID].lower;
       int ix = (lPixelID % tileSize) + tileOffset.x;
       int iy = (lPixelID / tileSize) + tileOffset.y;
