@@ -123,7 +123,7 @@ namespace BARNEY_NS {
       float dotValue = dot(n,v);
       float k = 1.f-eta*eta*(1.f-dotValue*dotValue);
       return (k >= 0.f)
-        ? (eta*v - (eta*dotValue + sqrtf(k)*n))
+        ? (eta*v - (eta*dotValue + sqrtf(k))*n)
         : vec3f(0.f);
     }
 
