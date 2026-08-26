@@ -9,6 +9,7 @@
 #include "native/packedBSDF/Glass.h"
 #include "native/packedBSDF/Phase.h"
 #include "native/packedBSDF/Lambertian.h"
+#include "native/packedBSDF/PhysicallyBased.h"
 
 namespace BARNEY_NS {
   namespace native {
@@ -24,7 +25,8 @@ namespace BARNEY_NS {
         TYPE_SimplePhase,
         TYPE_Glass,
         TYPE_Lambertian,
-        TYPE_NVisii
+        TYPE_NVisii,
+        TYPE_PhysicallyBased
       } Type;
       struct Data {
         union {
@@ -33,6 +35,7 @@ namespace BARNEY_NS {
           packedBSDF::Lambertian  lambertian;
           packedBSDF::Glass       glass;
           packedBSDF::NVisii      nvisii;
+          packedBSDF::PhysicallyBased physicallyBased;
         };
       } data;
 
@@ -57,6 +60,8 @@ namespace BARNEY_NS {
       { type = TYPE_Glass; data.glass = glass; }
       inline __rtc_device PackedBSDF(const packedBSDF::Lambertian  &lambertian)
       { type = TYPE_Lambertian; data.lambertian = lambertian; }
+      inline __rtc_device PackedBSDF(const packedBSDF::PhysicallyBased &p)
+      { type = TYPE_PhysicallyBased; data.physicallyBased = p; }
       
       inline __rtc_device
       EvalRes eval(DG dg, vec3f w_i, bool dbg=false) const;
@@ -95,6 +100,8 @@ namespace BARNEY_NS {
         return data.glass.eval(dg,w_i,dbg);
       if (type == TYPE_Lambertian)
         return data.lambertian.eval(dg,w_i,dbg);
+      if (type == TYPE_PhysicallyBased)
+        return data.physicallyBased.eval(dg,w_i,dbg);
       return EvalRes();
     }
     
@@ -111,6 +118,8 @@ namespace BARNEY_NS {
         return data.simplePhase.pdf(dg,w_i,dbg);
       if (type == TYPE_HGPhase)
         return data.hgPhase.pdf(dg,w_i,dbg);
+      if (type == TYPE_PhysicallyBased)
+        return data.physicallyBased.pdf(dg,w_i,dbg);
       return 0.f;
     }
     
@@ -127,6 +136,9 @@ namespace BARNEY_NS {
         return data.nvisii.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
       if (type == TYPE_Lambertian)
         return data.lambertian.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
+      if (type == TYPE_PhysicallyBased)
+        return data.physicallyBased.getOpacity(isShadowRay,isInMedium,rayDir,
+                                               Ng,dbg);
       return 1.f;
     }
 
@@ -147,6 +159,8 @@ namespace BARNEY_NS {
         return data.glass.scatter(scatter,dg,random,dbg);
       if (type == TYPE_Lambertian)
         return data.lambertian.scatter(scatter,dg,random,dbg);
+      if (type == TYPE_PhysicallyBased)
+        return data.physicallyBased.scatter(scatter,dg,random,dbg);
     }
 #endif
   }
