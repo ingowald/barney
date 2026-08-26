@@ -9,6 +9,7 @@
 #include "native/render/HitAttributes.h"
 #include "native/material/AnariMatte.h"
 #include "native/material/AnariPBR.h"
+#include "native/material/NVisii.h"
 
 namespace BARNEY_NS {
   namespace native {
@@ -17,7 +18,8 @@ namespace BARNEY_NS {
       typedef enum {
         INVALID=0,
         TYPE_AnariMatte,
-        TYPE_AnariPBR
+        TYPE_AnariPBR,
+        TYPE_NVisii
       } Type;
 
 #if RTC_DEVICE_CODE
@@ -40,6 +42,7 @@ namespace BARNEY_NS {
       union {
         AnariPBR::DD   anariPBR;
         AnariMatte::DD anariMatte;
+        NVisii::DD     nvisii;
       };
     };
 
@@ -53,6 +56,8 @@ namespace BARNEY_NS {
         return anariMatte.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_AnariPBR)
         return anariPBR.createBSDF(hitData,samplers,dbg);
+      if (type == TYPE_NVisii)
+        return nvisii.createBSDF(hitData,samplers,dbg);
 #ifndef NDEBUG
       printf("#bn: DeviceMaterial::createBSDF encountered an invalid "
              "device material type (%i); most likely this is the app"

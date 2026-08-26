@@ -238,6 +238,134 @@ namespace BARNEY_NS {
       float m_iridescenceIor{1.3f};
     };
 
+    // ==================================================================
+    /*! ANARI "nvisii" material - Disney "Principled" BSDF (NVIDIA
+        NVisii port). Exposes the full Disney parameter set, mapped
+        1:1 to the barney core "nvisii" material subtype.
+
+      <param>
+      name: "baseColor"
+      type: FLOAT32_VEC3 / SAMPLER / STRING
+      default: (0.8, 0.8, 0.8)
+      description: diffuse base color
+
+      <param>
+      name: "subsurfaceColor"
+      type: FLOAT32_VEC3 / SAMPLER / STRING
+      default: (0.8, 0.8, 0.8)
+      description: subsurface scattering color
+
+      <param>
+      name: "metallic"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.0
+      description: metallic mask 0..1
+
+      <param>
+      name: "specular"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.5
+      description: specular lobe strength
+
+      <param>
+      name: "roughness"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.5
+      description: surface roughness 0..1
+
+      <param>
+      name: "specularTint"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.0
+      description: tint specular toward base color
+
+      <param>
+      name: "anisotropy"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.0
+      description: specular anisotropy -1..1
+
+      <param>
+      name: "sheen"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.0
+      description: sheen lobe strength
+
+      <param>
+      name: "sheenTint"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.5
+      description: tint sheen toward base color
+
+      <param>
+      name: "clearcoat"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.0
+      description: clearcoat lobe strength
+
+      <param>
+      name: "clearcoatGloss"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.9991
+      description: clearcoat gloss 0..1
+
+      <param>
+      name: "ior"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 1.45
+      description: index of refraction
+
+      <param>
+      name: "specularTransmission"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.0
+      description: specular transmission 0..1
+
+      <param>
+      name: "transmissionRoughness"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.04
+      description: transmission lobe roughness
+
+      <param>
+      name: "flatness"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 0.0
+      description: mix of diffuse and subsurface
+
+      <param>
+      name: "opacity"
+      type: FLOAT32 / SAMPLER / STRING
+      default: 1.0
+      description: cut-out opacity / alpha
+    */
+    struct NVisii : public Material
+    {
+      NVisii(BarneyGlobalState *s);
+      void commitParameters() override;
+
+      const char *bnSubtype() const override;
+      void setBarneyParameters() override;
+
+    private:
+      MaterialParameter<math::float4> m_baseColor;
+      MaterialParameter<math::float4> m_subsurfaceColor;
+      MaterialParameter<float> m_metallic;
+      MaterialParameter<float> m_specular;
+      MaterialParameter<float> m_roughness;
+      MaterialParameter<float> m_specularTint;
+      MaterialParameter<float> m_anisotropy;
+      MaterialParameter<float> m_sheen;
+      MaterialParameter<float> m_sheenTint;
+      MaterialParameter<float> m_clearcoat;
+      MaterialParameter<float> m_clearcoatGloss;
+      MaterialParameter<float> m_ior;
+      MaterialParameter<float> m_specularTransmission;
+      MaterialParameter<float> m_transmissionRoughness;
+      MaterialParameter<float> m_flatness;
+      MaterialParameter<float> m_opacity;
+    };
+
   }
 }
 
