@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "common.h"
 #include <iostream>
+#include <limits>
 
 namespace BARNEY_NS {
   namespace anari {
@@ -170,7 +171,28 @@ namespace BARNEY_NS {
       m_roughness     = getMaterialHelper(this, "roughness",    1.f);
       m_specular      = getMaterialHelper(this, "specular",     0.f);
       m_transmission  = getMaterialHelper(this, "transmission", 0.f);
+      m_occlusion     = getMaterialHelper(this, "occlusion",    1.f);
+      m_clearcoat     = getMaterialHelper(this, "clearcoat",    0.f);
+      m_clearcoatRoughness = getMaterialHelper(this, "clearcoatRoughness",
+                                               0.f);
+      m_attenuationColor = getMaterialHelper(this, "attenuationColor",
+                                             math::float3(1, 1, 1));
+      m_thickness     = getMaterialHelper(this, "thickness",    0.f);
+      m_attenuationDistance = getMaterialHelper(this, "attenuationDistance",
+                                                std::numeric_limits<float>::infinity());
+      m_sheenColor    = getMaterialHelper(this, "sheenColor",
+                                          math::float3(0, 0, 0));
+      m_sheenRoughness = getMaterialHelper(this, "sheenRoughness", 0.f);
+      m_iridescence   = getMaterialHelper(this, "iridescence",  0.f);
+      m_iridescenceThickness = getMaterialHelper(this, "iridescenceThickness",
+                                                 0.f);
+      // Sampler-only: normal / clearcoatNormal (no scalar default).
+      m_normal        = getMaterialHelper(this, "normal",
+                                          math::float4(0, 0, 1, 1));
+      m_clearcoatNormal = getMaterialHelper(this, "clearcoatNormal",
+                                            math::float4(0, 0, 1, 1));
       m_ior           = getParam<float>("ior", 1.5f);
+      m_iridescenceIor = getParam<float>("iridescenceIor", 1.3f);
     }
 
     const char *PhysicallyBased::bnSubtype() const
@@ -191,8 +213,26 @@ namespace BARNEY_NS {
       setBNMaterialHelper(m_bnMat, "specular",     m_specular);
       setBNMaterialHelper(m_bnMat, "transmission", m_transmission);
       setBNMaterialHelper(m_bnMat, "opacity",      m_opacity);
+      setBNMaterialHelper(m_bnMat, "occlusion",    m_occlusion);
+      setBNMaterialHelper(m_bnMat, "clearcoat",    m_clearcoat);
+      setBNMaterialHelper(m_bnMat, "clearcoatRoughness",m_clearcoatRoughness);
+      setBNMaterialHelper(m_bnMat, "attenuationColor",m_attenuationColor);
+      setBNMaterialHelper(m_bnMat, "thickness",    m_thickness);
+      setBNMaterialHelper(m_bnMat, "attenuationDistance",m_attenuationDistance);
+      setBNMaterialHelper(m_bnMat, "sheenColor",   m_sheenColor);
+      setBNMaterialHelper(m_bnMat, "sheenRoughness",m_sheenRoughness);
+      setBNMaterialHelper(m_bnMat, "iridescence",  m_iridescence);
+      setBNMaterialHelper(m_bnMat, "iridescenceThickness",m_iridescenceThickness);
+      // normal / clearcoatNormal have no scalar form in barney (sampler or
+      // attribute only); forwarding the uniform default would just produce
+      // an ignored-member warning, so only set them when actually mapped.
+      if (m_normal.sampler || !m_normal.attribute.empty())
+        setBNMaterialHelper(m_bnMat, "normal",       m_normal);
+      if (m_clearcoatNormal.sampler || !m_clearcoatNormal.attribute.empty())
+        setBNMaterialHelper(m_bnMat, "clearcoatNormal",m_clearcoatNormal);
 
       bnSet1f(m_bnMat, "ior", m_ior);
+      bnSet1f(m_bnMat, "iridescenceIor", m_iridescenceIor);
       bnCommit(m_bnMat);
     }
 

@@ -220,8 +220,22 @@ namespace BARNEY_NS {
       MaterialParameter<float> m_roughness;
       MaterialParameter<float> m_specular;
       MaterialParameter<float> m_transmission;
+      MaterialParameter<float> m_occlusion;
+      MaterialParameter<float> m_clearcoat;
+      MaterialParameter<float> m_clearcoatRoughness;
+      MaterialParameter<math::float3> m_attenuationColor;
+      MaterialParameter<float> m_thickness;
+      MaterialParameter<float> m_attenuationDistance;
+      MaterialParameter<math::float3> m_sheenColor;
+      MaterialParameter<float> m_sheenRoughness;
+      MaterialParameter<float> m_iridescence;
+      MaterialParameter<float> m_iridescenceThickness;
+      // Sampler-only params (no scalar default that maps cleanly).
+      MaterialParameter<math::float4> m_normal;
+      MaterialParameter<math::float4> m_clearcoatNormal;
 
       float m_ior{1.5f};
+      float m_iridescenceIor{1.3f};
     };
 
   }
