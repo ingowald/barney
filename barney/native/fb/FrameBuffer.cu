@@ -195,6 +195,9 @@ namespace BARNEY_NS {
 
     void FrameBuffer::finalizeFrame()
     {
+      // make sure all devices are done with rendering
+      context->syncCheckAll();
+      
       Device *device = getDenoiserDevice();
       SetActiveGPU forDuration(device);
 
@@ -216,6 +219,9 @@ namespace BARNEY_NS {
         : colorChannelFormat;
 
       gatherColorChannel(colorCopyTarget,gatherType,normalCopyTarget);
+      
+      // make sure all devices are done with copying
+      context->syncCheckAll();
 
       if (doDenoising && needNormalChannel) {
         if (enableUpscaling && renderPixels != numPixels) {
@@ -255,7 +261,6 @@ namespace BARNEY_NS {
       bool doDenoising = denoiser != 0 && (enableDenoising || enableUpscaling);
       if (doDenoising) {
         float blendFactor = fadeOutDenoiser ? (accumID-1) / (accumID+100.f) : 0.f;
-        device->rtc->sync();
         denoiser->run(blendFactor);
 
         // We always use HDR denoiser (no OptiX UPSCALE2X). When enableUpscaling,
