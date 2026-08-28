@@ -74,6 +74,18 @@ namespace BARNEY_NS {
       }
     }
 
+    inline void setBNCoverage(BNMaterial m, Object *o)
+    {
+      // 'bn:'-prefixed bookkeeping flags consumed by HostMaterial::set1i;
+      // kept namespaced away from application parameter names.
+      if (o->hasParam("alphaMode"))
+        bnSetString(m, "alphaMode", o->getParamString("alphaMode", "").c_str());
+      bnSet1i(m, "bn:alphaModeSet", o->hasParam("alphaMode") ? 1 : 0);
+      if (o->hasParam("alphaCutoff"))
+        bnSet1f(m, "alphaCutoff", o->getParam<float>("alphaCutoff", 0.f));
+      bnSet1i(m, "bn:alphaCutoffSet", o->hasParam("alphaCutoff") ? 1 : 0);
+    }
+
     // Material definitions ///////////////////////////////////////////////////////
 
     Material::Material(BarneyGlobalState *s) : Object(ANARI_MATERIAL, s) {}
@@ -132,8 +144,6 @@ namespace BARNEY_NS {
       m_color   = getMaterialHelper(this, "color",
                                     math::float4(0.8f, 0.8f, 0.8f, 1.f));
       m_opacity = getMaterialHelper(this, "opacity", 1.f);
-      m_alphaMode = getParamString("alphaMode", "opaque");
-      m_alphaCutoff = getParam<float>("alphaCutoff", 0.5f);
     }
 
     bool Matte::isValid() const
@@ -153,8 +163,7 @@ namespace BARNEY_NS {
 
       setBNMaterialHelper(m_bnMat, "color",   m_color);
       setBNMaterialHelper(m_bnMat, "opacity", m_opacity);
-      bnSetString(m_bnMat, "alphaMode", m_alphaMode.c_str());
-      bnSet1f(m_bnMat, "alphaCutoff", m_alphaCutoff);
+      setBNCoverage(m_bnMat, this);
       bnCommit(m_bnMat);
     }
 
@@ -201,8 +210,6 @@ namespace BARNEY_NS {
                                             math::float4(0, 0, 1, 1));
       m_ior           = getParam<float>("ior", 1.5f);
       m_iridescenceIor = getParam<float>("iridescenceIor", 1.3f);
-      m_alphaMode     = getParamString("alphaMode", "opaque");
-      m_alphaCutoff   = getParam<float>("alphaCutoff", 0.5f);
     }
 
     const char *PhysicallyBased::bnSubtype() const
@@ -243,8 +250,7 @@ namespace BARNEY_NS {
 
       bnSet1f(m_bnMat, "ior", m_ior);
       bnSet1f(m_bnMat, "iridescenceIor", m_iridescenceIor);
-      bnSetString(m_bnMat, "alphaMode", m_alphaMode.c_str());
-      bnSet1f(m_bnMat, "alphaCutoff", m_alphaCutoff);
+      setBNCoverage(m_bnMat, this);
       bnCommit(m_bnMat);
     }
 
@@ -307,6 +313,7 @@ namespace BARNEY_NS {
       setBNMaterialHelper(m_bnMat, "transmissionRoughness",m_transmissionRoughness);
       setBNMaterialHelper(m_bnMat, "flatness",            m_flatness);
       setBNMaterialHelper(m_bnMat, "opacity",             m_opacity);
+      setBNCoverage(m_bnMat, this);
       bnCommit(m_bnMat);
     }
 

@@ -101,14 +101,17 @@ namespace BARNEY_NS {
     {
       if (Object::setString(member,value)) return true;
       if (member == "alphaMode") {
+        alphaModeSet = true;
         if (value == "opaque")
           alphaMode = AlphaMode::Opaque;
         else if (value == "mask")
           alphaMode = AlphaMode::Mask;
         else if (value == "blend")
           alphaMode = AlphaMode::Blend;
-        else
+        else {
+          alphaModeSet = false;
           warn_unsupported_member("string", "alphaMode");
+        }
         return true;
       }
       return false;
@@ -118,10 +121,60 @@ namespace BARNEY_NS {
     {
       if (Object::set1f(member,value)) return true;
       if (member == "alphaCutoff") {
+        alphaCutoffSet = true;
         alphaCutoff = value;
         return true;
       }
       return false;
+    }
+
+    bool HostMaterial::set1i(const std::string &member, const int &value)
+    {
+      if (Object::set1i(member,value)) return true;
+      // Internal wire names used by the anari wrapper (setBNCoverage) to
+      // convey parameter-presence bookkeeping; the 'bn:' prefix keeps them
+      // from colliding with application parameter names.
+      if (member == "bn:alphaModeSet") {
+        alphaModeSet = value != 0;
+        return true;
+      }
+      if (member == "bn:alphaCutoffSet") {
+        alphaCutoffSet = value != 0;
+        return true;
+      }
+      return false;
+    }
+
+    void HostMaterial::packCoverage(DeviceMaterial &dd,
+                                    bool opacityIdenticallyOne) const
+    {
+      // ANARI 1.2 has no alphaMode parameter; coverage is derived:
+      //  - an explicitly set legacy alphaMode always wins (1.0/1.1
+      //    compatibility),
+      //  - alphaCutoff alone implies Mask,
+      //  - anything else defaults to Opaque, the documented ANARI default;
+      //    apps wanting stochastic blending set alphaMode = "blend".
+      AlphaMode mode;
+      if (alphaModeSet) {
+        mode = alphaMode;
+        if (mode == AlphaMode::Mask) {
+          const float c = alphaCutoffSet ? alphaCutoff : 0.5f;
+          if (c <= 0.f)
+            mode = AlphaMode::Opaque;
+        }
+      } else if (alphaCutoffSet) {
+        mode = (alphaCutoff <= 0.f) ? AlphaMode::Opaque : AlphaMode::Mask;
+      } else {
+        mode = AlphaMode::Opaque;
+      }
+      // A blend material whose opacity is provably constant 1 is
+      // indistinguishable from Opaque (coverage() returns 1 either way) and
+      // lets anyHit skip the opacity evaluation entirely.
+      if (mode == AlphaMode::Blend && opacityIdenticallyOne)
+        mode = AlphaMode::Opaque;
+
+      dd.alphaMode = mode;
+      dd.alphaCutoff = alphaCutoffSet ? alphaCutoff : 0.5f;
     }
 
     void HostMaterial::commit()

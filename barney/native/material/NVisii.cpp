@@ -16,8 +16,7 @@ namespace BARNEY_NS {
     {
       DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_NVisii;
-      dd.alphaMode = AlphaMode::Blend;
-      dd.alphaCutoff = alphaCutoff;
+      packCoverage(dd, opacity.isConstantScalar(1.f));
 
       dd.nvisii.baseColor            = baseColor.getDD(device);
       dd.nvisii.subsurfaceColor      = subsurfaceColor.getDD(device);

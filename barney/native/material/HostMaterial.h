@@ -53,6 +53,11 @@ namespace BARNEY_NS {
       Sampler::SP          sampler;
       HitAttributes::Which attribute;
       vec4f               value { 0.f, 0.f, 0.f, 1.f };
+
+      bool isConstantScalar(float v) const
+      { return type == VALUE && value.x == v; }
+      bool isConstantAlpha(float a) const
+      { return type == VALUE && value.w == a; }
     };
 
     /*! barney 'virtual' material implementation that takes anari-like
@@ -82,6 +87,7 @@ namespace BARNEY_NS {
       bool setString(const std::string &member,
                      const std::string &value) override;
       bool set1f(const std::string &member, const float &value) override;
+      bool set1i(const std::string &member, const int &value) override;
       /*! @} */
       // ------------------------------------------------------------------
       static HostMaterial::SP create(LDGContext *context,
@@ -89,6 +95,11 @@ namespace BARNEY_NS {
     
       virtual DeviceMaterial getDD(Device *device) = 0;
 
+      void packCoverage(DeviceMaterial &dd, bool opacityIdenticallyOne) const;
+
+      bool alphaModeSet = false;
+      bool alphaCutoffSet = false;
+      // Only consulted when alphaModeSet is true (see packCoverage).
       AlphaMode alphaMode = AlphaMode::Opaque;
       float alphaCutoff = 0.5f;
 
