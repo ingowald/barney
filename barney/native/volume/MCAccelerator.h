@@ -529,13 +529,10 @@ namespace BARNEY_NS {
       const DeviceMaterial &material
         = world.materials[self.isoSurface.materialID];
       
-      PackedBSDF bsdf
-        = material.createBSDF(hitData,world.samplers,dbg);
-      float opacity
-        = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                          ray.dir,hitData.worldNormal,ray.dbg());
-      if (opacity < 1.f) {
-        if (rng() > opacity) {
+      const float coverage
+        = material.coverage(hitData,world.samplers,dbg);
+      if (coverage < 1.f) {
+        if (rng() > coverage) {
           return;
         }
       }

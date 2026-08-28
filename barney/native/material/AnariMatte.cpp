@@ -16,6 +16,8 @@ namespace BARNEY_NS {
     {
       DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariMatte;
+      dd.alphaMode = alphaMode;
+      dd.alphaCutoff = alphaCutoff;
       dd.anariMatte.color = color.getDD(device);
       dd.anariMatte.opacity = opacity.getDD(device);
       return dd;

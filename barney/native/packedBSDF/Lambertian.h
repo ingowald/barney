@@ -28,18 +28,7 @@ namespace BARNEY_NS {
                      const DG &dg,
                      Random &random,
                      bool dbg) const;
-        inline __rtc_device
-        float getOpacity(bool isShadowRay,
-                         bool isInMedium,
-                         vec3f rayDir,
-                         vec3f Ng,
-                         bool dbg=false) const
-        {
-          return (float)alpha;
-        }
-        
         rtc::float3 albedo;
-        float       alpha;
       };
 
       inline __rtc_device

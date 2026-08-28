@@ -132,6 +132,8 @@ namespace BARNEY_NS {
       m_color   = getMaterialHelper(this, "color",
                                     math::float4(0.8f, 0.8f, 0.8f, 1.f));
       m_opacity = getMaterialHelper(this, "opacity", 1.f);
+      m_alphaMode = getParamString("alphaMode", "opaque");
+      m_alphaCutoff = getParam<float>("alphaCutoff", 0.5f);
     }
 
     bool Matte::isValid() const
@@ -151,6 +153,8 @@ namespace BARNEY_NS {
 
       setBNMaterialHelper(m_bnMat, "color",   m_color);
       setBNMaterialHelper(m_bnMat, "opacity", m_opacity);
+      bnSetString(m_bnMat, "alphaMode", m_alphaMode.c_str());
+      bnSet1f(m_bnMat, "alphaCutoff", m_alphaCutoff);
       bnCommit(m_bnMat);
     }
 
@@ -197,6 +201,8 @@ namespace BARNEY_NS {
                                             math::float4(0, 0, 1, 1));
       m_ior           = getParam<float>("ior", 1.5f);
       m_iridescenceIor = getParam<float>("iridescenceIor", 1.3f);
+      m_alphaMode     = getParamString("alphaMode", "opaque");
+      m_alphaCutoff   = getParam<float>("alphaCutoff", 0.5f);
     }
 
     const char *PhysicallyBased::bnSubtype() const
@@ -237,6 +243,8 @@ namespace BARNEY_NS {
 
       bnSet1f(m_bnMat, "ior", m_ior);
       bnSet1f(m_bnMat, "iridescenceIor", m_iridescenceIor);
+      bnSetString(m_bnMat, "alphaMode", m_alphaMode.c_str());
+      bnSet1f(m_bnMat, "alphaCutoff", m_alphaCutoff);
       bnCommit(m_bnMat);
     }
 

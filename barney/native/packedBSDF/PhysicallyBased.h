@@ -16,7 +16,6 @@ namespace BARNEY_NS {
 
         rtc::float3 baseColor;
         rtc::float3 normal;
-        float opacity;
         float metallic;
         float roughness;
         float transmission;
@@ -576,7 +575,6 @@ namespace BARNEY_NS {
         inline __rtc_device void setDefaults()
         {
           baseColor = rtc::float3(1.0f, 1.0f, 1.0f);
-          opacity = 1.0f;
           metallic = 1.0f;
           roughness = 1.0f;
           normal = rtc::float3(0.0f, 0.0f, 1.0f);
@@ -811,14 +809,6 @@ namespace BARNEY_NS {
           scatter.type = ScatterResult::SPECULAR;
           scatter.offsetDirection = -1.0f;
           scatter.changedMedium = true;
-        }
-        inline __rtc_device float getOpacity(bool isShadowRay,
-                                             bool isInMedium,
-                                             vec3f &rayDir,
-                                             vec3f &Ng,
-                                             bool dbg = false) const
-        {
-          return opacity;
         }
       };
     }

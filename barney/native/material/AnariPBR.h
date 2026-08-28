@@ -102,7 +102,6 @@ namespace BARNEY_NS {
     {
       vec4f baseColor    = this->baseColor   .eval(hitData,samplers,dbg);
       vec4f metallic     = this->metallic    .eval(hitData,samplers,dbg);
-      vec4f opacity      = this->opacity     .eval(hitData,samplers,dbg);
       vec4f roughness    = this->roughness   .eval(hitData,samplers,dbg);
       vec4f transmission = this->transmission.eval(hitData,samplers,dbg);
       vec4f ior          = this->ior         .eval(hitData,samplers,dbg);
@@ -159,8 +158,6 @@ namespace BARNEY_NS {
         const vec3f Nw = (dot(Nc,Nc) > 1e-12f) ? Nc : Ng;
         bsdf.clearcoatNormal = rtc::float3(Nw.x, Nw.y, Nw.z);
       }
-      // FIXME: neither opacityMode nor cutoff are supported.
-      bsdf.opacity = baseColor.w * opacity.x;
       bsdf.metallic = metallic.x;
       bsdf.roughness = roughness.x;
       bsdf.transmission = transmission.x;
@@ -188,6 +185,16 @@ namespace BARNEY_NS {
       bsdf.iridescenceThickness = iridescenceThickness.x;
       
       return bsdf;
+    }
+
+    inline __rtc_device
+    float AnariPBR::DD::getOpacity(const HitAttributes &hitData,
+                                  const Sampler::DD *samplers,
+                                  bool dbg) const
+    {
+      vec4f baseColor = this->baseColor.eval(hitData,samplers,dbg);
+      vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
+      return baseColor.w * opacity.x;
     }
 #endif
     

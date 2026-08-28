@@ -115,18 +115,14 @@ namespace BARNEY_NS {
         const DeviceMaterial &material
           = world.materials[self.materialID];
       
-        PackedBSDF bsdf
-          = material.createBSDF(hitData,world.samplers,dbg);
-        float opacity
-          = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                            ray.dir,hitData.worldNormal,dbg);
-
-        if (opacity < 1.f) {
+        const float coverage
+          = material.coverage(hitData,world.samplers,dbg);
+        if (coverage < 1.f) {
           ray.rngSeed.next((const uint32_t&)osP.x);
           ray.rngSeed.next((const uint32_t&)osP.y);
           ray.rngSeed.next((const uint32_t&)osP.z);
           Random rng(ray.rngSeed,290374u);
-          if (rng() > opacity) {
+          if (rng() > coverage) {
             ti.ignoreIntersection();
             return;
           }

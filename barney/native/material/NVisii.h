@@ -24,6 +24,10 @@ namespace BARNEY_NS {
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
+        inline __rtc_device
+        float getOpacity(const HitAttributes &hitData,
+                         const Sampler::DD *samplers,
+                         bool dbg) const;
 #endif
         PossiblyMappedParameter::DD baseColor;
         PossiblyMappedParameter::DD subsurfaceColor;
@@ -102,8 +106,6 @@ namespace BARNEY_NS {
       vec4f specularTransmission = this->specularTransmission.eval(hitData,samplers,dbg);
       vec4f transmissionRoughness= this->transmissionRoughness.eval(hitData,samplers,dbg);
       vec4f flatness             = this->flatness            .eval(hitData,samplers,dbg);
-      vec4f opacity              = this->opacity             .eval(hitData,samplers,dbg);
-
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
       bsdf.baseColor            = (const vec3f&)baseColor;
@@ -121,8 +123,16 @@ namespace BARNEY_NS {
       bsdf.specularTransmission = specularTransmission.x;
       bsdf.transmissionRoughness= transmissionRoughness.x;
       bsdf.flatness             = flatness.x;
-      bsdf.alpha                = opacity.x;
       return bsdf;
+    }
+
+    inline __rtc_device
+    float NVisii::DD::getOpacity(const HitAttributes &hitData,
+                                const Sampler::DD *samplers,
+                                bool dbg) const
+    {
+      vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
+      return opacity.x;
     }
 #endif
 

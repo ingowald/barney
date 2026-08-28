@@ -16,6 +16,8 @@ namespace BARNEY_NS {
     {
       DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariPBR;
+      dd.alphaMode = alphaMode;
+      dd.alphaCutoff = alphaCutoff;
 
       dd.anariPBR.baseColor    = baseColor.getDD(device);
       dd.anariPBR.emission     = emission.getDD(device);

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "native/Context.h"
+#include "native/material/DeviceMaterial.h"
 #include "native/material/AnariPBR.h"
 #include "native/material/AnariMatte.h"
 #include "native/material/NVisii.h"
@@ -93,6 +94,34 @@ namespace BARNEY_NS {
       if (type == "glass" || type == "Glass")
         return std::make_shared<Glass>(slotContext); 
       return std::make_shared<AnariPBR>(slotContext); 
+    }
+
+    bool HostMaterial::setString(const std::string &member,
+                                 const std::string &value)
+    {
+      if (Object::setString(member,value)) return true;
+      if (member == "alphaMode") {
+        if (value == "opaque")
+          alphaMode = AlphaMode::Opaque;
+        else if (value == "mask")
+          alphaMode = AlphaMode::Mask;
+        else if (value == "blend")
+          alphaMode = AlphaMode::Blend;
+        else
+          warn_unsupported_member("string", "alphaMode");
+        return true;
+      }
+      return false;
+    }
+
+    bool HostMaterial::set1f(const std::string &member, const float &value)
+    {
+      if (Object::set1f(member,value)) return true;
+      if (member == "alphaCutoff") {
+        alphaCutoff = value;
+        return true;
+      }
+      return false;
     }
 
     void HostMaterial::commit()

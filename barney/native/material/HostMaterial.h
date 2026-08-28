@@ -12,6 +12,8 @@
 namespace BARNEY_NS {
   namespace native {
 
+    enum class AlphaMode : int { Opaque = 0, Mask, Blend };
+
     struct LDGContext;
     struct DeviceMaterial;
     
@@ -77,12 +79,18 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
       void commit() override;
+      bool setString(const std::string &member,
+                     const std::string &value) override;
+      bool set1f(const std::string &member, const float &value) override;
       /*! @} */
       // ------------------------------------------------------------------
       static HostMaterial::SP create(LDGContext *context,
                                      const std::string &type);
     
       virtual DeviceMaterial getDD(Device *device) = 0;
+
+      AlphaMode alphaMode = AlphaMode::Opaque;
+      float alphaCutoff = 0.5f;
 
       /*! this material's index in the device list of all DeviceMaterials */
       const int materialID;

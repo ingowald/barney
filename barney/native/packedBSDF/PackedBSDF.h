@@ -75,12 +75,6 @@ namespace BARNEY_NS {
                    Random &random,
                    bool dbg=false) const;
       
-      inline __rtc_device
-      float getOpacity(bool isShadowRay,
-                       bool isInMedium,
-                       vec3f rayDir,
-                       vec3f Ng,
-                       bool dbg=false) const;
 #endif
     };
 
@@ -123,25 +117,6 @@ namespace BARNEY_NS {
       return 0.f;
     }
     
-    inline __rtc_device
-    float PackedBSDF::getOpacity(bool isShadowRay,
-                                 bool isInMedium,
-                                 vec3f rayDir,
-                                 vec3f Ng,
-                                 bool dbg) const
-    {
-      if (type == TYPE_Glass)
-        return data.glass.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
-      if (type == TYPE_NVisii)
-        return data.nvisii.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
-      if (type == TYPE_Lambertian)
-        return data.lambertian.getOpacity(isShadowRay,isInMedium,rayDir,Ng,dbg);
-      if (type == TYPE_PhysicallyBased)
-        return data.physicallyBased.getOpacity(isShadowRay,isInMedium,rayDir,
-                                               Ng,dbg);
-      return 1.f;
-    }
-
     inline __rtc_device
     void PackedBSDF::scatter(ScatterResult &scatter,
                              const DG &dg,

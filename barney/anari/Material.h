@@ -79,6 +79,8 @@ namespace BARNEY_NS {
     private:
       MaterialParameter<math::float4> m_color;
       MaterialParameter<float>        m_opacity;
+      std::string m_alphaMode{"opaque"};
+      float m_alphaCutoff{0.5f};
     };
 
     // ==================================================================
@@ -236,6 +238,8 @@ namespace BARNEY_NS {
 
       float m_ior{1.5f};
       float m_iridescenceIor{1.3f};
+      std::string m_alphaMode{"opaque"};
+      float m_alphaCutoff{0.5f};
     };
 
     // ==================================================================
