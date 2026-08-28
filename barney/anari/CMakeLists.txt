@@ -99,11 +99,12 @@ endif()
 #  ${CMAKE_CURRENT_BINARY_DIR}
 #)
 
+add_library(barney_${backend}_plugins INTERFACE)
+
 # ==================================================================
 # the 'full' barney+anari, library+device, for a single backend, in
 # static linkage (so it can be used in possibly multiple shared libraries)
 # ==================================================================
-message("anari_library_barney_${backend}_static ")
 add_library(anari_library_barney_${backend}_static STATIC
   ${BANARI_SOURCES}
   ${QUERIES_SOURCES}
@@ -112,10 +113,27 @@ add_library(anari_library_barney_${backend}_static STATIC
 target_include_directories(anari_library_barney_${backend}_static PRIVATE
   ${QUERIES_INCLUDE})
 target_link_libraries(anari_library_barney_${backend}_static PUBLIC
-  barney_${backend}_static
+  # barney itself, as a static library that this backend can pull
+  # whatever symbols it needs out of.
+  barney_${backend}_static 
+  # the interface-library that all the found-and-compiled plugins will
+  # link themselves to.
+  barney_${backend}_plugins
   anari::helium
 )
 rtc_library_properties(anari_library_barney_${backend}_static)
+
+
+file (GLOB PLUGIN_SOURCES "${PROJECT_SOURCE_DIR}/plugins/*")
+#file (GLOB_RECURSE PLUGIN_SOURCES ${PROJECT_SOURCE_DIR}/plugins/plugin-barney-test/test1/barney_plugin.cmake)
+message("found plugins '${PLUGIN_SOURCES}'")
+#foreach(f ${PLUGIN_SOURCES})
+#  file (NAME $f base)
+#  message("inclding ${f} -> ${base}")
+#  #  include(${f})
+#  add_subdirectory(${f})
+#endforeach()
+#add_subdirectory(${PROJECT_SOURCE_DIR}/plugins/test1 builddir-${backend}-test1)
 
 
 # ==================================================================

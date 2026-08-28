@@ -24,10 +24,12 @@ namespace BARNEY_NS {
     bool AnariMatte::setObject(const std::string &member,
                                const Object::SP &value) 
     {
+      PING; PRINT(member);
       if (HostMaterial::setObject(member,value)) return true;
 
       if (member == "color") {
         Sampler::SP sampler = value ? value->as<Sampler>() : Sampler::SP();
+        PING;
         color.set(sampler);
         return true;
       }
