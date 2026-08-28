@@ -466,6 +466,19 @@ namespace BARNEY_NS {
         / float(self.mcGrid.dims.x+self.mcGrid.dims.y+self.mcGrid.dims.z);
     
       float fP   = self.isoSurface.sfSampler.sample(osP);
+      // iw - this _can_ happen if the interpolated t value just falls
+      // between the crack between two hexes (at least numerically
+      // so), even if there's no 'real' empty space (and of course,
+      // that could be the case, too).
+      if (isnan(fP))
+        // iw - exiting here may lose the hit with the entire volume
+        // even if _just_ this special t value doesn't evaluate. In
+        // theory we could jump back to marching and interval
+        // searching and still find a valid hit further down the road;
+        // but this is a very unlikely case anyway, so probably good
+        // enough to just drop this ray as long as it doesn't nan-poison.
+        return;
+      
       float fPx0 = self.isoSurface.sfSampler.sample(osP+vec3f(-delta,0.f,0.f));
       float fPx1 = self.isoSurface.sfSampler.sample(osP+vec3f(+delta,0.f,0.f));
       float fPy0 = self.isoSurface.sfSampler.sample(osP+vec3f(0.f,-delta,0.f));
@@ -484,7 +497,7 @@ namespace BARNEY_NS {
       vec3f osN(dx == 0.f ? 0.f : (fPx1-fPx0) / dx,
                 dy == 0.f ? 0.f : (fPy1-fPy0) / dy,
                 dz == 0.f ? 0.f : (fPz1-fPz0) / dz);
-      if (osN == vec3f(0.f))
+      if (osN == vec3f(0.f) || isnan(osN.x+osN.y+osN.z))
         osN = -normalize(obj_dir);
       vec3f n = ti.transformNormalFromObjectToWorldSpace(osN);
 #else
