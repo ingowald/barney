@@ -6,6 +6,7 @@
 #include "native/material/AnariPBR.h"
 #include "native/material/AnariMatte.h"
 #include "native/material/NVisii.h"
+#include "native/material/Glass.h"
 #include "native/ModelSlot.h"
 #include "native/Context.h"
 
@@ -89,6 +90,8 @@ namespace BARNEY_NS {
         return std::make_shared<AnariPBR>(slotContext); 
       if (type == "nvisii" || type == "NVisii")
         return std::make_shared<NVisii>(slotContext); 
+      if (type == "glass" || type == "Glass")
+        return std::make_shared<Glass>(slotContext); 
       return std::make_shared<AnariPBR>(slotContext); 
     }
 

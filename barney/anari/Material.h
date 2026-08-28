@@ -366,6 +366,36 @@ namespace BARNEY_NS {
       MaterialParameter<float> m_opacity;
     };
 
+    // ==================================================================
+    /*! ANARI "glass" material - smooth dielectric (specular
+        reflect/refract), mapped to the barney core "glass" material
+        subtype. Barney-specific; not a KHR standard subtype.
+
+      <param>
+      name: "ior"
+      type: FLOAT32
+      default: 1.45
+      description: index of refraction
+
+      <param>
+      name: "attenuationColor"
+      type: FLOAT32_VEC3
+      default: (1, 1, 1)
+      description: Beer-Lambert transmission color
+    */
+    struct Glass : public Material
+    {
+      Glass(BarneyGlobalState *s);
+      void commitParameters() override;
+
+      const char *bnSubtype() const override;
+      void setBarneyParameters() override;
+
+    private:
+      MaterialParameter<float> m_ior;
+      MaterialParameter<math::float3> m_attenuationColor;
+    };
+
   }
 }
 

@@ -95,6 +95,8 @@ namespace BARNEY_NS {
         return new PhysicallyBased(s);
       else if (subtype == "nvisii")
         return new NVisii(s);
+      else if (subtype == "glass")
+        return new Glass(s);
       else
         return (Material *)new UnknownObject(ANARI_MATERIAL, subtype, s);
     }
@@ -297,6 +299,36 @@ namespace BARNEY_NS {
       setBNMaterialHelper(m_bnMat, "transmissionRoughness",m_transmissionRoughness);
       setBNMaterialHelper(m_bnMat, "flatness",            m_flatness);
       setBNMaterialHelper(m_bnMat, "opacity",             m_opacity);
+      bnCommit(m_bnMat);
+    }
+
+    // Glass //
+
+    Glass::Glass(BarneyGlobalState *s) : Material(s)
+    {
+      this->commitParameters(); // init with defaults for scalar values
+    }
+
+    void Glass::commitParameters()
+    {
+      Object::commitParameters();
+      m_ior             = getMaterialHelper(this, "ior", 1.45f);
+      m_attenuationColor = getMaterialHelper(this, "attenuationColor",
+                                             math::float3(1, 1, 1));
+    }
+
+    const char *Glass::bnSubtype() const
+    {
+      return "glass";
+    }
+
+    void Glass::setBarneyParameters()
+    {
+      if (!m_bnMat)
+        return;
+
+      setBNMaterialHelper(m_bnMat, "ior",              m_ior);
+      setBNMaterialHelper(m_bnMat, "attenuationColor", m_attenuationColor);
       bnCommit(m_bnMat);
     }
 

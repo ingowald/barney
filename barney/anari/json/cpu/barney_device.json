@@ -118,6 +118,14 @@
         { "name": "flatness", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "mix of diffuse and subsurface" },
         { "name": "opacity", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 1.0, "description": "cut-out opacity / alpha" }
       ]
+    },
+    {
+      "type": "ANARI_MATERIAL",
+      "name": "glass",
+      "parameters": [
+        { "name": "ior", "types": ["ANARI_FLOAT32"], "tags": [], "default": 1.45, "description": "index of refraction" },
+        { "name": "attenuationColor", "types": ["ANARI_FLOAT32_VEC3"], "tags": [], "default": [1.0, 1.0, 1.0], "description": "Beer-Lambert transmission color" }
+      ]
     }
   ]
 }

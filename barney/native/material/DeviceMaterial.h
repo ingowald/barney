@@ -10,6 +10,7 @@
 #include "native/material/AnariMatte.h"
 #include "native/material/AnariPBR.h"
 #include "native/material/NVisii.h"
+#include "native/material/Glass.h"
 
 namespace BARNEY_NS {
   namespace native {
@@ -19,7 +20,8 @@ namespace BARNEY_NS {
         INVALID=0,
         TYPE_AnariMatte,
         TYPE_AnariPBR,
-        TYPE_NVisii
+        TYPE_NVisii,
+        TYPE_Glass
       } Type;
 
 #if RTC_DEVICE_CODE
@@ -43,6 +45,7 @@ namespace BARNEY_NS {
         AnariPBR::DD   anariPBR;
         AnariMatte::DD anariMatte;
         NVisii::DD     nvisii;
+        Glass::DD      glass;
       };
     };
 
@@ -58,6 +61,8 @@ namespace BARNEY_NS {
         return anariPBR.createBSDF(hitData,samplers,dbg);
       if (type == TYPE_NVisii)
         return nvisii.createBSDF(hitData,samplers,dbg);
+      if (type == TYPE_Glass)
+        return glass.createBSDF(hitData,samplers,dbg);
 #ifndef NDEBUG
       printf("#bn: DeviceMaterial::createBSDF encountered an invalid "
              "device material type (%i); most likely this is the app"
