@@ -6,6 +6,7 @@
 
 #include "native/Object.h"
 #include <set>
+#include <mutex>
 #include "native/WorkerTopo.h"
 
 #define BN_TRACK_LEAKS(a) /* nothing */
