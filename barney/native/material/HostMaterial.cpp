@@ -9,7 +9,6 @@
 #include "native/material/NVisii.h"
 #include "native/material/Glass.h"
 #include "native/ModelSlot.h"
-#include "native/Context.h"
 
 namespace BARNEY_NS {
   namespace native {
@@ -55,6 +54,14 @@ namespace BARNEY_NS {
 
     void PossiblyMappedParameter::set(Sampler::SP s)
     {
+      // A null sampler (mistyped or since-removed object) must not be
+      // recorded as SAMPLER: getDD() would store samplerID -1 and the device
+      // side would index samplers[-1] on eval.
+      if (!s) {
+        type  = INVALID;
+        value = vec4f(0.f,0.f,0.f,1.f);
+        return;
+      }
       type = SAMPLER;
       sampler   = s;
     }
