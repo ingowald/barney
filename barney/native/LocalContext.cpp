@@ -112,8 +112,8 @@ namespace BARNEY_NS {
     {
       assert(dataRanksInDataGroup);
       assert(gpuIDs);
-      assert(gpuIDs >= numDataGroupsOnThisContext);
-      assert((numDataGroupsOnThisContext % gpuIDs) == 0);
+      assert(numGPUs >= numDataGroupsOnThisContext);
+      assert((numDataGroupsOnThisContext % numGPUs) == 0);
       for (int i=0;i<numGPUs;i++) assert(gpuIDs[i] >= 0);
 
       // build local data group descriptors:

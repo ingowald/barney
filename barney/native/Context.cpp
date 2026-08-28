@@ -32,8 +32,8 @@ namespace BARNEY_NS {
       assert(!localDataGroups.empty());
       for (int i=0;i<(int)localDataGroups.size();i++) {
         assert(localDataGroups[i].dataRank >= 0 ||
-               i == 0 && localSlots[i].dataRank == -1);
-        assert(!localSlots[i].gpuIDs.empty());
+               i == 0 && localDataGroups[i].dataRank == -1);
+        assert(!localDataGroups[i].gpuIDs.empty());
       }
     
       if (!isActiveWorker)  {

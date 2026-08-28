@@ -77,7 +77,7 @@ namespace BARNEY_NS {
   {
     LOG_API_ENTRY;
     FromEnv::init();
-    assert(dataRanksOnThisContext);
+    assert(dataRanksInDataGroup);
     assert(gpuIDs);
     BNContext ctx
       = (BNContext)LocalContext::create(numDataGroupsOnThisContext,
