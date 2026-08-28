@@ -38,7 +38,7 @@ jobs:
             visual-studio: "Visual Studio 18 2026"
             shell: "powershell"
             config: Debug
-            build_flags: -DBARNEY_BACKEND_EMBREE=ON -DBARNEY_BACKEND_CUDA=OFF -DBARNEY_BACKEND_OPTIX=OFF
+            build_flags: -DBARNEY_BACKEND_CPU=ON -DBARNEY_BACKEND_CUDA=OFF -DBARNEY_BACKEND_OPTIX=OFF
 
     env:
       cmake_generator: "${{ matrix.visual-studio }}"
