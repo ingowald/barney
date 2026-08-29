@@ -9,6 +9,7 @@
 #include <atomic>
 #include <thread>
 #include <barrier>
+#include <mutex>
 
 namespace BARNEY_NS {
   namespace rtc {
