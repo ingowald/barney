@@ -74,6 +74,12 @@ namespace BARNEY_NS {
                    const DG &dg,
                    Random &random,
                    bool dbg=false) const;
+
+      /*! emitted radiance at this hit (already textured, since createBSDF
+          bakes the evaluated emission sampler into the packed data);
+          zero for non-emissive BSDF types. */
+      inline __rtc_device
+      vec3f getEmission(bool dbg=false) const;
       
 #endif
     };
@@ -136,6 +142,16 @@ namespace BARNEY_NS {
         return data.lambertian.scatter(scatter,dg,random,dbg);
       if (type == TYPE_PhysicallyBased)
         return data.physicallyBased.scatter(scatter,dg,random,dbg);
+    }
+
+    inline __rtc_device
+    vec3f PackedBSDF::getEmission(bool dbg) const
+    {
+      if (type == TYPE_PhysicallyBased)
+        return (const vec3f &)data.physicallyBased.emissive;
+      if (type == TYPE_HGPhase)
+        return (const vec3f &)data.hgPhase.emission;
+      return vec3f(0.f);
     }
 #endif
   }

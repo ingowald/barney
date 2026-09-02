@@ -609,13 +609,14 @@ namespace BARNEY_NS {
       // Random random(ray.rngSeed.next((const uint32_t&)ray.tMax));//rayID,ray.rngSeed);
       const PackedBSDF bsdf = ray.getBSDF();
 
-      /* iw - this should be abstracted somewhere where packedbsdf can
-         repor the emission, not a hard-switch in shade() */
-      if (isVolumeHit && bsdf.type == PackedBSDF::TYPE_HGPhase) {
-        vec3f emission = (const vec3f &)bsdf.data.hgPhase.emission;
-        if (reduce_max(emission) > 0.f)
-          fragment = incomingThroughput * emission;
-      }
+      // Emitted radiance at this hit, weighted by the path throughput
+      // carried into this vertex. This makes an emissive surface (or
+      // volume) visible along the camera/bounce path; it does not yet act
+      // as a light source for the rest of the scene (geometry lights are a
+      // separate topic).
+      const vec3f emission = bsdf.getEmission(dbg);
+      if (reduce_max(emission) > 0.f)
+        fragment += incomingThroughput * emission;
 
       // bool doTransmission = false;
       // =  ((float)ray.mini.transmission > 0.f)
