@@ -16,3 +16,5 @@
 #define BARNEY_RTC_OPTIX 1
 
 
+inline void rtc_check()
+{ BARNEY_CUDA_SYNC_CHECK(); }

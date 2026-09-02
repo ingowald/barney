@@ -275,6 +275,7 @@ namespace BARNEY_NS {
       initMPI();
     
       std::vector<int> gpuIDs;
+      int numGPUs = rtc::physicalDeviceCount();
       if (state->tether->devices[0]->m_cudaDevice >= 0) {
         // first device DID have a cudadevice explicitly set; let's
         // assume that app then explciitly sets cudaDevice for every
@@ -284,7 +285,7 @@ namespace BARNEY_NS {
                         "adding requested GPU ID %i",
                         dev->m_cudaDevice);
           assert(dev->m_cudaDevice >= 0);
-          gpuIDs.push_back(dev->m_cudaDevice);
+          gpuIDs.push_back(dev->m_cudaDevice % numGPUs);
         }
       } else {
         // first device did NOT have a cudadevice set - this means the
@@ -294,7 +295,6 @@ namespace BARNEY_NS {
         // explicitly attached to it.... which means we could in theory
         // use multiple GPU" << 
         if (m_enable_multiGPU) {
-          int numGPUs = rtc::physicalDeviceCount();
           std::cout << "#banari: no GPUs selected, but multi-gpu enabled"
                     << " -> picking all " << numGPUs << " rtc devices"
                     << std::endl;
