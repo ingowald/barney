@@ -461,6 +461,8 @@ namespace BARNEY_NS {
     LOG_API_ENTRY;
     Context *context = checkGet(_context);
     
+    if (!_sf)
+      return {};
     std::shared_ptr<ScalarField> sf = checkGetSP(_sf);
     std::shared_ptr<Volume> volume
       = context->createVolume(checkGetSP(_sf));

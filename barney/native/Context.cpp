@@ -285,7 +285,9 @@ namespace BARNEY_NS {
     std::shared_ptr<Volume>
     Context::createVolume(const std::shared_ptr<ScalarField> &sf)
     {
-      return Volume::create(sf->as<ScalarField>());
+      // sf->as<ScalarField>()
+      if (!sf) return {};
+      return Volume::create(sf);
     }
 
     std::shared_ptr<TextureData> 
