@@ -133,7 +133,7 @@ namespace BARNEY_NS {
       bsdf.setDefaults();
       {
         const vec3f bc = (const vec3f&)baseColor;
-        bsdf.baseColor = rtc::float3(bc.x, bc.y, bc.z);
+        bsdf.baseColor = bc;
       }
       // Resolve the shading normal to world space. The geometric world
       // normal is the fallback and the frame a normal map is perturbed
@@ -142,21 +142,21 @@ namespace BARNEY_NS {
       if (this->normal.type == PossiblyMappedParameter::SAMPLER) {
         const vec3f ts = normalize(((const vec3f)normal)*2.f-1.f);
         const vec3f N = packedBSDF::physicallybased::applyNormalMap(ts,Ng);
-        bsdf.normal = rtc::float3(N.x, N.y, N.z);
+        bsdf.normal = N;
       } else {
         const vec3f N = normalize((const vec3f)normal);
         const vec3f Nw = (dot(N,N) > 1e-12f) ? N : Ng;
-        bsdf.normal = rtc::float3(Nw.x, Nw.y, Nw.z);
+        bsdf.normal = Nw;
       }
       // Clearcoat normal: same TBN treatment as the base normal.
       if (this->clearcoatNormal.type == PossiblyMappedParameter::SAMPLER) {
         const vec3f ts = normalize(((const vec3f)clearcoatNormal)*2.f-1.f);
         const vec3f Nc = packedBSDF::physicallybased::applyNormalMap(ts,Ng);
-        bsdf.clearcoatNormal = rtc::float3(Nc.x, Nc.y, Nc.z);
+        bsdf.clearcoatNormal = Nc;
       } else {
         const vec3f Nc = normalize((const vec3f)clearcoatNormal);
         const vec3f Nw = (dot(Nc,Nc) > 1e-12f) ? Nc : Ng;
-        bsdf.clearcoatNormal = rtc::float3(Nw.x, Nw.y, Nw.z);
+        bsdf.clearcoatNormal = Nw;
       }
       bsdf.metallic = metallic.x;
       bsdf.roughness = roughness.x;
@@ -170,15 +170,15 @@ namespace BARNEY_NS {
       bsdf.occlusion = occlusion.x;
       bsdf.specular = specular.x;
       bsdf.specularColor
-        = rtc::float3(specularColor.x,specularColor.y,specularColor.z);
+        = vec3f(specularColor.x,specularColor.y,specularColor.z);
       bsdf.clearcoat = clearcoat.x;
       bsdf.clearcoatRoughness = clearcoatRoughness.x;
       bsdf.thickness = thickness.x;
       bsdf.attenuationDistance = attenuationDistance.x;
       bsdf.attenuationColor
-        = rtc::float3(attenuationColor.x,attenuationColor.y,
-                      attenuationColor.z);
-      bsdf.sheenColor = rtc::float3(sheenColor.x,sheenColor.y,sheenColor.z);
+        = vec3f(attenuationColor.x,attenuationColor.y,
+                attenuationColor.z);
+      bsdf.sheenColor = vec3f(sheenColor.x,sheenColor.y,sheenColor.z);
       bsdf.sheenRoughness = sheenRoughness.x;
       bsdf.iridescence = iridescence.x;
       bsdf.iridescenceIor = iridescenceIor.x;

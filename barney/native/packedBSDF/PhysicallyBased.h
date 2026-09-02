@@ -6,6 +6,7 @@
 
 #include "native/render/DG.h"
 #include "native/render/HitAttributes.h"
+#include "native/common/half.h"
 #include <limits>
 
 namespace BARNEY_NS {
@@ -77,12 +78,12 @@ namespace BARNEY_NS {
 
         inline __rtc_device vec2f exp(vec2f v)
         {
-          return vec2f(std::expf(v.x), std::expf(v.y));
+          return vec2f(expf(v.x), expf(v.y));
         }
 
         inline __rtc_device vec3f exp(vec3f v)
         {
-          return vec3f(std::expf(v.x), std::expf(v.y), std::expf(v.z));
+          return vec3f(expf(v.x), expf(v.y), expf(v.z));
         }
 
         //-----------------------------------------------------------------------------
@@ -570,27 +571,91 @@ namespace BARNEY_NS {
       // glTF-style physically-based material BSDF: diffuse + GGX specular
       // (metallic/roughness), plus clearcoat, sheen, iridescence and
       // transmission lobes; see setDefaults() for the parameter set.
-      struct PhysicallyBased : PhysicallyBasedShadingState {
+      //
+      // This struct rides in the ray payload (PackedBSDF::Data ->
+      // Ray::hitBSDF), so parameters are packed in half precision to keep
+      // the payload registers and traffic low; unpack() widens them into
+      // the float PhysicallyBasedShadingState the eval/pdf/scatter math
+      // runs on. `emissive` stays float so HDR emission is not clamped to
+      // the half range.
+      struct PhysicallyBased {
         inline PhysicallyBased() = default;
+
+        rtc::float3 emissive;
+        vec3h baseColor;
+        vec3h normal;
+        half  metallic;
+        half  roughness;
+        half  transmission;
+        half  ior;
+
+        half  occlusion;
+        half  specular;
+        vec3h specularColor;
+        half  clearcoat;
+        half  clearcoatRoughness;
+        vec3h clearcoatNormal;
+        half  thickness;
+        half  attenuationDistance;
+        vec3h attenuationColor;
+        vec3h sheenColor;
+        half  sheenRoughness;
+        half  iridescence;
+        half  iridescenceIor;
+        half  iridescenceThickness;
+
+        inline __rtc_device PhysicallyBasedShadingState unpack() const
+        {
+          PhysicallyBasedShadingState st;
+          st.emissive = rtc::float3(emissive.x, emissive.y, emissive.z);
+          const vec3f bc = (vec3f)baseColor;
+          st.baseColor = rtc::float3(bc.x, bc.y, bc.z);
+          const vec3f n = (vec3f)normal;
+          st.normal = rtc::float3(n.x, n.y, n.z);
+          st.metallic = metallic;
+          st.roughness = roughness;
+          st.transmission = transmission;
+          st.ior = ior;
+          st.occlusion = occlusion;
+          st.specular = specular;
+          const vec3f sc = (vec3f)specularColor;
+          st.specularColor = rtc::float3(sc.x, sc.y, sc.z);
+          st.clearcoat = clearcoat;
+          st.clearcoatRoughness = clearcoatRoughness;
+          const vec3f ccn = (vec3f)clearcoatNormal;
+          st.clearcoatNormal = rtc::float3(ccn.x, ccn.y, ccn.z);
+          st.thickness = thickness;
+          st.attenuationDistance = attenuationDistance;
+          const vec3f ac = (vec3f)attenuationColor;
+          st.attenuationColor = rtc::float3(ac.x, ac.y, ac.z);
+          const vec3f shc = (vec3f)sheenColor;
+          st.sheenColor = rtc::float3(shc.x, shc.y, shc.z);
+          st.sheenRoughness = sheenRoughness;
+          st.iridescence = iridescence;
+          st.iridescenceIor = iridescenceIor;
+          st.iridescenceThickness = iridescenceThickness;
+          return st;
+        }
+
         inline __rtc_device void setDefaults()
         {
-          baseColor = rtc::float3(1.0f, 1.0f, 1.0f);
+          baseColor = vec3f(1.0f, 1.0f, 1.0f);
           metallic = 1.0f;
           roughness = 1.0f;
-          normal = rtc::float3(0.0f, 0.0f, 1.0f);
+          normal = vec3f(0.0f, 0.0f, 1.0f);
           emissive = rtc::float3(0.0f, 0.0f, 0.0f);
           occlusion = 1.0f;
           specular = 0.0f;
-          specularColor = rtc::float3(1.0f, 1.0f, 1.0f);
+          specularColor = vec3f(1.0f, 1.0f, 1.0f);
           clearcoat = 0.0f;
           clearcoatRoughness = 0.0f;
-          clearcoatNormal = rtc::float3(0.0f, 0.0f, 1.0f);
+          clearcoatNormal = vec3f(0.0f, 0.0f, 1.0f);
           transmission = 0.0f;
           ior = 1.5f;
           thickness = 0.0f;
           attenuationDistance = std::numeric_limits<float>::infinity();
-          attenuationColor = rtc::float3(1.0f, 1.0f, 1.0);
-          sheenColor = rtc::float3(0.0f, 0.0f, 0.0f);
+          attenuationColor = vec3f(1.0f, 1.0f, 1.0f);
+          sheenColor = vec3f(0.0f, 0.0f, 0.0f);
           sheenRoughness = 0.0f;
           iridescence = 0.0f;
           iridescenceIor = 1.3f;
@@ -602,13 +667,14 @@ namespace BARNEY_NS {
         // through-surface directions, matching eval()/VisRTX pbrBsdfPdf.
         inline __rtc_device float pdf(DG dg, const vec3f &wi, bool dbg) const
         {
+          const PhysicallyBasedShadingState st = unpack();
           const vec3f V = dg.wo;
-          vec3f N = rtc::load(this->normal);
+          vec3f N = rtc::load(st.normal);
           if (dot(N, V) < 0.0f) N = -N;
-          vec3f Nc = rtc::load(this->clearcoatNormal);
+          vec3f Nc = rtc::load(st.clearcoatNormal);
           if (dot(Nc, V) < 0.0f) Nc = -Nc;
-          const float eta = dg.insideMedium ? ior : (1.0f / ior);
-          return physicallybased::pbrBsdfPdf(this, eta, N, Nc, V, wi);
+          const float eta = dg.insideMedium ? st.ior : (1.0f / st.ior);
+          return physicallybased::pbrBsdfPdf(&st, eta, N, Nc, V, wi);
         }
 
         // NEE evaluation: full BRDF (diffuse + GGX specular + clearcoat +
@@ -616,15 +682,16 @@ namespace BARNEY_NS {
         // barney equivalent of VisRTX shadeSurface's `base * NdotL` term.
         inline __rtc_device EvalRes eval(DG dg, const vec3f &wi, bool dbg) const
         {
+          const PhysicallyBasedShadingState st = unpack();
           const vec3f V = dg.wo;
-          vec3f N = rtc::load(this->normal);
+          vec3f N = rtc::load(st.normal);
           if (dot(N, V) < 0.0f) N = -N;
-          const float eta = dg.insideMedium ? ior : (1.0f / ior);
-          vec3f Nc = rtc::load(this->clearcoatNormal);
+          const float eta = dg.insideMedium ? st.ior : (1.0f / st.ior);
+          vec3f Nc = rtc::load(st.clearcoatNormal);
           if (dot(Nc, V) < 0.0f) Nc = -Nc;
           const float NdotL = fmaxf(dot(N, wi), 0.0f);
-          const vec3f base = physicallybased::pbrEvalBase(this, eta, N, Nc, V, wi);
-          const float pdf = physicallybased::pbrBsdfPdf(this, eta, N, Nc, V, wi);
+          const vec3f base = physicallybased::pbrEvalBase(&st, eta, N, Nc, V, wi);
+          const float pdf = physicallybased::pbrBsdfPdf(&st, eta, N, Nc, V, wi);
           return EvalRes(base * NdotL, pdf);
         }
 
@@ -644,12 +711,13 @@ namespace BARNEY_NS {
                                          bool dbg) const
         {
           scatter = {};
+          const PhysicallyBasedShadingState st = unpack();
           const vec3f V = dg.wo;
-          vec3f N = rtc::load(this->normal);
+          vec3f N = rtc::load(st.normal);
           if (dot(N, V) < 0.0f) N = -N;
-          vec3f Nc = rtc::load(this->clearcoatNormal);
+          vec3f Nc = rtc::load(st.clearcoatNormal);
           if (dot(Nc, V) < 0.0f) Nc = -Nc;
-          const float eta = dg.insideMedium ? ior : (1.0f / ior);
+          const float eta = dg.insideMedium ? st.ior : (1.0f / st.ior);
 
           // Clearcoat lobe: pick with probability clearcoat*FcV(NcDotV). This
           // weight makes the entry-side attenuation cancel the (1-pick) divisor
@@ -658,16 +726,16 @@ namespace BARNEY_NS {
           const float FcV_world = CLEARCOAT_F0
             + (1.0f - CLEARCOAT_F0)
               * physicallybased::pow5(1.0f - NcDotV_world);
-          const float clearcoatPick = saturate(clearcoat * FcV_world);
+          const float clearcoatPick = saturate(st.clearcoat * FcV_world);
 
           auto clearcoatExitAttn = [&](const vec3f &Lworld) -> float {
-            if (clearcoat <= 0.0f)
+            if (st.clearcoat <= 0.0f)
               return 1.0f;
             const float NcDotL = fabsf(dot(Nc, Lworld));
             const float FcL = CLEARCOAT_F0
               + (1.0f - CLEARCOAT_F0)
                 * physicallybased::pow5(1.0f - NcDotL);
-            return saturate(1.0f - clearcoat * FcL);
+            return saturate(1.0f - st.clearcoat * FcL);
           };
 
           if (clearcoatPick > 0.0f && random() < clearcoatPick) {
@@ -679,7 +747,7 @@ namespace BARNEY_NS {
               return;
             }
             const float alphaC =
-              fmaxf(physicallybased::pow2(clearcoatRoughness), 1e-4f);
+              fmaxf(physicallybased::pow2(st.clearcoatRoughness), 1e-4f);
             const vec3f HlocalC = physicallybased::sampleGGXVNDF(
               VlocalC, alphaC, random(), random());
             const vec3f LlocalC = reflect(neg(VlocalC), HlocalC);
@@ -690,8 +758,10 @@ namespace BARNEY_NS {
             const vec3f Lworld =
               normalize(owl::common::xfmVector(toWorldC, LlocalC));
             scatter.dir = Lworld;
-            scatter.f_r = physicallybased::pbrEvalBase(this, eta, N, Nc, V, Lworld);
-            scatter.pdf = physicallybased::pbrBsdfPdf(this, eta, N, Nc, V, Lworld);
+            scatter.f_r
+              = physicallybased::pbrEvalBase(&st, eta, N, Nc, V, Lworld);
+            scatter.pdf
+              = physicallybased::pbrBsdfPdf(&st, eta, N, Nc, V, Lworld);
             scatter.type = ScatterResult::GLOSSY;
             scatter.offsetDirection = +1.0f;
             scatter.changedMedium = false;
@@ -708,12 +778,12 @@ namespace BARNEY_NS {
           }
           const float NdotV = Vlocal.z;
 
-          const vec3f F0 = physicallybased::computeF0(this, eta);
-          const vec3f F90 = physicallybased::computeF90(this);
+          const vec3f F0 = physicallybased::computeF0(&st, eta);
+          const vec3f F90 = physicallybased::computeF90(&st);
           const vec3f Fv =
-            physicallybased::evalFresnelWithIridescence(this, F0, F90, NdotV);
+            physicallybased::evalFresnelWithIridescence(&st, F0, F90, NdotV);
           const vec3f transmissionFilter =
-            physicallybased::computeTransmissionFilter(this);
+            physicallybased::computeTransmissionFilter(&st);
           const bool hasTransmission = luminance(transmissionFilter) > 0.0f;
 
           const float specSelW = fmaxf(luminance(Fv), 0.0f)
@@ -721,11 +791,12 @@ namespace BARNEY_NS {
                               * transmissionFilter),
                     0.0f);
           const vec3f diffuseEnergy = max(vec3f(1.0f) - Fv, vec3f(0.0f))
-            * rtc::load(baseColor) * (1.0f - metallic)
-            * (1.0f - transmission) * occlusion;
+            * rtc::load(st.baseColor) * (1.0f - st.metallic)
+            * (1.0f - st.transmission) * st.occlusion;
           // Sheen is folded into the diffuse selection weight (see
           // pbrBsdfPdf); keep the two computations in sync.
-          const float sheenSelW = fmaxf(luminance(rtc::load(sheenColor)), 0.0f);
+          const float sheenSelW
+            = fmaxf(luminance(rtc::load(st.sheenColor)), 0.0f);
           const float diffSelW = fmaxf(luminance(diffuseEnergy), 0.0f)
             + sheenSelW;
           const float baseSel = specSelW + diffSelW;
@@ -742,8 +813,10 @@ namespace BARNEY_NS {
             const vec3f Lworld =
               normalize(owl::common::xfmVector(toWorld, localDir));
             scatter.dir = Lworld;
-            scatter.f_r = physicallybased::pbrEvalBase(this, eta, N, Nc, V, Lworld);
-            scatter.pdf = physicallybased::pbrBsdfPdf(this, eta, N, Nc, V, Lworld);
+            scatter.f_r
+              = physicallybased::pbrEvalBase(&st, eta, N, Nc, V, Lworld);
+            scatter.pdf
+              = physicallybased::pbrBsdfPdf(&st, eta, N, Nc, V, Lworld);
             scatter.type = ScatterResult::DIFFUSE;
             scatter.offsetDirection = +1.0f;
             scatter.changedMedium = false;
@@ -753,13 +826,13 @@ namespace BARNEY_NS {
           // Specular lobe: VNDF-sample the microfacet, then split
           // reflect/transmit by the microfacet Fresnel F(VdotH). TIR folds all
           // energy into reflection.
-          const float alpha = fmaxf(physicallybased::pow2(roughness), 1e-4f);
+          const float alpha = fmaxf(physicallybased::pow2(st.roughness), 1e-4f);
           const float alpha2 = alpha * alpha;
           const vec3f Hlocal =
             physicallybased::sampleGGXVNDF(Vlocal, alpha, random(), random());
           const float VdotH = fmaxf(dot(Vlocal, Hlocal), 0.0f);
           const vec3f Fh =
-            physicallybased::evalFresnelWithIridescence(this, F0, F90, VdotH);
+            physicallybased::evalFresnelWithIridescence(&st, F0, F90, VdotH);
 
           const vec3f Lrefl = reflect(neg(Vlocal), Hlocal);
           const vec3f Ltrans = refract(neg(Vlocal), Hlocal, eta);
@@ -783,8 +856,10 @@ namespace BARNEY_NS {
             const vec3f Lworld =
               normalize(owl::common::xfmVector(toWorld, Lrefl));
             scatter.dir = Lworld;
-            scatter.f_r = physicallybased::pbrEvalBase(this, eta, N, Nc, V, Lworld);
-            scatter.pdf = physicallybased::pbrBsdfPdf(this, eta, N, Nc, V, Lworld);
+            scatter.f_r
+              = physicallybased::pbrEvalBase(&st, eta, N, Nc, V, Lworld);
+            scatter.pdf
+              = physicallybased::pbrBsdfPdf(&st, eta, N, Nc, V, Lworld);
             scatter.type = ScatterResult::GLOSSY;
             scatter.offsetDirection = +1.0f;
             scatter.changedMedium = false;
