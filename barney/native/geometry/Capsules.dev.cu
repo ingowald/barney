@@ -264,16 +264,13 @@ namespace BARNEY_NS {
         // trigger the anari attribute evaluation
         self.setHitAttributes(hitData,interpolator,world,ray.dbg());
 
-        PackedBSDF bsdf
-          = material.createBSDF(hitData,OptixGlobals::get(ti).world.samplers,ray.dbg());
-        float opacity
-          = bsdf.getOpacity(ray.isShadowRay,ray.isInMedium,
-                            ray.dir,hitData.worldNormal,ray.dbg());
-        if (opacity < 1.f) {
+        const float coverage
+          = material.coverage(hitData,world.samplers,ray.dbg());
+        if (coverage < 1.f) {
           Random rng(ray.rngSeed,hash(ti.getRTCInstanceIndex(),
                                       ti.getGeometryIndex(),
                                       ti.getPrimitiveIndex()));
-          if (rng() > opacity) {
+          if (rng() > coverage) {
             return;
           }
         }

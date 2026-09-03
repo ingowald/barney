@@ -141,6 +141,10 @@ set(HOST_SOURCES
   material/AnariPBR.cpp
   material/AnariMatte.h
   material/AnariMatte.cpp
+  material/NVisii.h
+  material/NVisii.cpp
+  material/Glass.h
+  material/Glass.cpp
 
   # different traceRays() implementations
   globalTrace/RQSBase.h

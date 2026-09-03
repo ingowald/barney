@@ -20,6 +20,10 @@ namespace BARNEY_NS {
         PackedBSDF createBSDF(const HitAttributes &hitData,
                               const Sampler::DD *samplers,
                               bool dbg) const;
+        inline __rtc_device
+        float getOpacity(const HitAttributes &hitData,
+                         const Sampler::DD *samplers,
+                         bool dbg) const;
 #endif
         PossiblyMappedParameter::DD color;
         PossiblyMappedParameter::DD opacity;
@@ -53,14 +57,12 @@ namespace BARNEY_NS {
                                           bool dbg) const
     {
       vec4f baseColor = this->color.eval(hitData,samplers,dbg);
-      vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
 # if 1
       float reflectance = .85f;
       packedBSDF::Lambertian bsdf;
       (vec3f&)bsdf.albedo = reflectance * (const vec3f&)baseColor
         * (ONE_OVER_PI)
         ;
-      bsdf.alpha = baseColor.w * opacity.x;
 # else
       packedBSDF::NVisii bsdf;
       bsdf.setDefaults();
@@ -73,6 +75,16 @@ namespace BARNEY_NS {
       bsdf.ior = 1.f;
 # endif
       return bsdf;
+    }
+
+    inline __rtc_device
+    float AnariMatte::DD::getOpacity(const HitAttributes &hitData,
+                                    const Sampler::DD *samplers,
+                                    bool dbg) const
+    {
+      vec4f baseColor = this->color.eval(hitData,samplers,dbg);
+      vec4f opacity = this->opacity.eval(hitData,samplers,dbg);
+      return baseColor.w * opacity.x;
     }
 #endif    
   }

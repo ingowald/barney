@@ -97,6 +97,36 @@
           "description": "cutting plane equation (nx, ny, nz, d); disabled when w < -1e28"
         }
       ]
+    },
+    {
+      "type": "ANARI_MATERIAL",
+      "name": "nvisii",
+      "parameters": [
+        { "name": "baseColor", "types": ["ANARI_FLOAT32_VEC3", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": [0.8, 0.8, 0.8], "description": "diffuse base color" },
+        { "name": "subsurfaceColor", "types": ["ANARI_FLOAT32_VEC3", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": [0.8, 0.8, 0.8], "description": "subsurface scattering color" },
+        { "name": "metallic", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "metallic mask 0..1" },
+        { "name": "specular", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.5, "description": "specular lobe strength" },
+        { "name": "roughness", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.5, "description": "surface roughness 0..1" },
+        { "name": "specularTint", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "tint specular toward base color" },
+        { "name": "anisotropy", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "specular anisotropy -1..1" },
+        { "name": "sheen", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "sheen lobe strength" },
+        { "name": "sheenTint", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.5, "description": "tint sheen toward base color" },
+        { "name": "clearcoat", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "clearcoat lobe strength" },
+        { "name": "clearcoatGloss", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.9991, "description": "clearcoat gloss 0..1" },
+        { "name": "ior", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 1.45, "description": "index of refraction" },
+        { "name": "specularTransmission", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "specular transmission 0..1" },
+        { "name": "transmissionRoughness", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.04, "description": "transmission lobe roughness" },
+        { "name": "flatness", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 0.0, "description": "mix of diffuse and subsurface" },
+        { "name": "opacity", "types": ["ANARI_FLOAT32", "ANARI_SAMPLER", "ANARI_STRING"], "tags": [], "default": 1.0, "description": "cut-out opacity / alpha" }
+      ]
+    },
+    {
+      "type": "ANARI_MATERIAL",
+      "name": "glass",
+      "parameters": [
+        { "name": "ior", "types": ["ANARI_FLOAT32"], "tags": [], "default": 1.45, "description": "index of refraction" },
+        { "name": "attenuationColor", "types": ["ANARI_FLOAT32_VEC3"], "tags": [], "default": [1.0, 1.0, 1.0], "description": "Beer-Lambert transmission color" }
+      ]
     }
   ]
 }

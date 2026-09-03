@@ -49,7 +49,6 @@ namespace BARNEY_NS {
           float specular_transmission;
           float transmission_roughness;
           float flatness;
-          float alpha;
         };
 
         inline
@@ -998,19 +997,9 @@ namespace BARNEY_NS {
           mat.specular_transmission = specularTransmission;
           mat.transmission_roughness = transmissionRoughness;
           mat.flatness = flatness;
-          mat.alpha = alpha;
           return mat;
         }
         inline __rtc_device vec3f getAlbedo(bool dbg) const;
-        inline __rtc_device
-        float getOpacity(bool isShadowRay,
-                         bool isInMedium,
-                         vec3f rayDir,
-                         vec3f Ng,
-                         bool dbg=false) const
-        {
-          return (float)alpha;
-        }
         inline __rtc_device EvalRes eval(DG dg, vec3f wi, bool dbg) const;
         inline __rtc_device float pdf(DG dg, vec3f wi, bool dbg) const;
         inline __rtc_device void scatter(ScatterResult &scatter,
@@ -1057,7 +1046,6 @@ namespace BARNEY_NS {
           const float MIN_ROUGHNESS = .04f;
           this->transmissionRoughness = MIN_ROUGHNESS;
           this->flatness = 0.f;
-          this->alpha = 1.f;
         }
         
         
@@ -1079,7 +1067,6 @@ namespace BARNEY_NS {
 	half specularTransmission;
 	half transmissionRoughness;
 	half flatness;
-	half alpha;
       };
 
       inline __rtc_device vec3f NVisii::getAlbedo(bool dbg) const
@@ -1124,7 +1111,6 @@ namespace BARNEY_NS {
         //                                    ) {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
-        mat.alpha = 1.f;
 
         // * @param g_n The geometric normal (cross product of the two triangle edges)
         vec3f g_n = (vec3f)dg.Ng;
@@ -1166,7 +1152,6 @@ namespace BARNEY_NS {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
 
-        mat.alpha = 1.f;
         // * @param g_n The geometric normal (cross product of the two triangle edges)
         vec3f g_n = (vec3f)dg.Ng;
          // * @param s_n The shading normal (per-vertex interpolated normal)
@@ -1196,7 +1181,6 @@ namespace BARNEY_NS {
       {
         using namespace nvisii;
         DisneyMaterial mat = unpack();
-        mat.alpha = 1.f;
         
         vec3f g_n = (vec3f)dg.Ng;
          // * @param s_n The shading normal (per-vertex interpolated normal)

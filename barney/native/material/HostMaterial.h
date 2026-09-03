@@ -12,6 +12,8 @@
 namespace BARNEY_NS {
   namespace native {
 
+    enum class AlphaMode : int { Opaque = 0, Mask, Blend };
+
     struct LDGContext;
     struct DeviceMaterial;
     
@@ -51,6 +53,11 @@ namespace BARNEY_NS {
       Sampler::SP          sampler;
       HitAttributes::Which attribute;
       vec4f               value { 0.f, 0.f, 0.f, 1.f };
+
+      bool isConstantScalar(float v) const
+      { return type == VALUE && value.x == v; }
+      bool isConstantAlpha(float a) const
+      { return type == VALUE && value.w == a; }
     };
 
     /*! barney 'virtual' material implementation that takes anari-like
@@ -77,12 +84,24 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
       void commit() override;
+      bool setString(const std::string &member,
+                     const std::string &value) override;
+      bool set1f(const std::string &member, const float &value) override;
+      bool set1i(const std::string &member, const int &value) override;
       /*! @} */
       // ------------------------------------------------------------------
       static HostMaterial::SP create(LDGContext *context,
                                      const std::string &type);
     
       virtual DeviceMaterial getDD(Device *device) = 0;
+
+      void packCoverage(DeviceMaterial &dd, bool opacityIdenticallyOne) const;
+
+      bool alphaModeSet = false;
+      bool alphaCutoffSet = false;
+      // Only consulted when alphaModeSet is true (see packCoverage).
+      AlphaMode alphaMode = AlphaMode::Opaque;
+      float alphaCutoff = 0.5f;
 
       /*! this material's index in the device list of all DeviceMaterials */
       const int materialID;
