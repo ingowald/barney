@@ -37,11 +37,9 @@ namespace BARNEY_NS {
     {
       if (subtype == "unstructured")
         return new UnstructuredField(s);
-      else if (subtype == "amr")
-        return new BlockStructuredField(s);
       else if (subtype == "nanovdb")
         return new NanoVDBSpatialField(s);
-      else if (subtype == "amr")
+      else if (subtype == "blockStructured")
         return new BlockStructuredField(s);
       else if (subtype == "structuredRegular")
         return new StructuredRegularField(s);
@@ -482,23 +480,27 @@ namespace BARNEY_NS {
       if (m_bnData.blockDims)        bnRelease(m_bnData.blockDims);
       if (m_bnData.blockLevels)      bnRelease(m_bnData.blockLevels);
       if (m_bnData.blockOffsets)     bnRelease(m_bnData.blockOffsets);
-      if (m_bnData.levelRefinements) bnRelease(m_bnData.levelRefinements);
     }
 
     void BlockStructuredField::commitParameters()
     {
       Object::commitParameters();
-      m_params.refinementRatio = getParamObject<helium::Array1D>("refinementRatio");
-      m_params.blockBounds = getParamObject<helium::Array1D>("block.bounds");
+      m_params.blockOrigins = getParamObject<helium::Array1D>("block.origin");
+      m_params.blockDims = getParamObject<helium::Array1D>("block.dimensions");
       m_params.blockLevel = getParamObject<helium::Array1D>("block.level");
       m_params.data = getParamObject<helium::Array1D>("data");
     }
 
     void BlockStructuredField::finalize()
     {
-      if (!m_params.blockBounds) {
+      if (!m_params.blockDims) {
         reportMessage(ANARI_SEVERITY_WARNING,
-                      "missing required parameter 'block.bounds' on amr spatial field");
+                      "missing required parameter 'block.dimensions' on amr spatial field");
+        return;
+      }
+      if (!m_params.blockOrigins) {
+        reportMessage(ANARI_SEVERITY_WARNING,
+                      "missing required parameter 'block.origins' on amr spatial field");
         return;
       }
 
@@ -515,45 +517,37 @@ namespace BARNEY_NS {
       }
 
       size_t numBlocks = m_params.blockLevel->totalSize();
-      auto *blockBounds = m_params.blockBounds->beginAs<box3i>();
+      auto *blockOrigins = m_params.blockOrigins->beginAs<math::int3>();
+      auto *blockDims = m_params.blockDims->beginAs<math::int3>();
       auto *blockLevels = m_params.blockLevel->beginAs<int>();
 
-      m_generatedBlockOrigins.clear();
-      m_generatedBlockDims.clear();
-      m_generatedBlockLevels.clear();
-      m_generatedBlockOffsets.clear();
-
+      m_generatedBlockOffsets.resize(numBlocks);
+      
       m_bounds.invalidate();
 
-      int maxLevel = 0;
+      size_t nextOffset = 0;
+      box3f worldBounds;
       for (size_t i = 0; i < numBlocks; ++i) {
-        const box3i bounds = *(blockBounds + i);
         const int level = *(blockLevels + i);
 
-        math::int3 dims = bounds.upper - bounds.lower + math::int3(1);
+        vec3i org = (const vec3i&)blockOrigins[i];
+        vec3i dims = (const vec3i&)blockDims[i];
 
-        m_generatedBlockOrigins.push_back(bounds.lower);
-        m_generatedBlockDims.push_back(dims);
-        m_generatedBlockLevels.push_back(level);
-        m_generatedBlockOffsets.push_back(dims.x * size_t(dims.y) * dims.z);
-        maxLevel = std::max(maxLevel, level);
-
-        box3 worldBounds;
-        worldBounds.lower = math::float3(float(bounds.lower.x * (1 << level)),
-                                         float(bounds.lower.y * (1 << level)),
-                                         float(bounds.lower.z * (1 << level)));
-        worldBounds.upper = math::float3(float((bounds.upper.x + 1) * (1 << level)),
-                                         float((bounds.upper.y + 1) * (1 << level)),
-                                         float((bounds.upper.z + 1) * (1 << level)));
-        m_bounds.insert(worldBounds);
+        // m_generatedBlockOrigins.push_back(bounds.lower);
+        // m_generatedBlockDims.push_back(dims);
+        // m_generatedBlockLevels.push_back(level);
+        // m_generatedBlockOffsets.push_back(dims.x * size_t(dims.y) * dims.z);
+        // maxLevel = std::max(maxLevel, level);
+        float cellSize = 1.f/(1<<blockLevels[i]);
+        box3f bb(cellSize*vec3f(org),
+                 cellSize*vec3f(org+dims));
+        worldBounds.extend(bb);
+        
+        m_generatedBlockOffsets[i] = nextOffset;
+        nextOffset += dims.x*dims.y*dims.z;
       }
-
-      m_generatedRefinements.resize(maxLevel+1, 2);
-
-      std::exclusive_scan(m_generatedBlockOffsets.begin(),
-                          m_generatedBlockOffsets.end(),
-                          m_generatedBlockOffsets.begin(),
-                          (uint64_t)0);
+      (vec3f&)m_bounds.lower = worldBounds.lower;
+      (vec3f&)m_bounds.upper = worldBounds.upper;
 
       //=======================================================
       // get (or create) and populate bn field
@@ -565,73 +559,60 @@ namespace BARNEY_NS {
       BNScalarField sf = getBarneyScalarField();
 
       size_t numScalars = m_params.data->size();
-      size_t numLevels = m_generatedRefinements.size();
 
       if (!m_bnData.scalars) {
         m_bnData.scalars =
-          bnDataCreate(context, slot, BN_FLOAT32, numScalars, m_params.data->beginAs<float>());
+          bnDataCreate(context, slot, BN_FLOAT32, numScalars,
+                       m_params.data->beginAs<float>());
       } else {
-        bnDataSet(m_bnData.scalars, numScalars, m_params.data->beginAs<float>());
+        bnDataSet(m_bnData.scalars, numScalars,
+                  m_params.data->beginAs<float>());
       }
-
 
       if (!m_bnData.blockOrigins) {
         m_bnData.blockOrigins =
-          bnDataCreate(context, slot, BN_INT32_VEC3, numBlocks, m_generatedBlockOrigins.data());
+          bnDataCreate(context, slot, BN_INT32_VEC3, numBlocks,
+                       blockOrigins);
       } else {
-        bnDataSet(m_bnData.blockOrigins, numBlocks, m_generatedBlockOrigins.data());
+        bnDataSet(m_bnData.blockOrigins, numBlocks,
+                  blockOrigins);
       }
 
 
       if (!m_bnData.blockDims) {
         m_bnData.blockDims =
-          bnDataCreate(context, slot, BN_INT32_VEC3, numBlocks, m_generatedBlockDims.data());
+          bnDataCreate(context, slot, BN_INT32_VEC3, numBlocks,
+                       blockDims);
       } else {
-        bnDataSet(m_bnData.blockDims, numBlocks, m_generatedBlockDims.data());
+        bnDataSet(m_bnData.blockDims, numBlocks, blockDims);
       }
-
 
       if (!m_bnData.blockLevels) {
         m_bnData.blockLevels =
-          bnDataCreate(context, slot, BN_INT32, numBlocks, m_generatedBlockLevels.data());
+          bnDataCreate(context, slot, BN_INT32, numBlocks, blockLevels);
       } else {
-        bnDataSet(m_bnData.blockLevels, numBlocks, m_generatedBlockLevels.data());
+        bnDataSet(m_bnData.blockLevels, numBlocks, blockLevels);
       }
-
-
+      
       if (!m_bnData.blockOffsets) {
         m_bnData.blockOffsets =
-          bnDataCreate(context, slot, BN_UINT64, numBlocks, m_generatedBlockOffsets.data());
+          bnDataCreate(context, slot, BN_UINT64, numBlocks,
+                       m_generatedBlockOffsets.data());
       } else {
-        bnDataSet(m_bnData.blockOffsets, numBlocks, m_generatedBlockOffsets.data());
+        bnDataSet(m_bnData.blockOffsets, numBlocks,
+                  m_generatedBlockOffsets.data());
       }
-
-      if (!m_bnData.levelRefinements) {
-        m_bnData.levelRefinements =
-          bnDataCreate(context, slot, BN_INT32, numLevels, m_generatedRefinements.data());
-      } else {
-        bnDataSet(m_bnData.levelRefinements, numLevels, m_generatedRefinements.data());
-      }
-
+      
       bnSetData(sf, "scalars", m_bnData.scalars);
       bnSetData(sf, "grid.origins", m_bnData.blockOrigins);
       bnSetData(sf, "grid.dims", m_bnData.blockDims);
       bnSetData(sf, "grid.levels", m_bnData.blockLevels);
       bnSetData(sf, "grid.offsets", m_bnData.blockOffsets);
-      bnSetData(sf, "level.refinements", m_bnData.levelRefinements);
       bnCommit(sf);
     }
 
     BNScalarField BlockStructuredField::createBarneyScalarField() const
     {
-      std::cout
-        << "=================================================================="
-        << std::endl;
-      std::cout << "BANARI: CREATING AMR DATA" << std::endl;
-      std::cout
-        << "=================================================================="
-        << std::endl;
-
       int slot = deviceState()->slot;
       auto context = deviceState()->tether->context;
 

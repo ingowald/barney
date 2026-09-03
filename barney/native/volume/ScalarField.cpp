@@ -39,29 +39,33 @@ namespace BARNEY_NS {
       
         auto& registry = ScalarFieldRegistry::instance();
       
-        registry.registerType("structured", 
-                              [](Context* ctx, const DevGroup::SP& devs) { 
-                                return std::make_shared<StructuredData>(ctx, devs); 
-                              });
+        registry.registerType
+          ("structured", 
+           [](Context* ctx, const DevGroup::SP& devs) { 
+             return std::make_shared<StructuredData>(ctx, devs); 
+           });
+        
+        registry.registerType
+          ("unstructured", 
+           [](Context* ctx, const DevGroup::SP& devs) { 
+             return std::make_shared<UMeshField>(ctx, devs); 
+           });
+        
+        registry.registerType
+          ("BlockStructuredAMR", 
+           [](Context* ctx, const DevGroup::SP& devs) { 
+             return std::make_shared<BlockStructuredField>(ctx, devs); 
+           });
       
-        registry.registerType("unstructured", 
-                              [](Context* ctx, const DevGroup::SP& devs) { 
-                                return std::make_shared<UMeshField>(ctx, devs); 
-                              });
-      
-        registry.registerType("BlockStructuredAMR", 
-                              [](Context* ctx, const DevGroup::SP& devs) { 
-                                return std::make_shared<BlockStructuredField>(ctx, devs); 
-                              });
-      
-        registry.registerType("NanoVDB", 
-                              [](Context* ctx, const DevGroup::SP& devs) -> ScalarField::SP {
+        registry.registerType
+          ("NanoVDB", 
+           [](Context* ctx, const DevGroup::SP& devs) -> ScalarField::SP {
 #if BARNEY_HAVE_NANOVDB
-                                return std::make_shared<NanoVDBData>(ctx, devs);
+             return std::make_shared<NanoVDBData>(ctx, devs);
 #else
-                                throw std::runtime_error("NanoVDB geometry type not enabled in this build");
+             throw std::runtime_error("NanoVDB geometry type not enabled in this build");
 #endif
-                              });
+           });
       }
     }
 

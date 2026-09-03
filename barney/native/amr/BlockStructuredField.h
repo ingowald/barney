@@ -44,9 +44,6 @@ namespace BARNEY_NS {
           const int   *levels;
           const uint64_t *offsets;
         } perBlock;
-        struct {
-          const int   *refinements;
-        } perLevel;
         int numBlocks;
       };
 
@@ -81,9 +78,6 @@ namespace BARNEY_NS {
         PODData::SP/*1i*/ levels     = 0;
         PODData::SP/*1l*/ offsets    = 0;
       } perBlock;
-      struct {
-        PODData::SP/*1i*/ refinements = 0;
-      } perLevel;
       PODData::SP/*1f*/   scalars     = 0;
       int                 numBlocks   = 0;
     };
@@ -246,8 +240,8 @@ namespace BARNEY_NS {
       block.origin   = dd.perBlock.origins[blockID];
       block.dims     = dd.perBlock.dims[blockID];
       block.level    = dd.perBlock.levels[blockID];
-      block.cellSize = (int)(powf((float)dd.perLevel.refinements[block.level],
-                                  (float)block.level));
+      block.cellSize =
+        1.f/(1<<block.level);
       block.scalars  = dd.scalars+dd.perBlock.offsets[blockID];
       return block;
     }

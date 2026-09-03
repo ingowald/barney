@@ -140,8 +140,6 @@ namespace BARNEY_NS {
       dd.perBlock.levels  = (const int   *)perBlock.levels->getDD(device);
       dd.perBlock.offsets = (const uint64_t *)perBlock.offsets->getDD(device);
 
-      dd.perLevel.refinements = (const int *)perLevel.refinements->getDD(device);
-    
       dd.scalars      = (const float *)scalars->getDD(device);
     
       dd.numBlocks    = (int)perBlock.origins->count;
@@ -243,10 +241,6 @@ namespace BARNEY_NS {
       }
       if (member == "scalars") {
         scalars = value->as<PODData>();
-        return true;
-      }
-      if (member == "level.refinements") {
-        perLevel.refinements = value->as<PODData>();
         return true;
       }
 

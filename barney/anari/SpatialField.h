@@ -108,13 +108,13 @@ namespace BARNEY_NS {
       struct Parameters
       {
         Parameters(helium::BaseObject *observer)
-          : refinementRatio(observer),
-            blockBounds(observer),
+          : blockDims(observer),
+            blockOrigins(observer),
             blockLevel(observer),
             data(observer)
         {}
-        helium::ChangeObserverPtr<helium::Array1D> refinementRatio;
-        helium::ChangeObserverPtr<helium::Array1D> blockBounds;
+        helium::ChangeObserverPtr<helium::Array1D> blockDims;
+        helium::ChangeObserverPtr<helium::Array1D> blockOrigins;
         helium::ChangeObserverPtr<helium::Array1D> blockLevel;
         helium::ChangeObserverPtr<helium::Array1D> data;
       } m_params;
@@ -126,14 +126,9 @@ namespace BARNEY_NS {
         BNData blockDims{nullptr};
         BNData blockLevels{nullptr};
         BNData blockOffsets{nullptr};
-        BNData levelRefinements{nullptr};
       } m_bnData;
 
-      std::vector<math::int3> m_generatedBlockOrigins;
-      std::vector<math::int3> m_generatedBlockDims;
-      std::vector<int> m_generatedBlockLevels;
       std::vector<uint64_t> m_generatedBlockOffsets;
-      std::vector<int> m_generatedRefinements;
 
       box3 m_bounds;
     };
