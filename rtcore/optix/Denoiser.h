@@ -46,7 +46,18 @@ namespace rtc {
       OptixDenoiserOptions denoiserOptions;
       void                *denoiserScratch = 0;
       void                *denoiserState   = 0;
+      /*! whole-frame autoexposure intensity, shared by all tiles */
+      float               *denoiserIntensity = 0;
+      /*! whole-frame average log color (3 floats), shared by all tiles;
+          the AOV model auto-computes this per tile if left null */
+      float               *denoiserAvgColor = 0;
       OptixDenoiserSizes   denoiserSizes;
+
+      /*! max tile per invoke; caps the uint32 tensor element count so large
+          frames don't overflow, run() denoises in overlapping tiles */
+      vec2i                tileDims = {0,0};
+      /*! overlap window for the tile size; padding at tile seams */
+      unsigned int         overlapWindow = 0;
 
       /*! tracks the mode the OptixDenoiser was created with, so we
           know when to destroy + recreate */
