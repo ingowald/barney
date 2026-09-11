@@ -8,6 +8,7 @@
 #include "native/render/floatN.h"
 #include "native/common/Data.h"
 #include "native/render/HitAttributes.h"
+#include "native/render/TypedRead.h"
 
 namespace BARNEY_NS {
   namespace native {
@@ -68,26 +69,7 @@ namespace BARNEY_NS {
     inline __rtc_device
     vec4f AttributeArray::DD::valueAt(int i, bool dbg) const
     {
-      switch(this->type) {
-      case BN_FLOAT: {
-        const float v = ((const float *)ptr)[i];
-        return vec4f(v,0.f,0.f,1.f);
-      }
-      case BN_FLOAT2: {
-        const vec2f v = ((const vec2f *)ptr)[i];
-        return vec4f(v.x,v.y,0.f,1.f);
-      }
-      case BN_FLOAT3: {
-        const vec3f v = ((const vec3f *)ptr)[i];
-        return vec4f(v.x,v.y,v.z,1.f);
-      }
-      case BN_FLOAT4: {
-        const vec4f v = ((const vec4f *)ptr)[i];
-        return v;
-      }
-      default:
-        return vec4f(0.f,0.f,0.f,0.f);
-      };
+      return typedRead(ptr, type, i, size);
     }
     
   }

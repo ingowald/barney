@@ -59,11 +59,9 @@ namespace BARNEY_NS {
       const math::float3 *radianceValues
         = m_radiance->dataAs<math::float3>();
       // cuda textures have to be float4, not float3, so barney only
-      // supports float3, too
-      std::vector<math::float4> asFloat4(width * height);
-      for (int i = 0; i < width * height; i++) {
-        (math::float3 &)asFloat4[i] = radianceValues[i];
-      }
+      // supports float3, too - a host pad (see anari/TexelPolicy.h)
+      std::vector<math::float4> asFloat4;
+      padFloat3ToVec4(radianceValues, width * height, asFloat4);
 
       BNTexture texture = bnTexture2DCreate(context,slot,
                                             BN_FLOAT4,

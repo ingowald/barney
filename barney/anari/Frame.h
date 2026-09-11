@@ -77,14 +77,18 @@ namespace BARNEY_NS {
       } m_didMapChannel;
       bool m_lastFrameWasFirstFrame = true;
 
-      struct {
+      struct ChannelTypes {
         anari::DataType color{ANARI_UNKNOWN};
         anari::DataType depth{ANARI_UNKNOWN};
         anari::DataType primID{ANARI_UNKNOWN};
         anari::DataType instID{ANARI_UNKNOWN};
         anari::DataType objID{ANARI_UNKNOWN};
         anari::DataType normal{ANARI_UNKNOWN};
-      } m_channelTypes;
+      };
+      ChannelTypes m_channelTypes;
+      /*! channels the last rendered frame actually used; the perf
+        warnings must blame that frame, not the freshly flushed params */
+      ChannelTypes m_lastFrameChannelTypes;
 
       helium::ChangeObserverPtr<Renderer> m_renderer;
       helium::IntrusivePtr<Camera>        m_camera;

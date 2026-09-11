@@ -37,6 +37,36 @@ namespace BARNEY_NS {
         readMode     = cudaReadModeNormalizedFloat;
         numScalarsPerTexel = 1;
         break;
+      case rtc::UCHAR2:
+        desc         = cudaCreateChannelDesc<uchar2>();
+        sizeOfScalar = 1;
+        readMode     = cudaReadModeNormalizedFloat;
+        numScalarsPerTexel = 2;
+        break;
+      case rtc::USHORT2:
+        desc         = cudaCreateChannelDesc<ushort2>();
+        sizeOfScalar = 2;
+        readMode     = cudaReadModeNormalizedFloat;
+        numScalarsPerTexel = 2;
+        break;
+      case rtc::HALF:
+        desc         = cudaCreateChannelDescHalf1();
+        sizeOfScalar = 2;
+        readMode     = cudaReadModeElementType;
+        numScalarsPerTexel = 1;
+        break;
+      case rtc::HALF2:
+        desc         = cudaCreateChannelDescHalf2();
+        sizeOfScalar = 2;
+        readMode     = cudaReadModeElementType;
+        numScalarsPerTexel = 2;
+        break;
+      case rtc::HALF4:
+        desc         = cudaCreateChannelDescHalf4();
+        sizeOfScalar = 2;
+        readMode     = cudaReadModeElementType;
+        numScalarsPerTexel = 4;
+        break;
       case rtc::UCHAR4:
         desc         = cudaCreateChannelDesc<uchar4>();
         sizeOfScalar = 1;
@@ -51,6 +81,8 @@ namespace BARNEY_NS {
         break;
       case rtc::FLOAT3:
         throw std::runtime_error("float3 textures not allowed in barney::rtc::cuda");
+      case rtc::HALF3:
+        throw std::runtime_error("half3 textures not allowed in barney::rtc::cuda");
       default:
         PRINT(std::to_string((int)format));
         assert(0);

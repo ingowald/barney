@@ -23,10 +23,10 @@ namespace BARNEY_NS {
     {                                                                   \
       helium::Array##DIM::unmap();                                      \
       if (m_handle)                                                     \
-        bnDataSet(m_handle, totalCapacity(), data());                   \
+        bnDataSet(m_handle, totalSize(), data());                       \
     }                                                                   \
                                                                         \
-    BNData Array##DIM::barneyData()                                     \
+    BNData Array##DIM::barneyData() const                               \
     {                                                                   \
       if (!m_handle) {                                                  \
         auto *state = (BarneyGlobalState *)deviceState();               \
@@ -35,7 +35,7 @@ namespace BARNEY_NS {
         m_handle = bnDataCreate(context,                                \
                                 slot,                                   \
                                 anariToBarney(elementType()),           \
-                                totalCapacity(),                        \
+                                totalSize(),                            \
                                 data());                                \
       }                                                                 \
       return m_handle;                                                  \
@@ -52,12 +52,16 @@ namespace BARNEY_NS {
       switch (type) {
       case ANARI_UFIXED8:
         return BN_UFIXED8;
+      case ANARI_UFIXED8_VEC2:
+        return BN_UFIXED8_VEC2;
       case ANARI_UFIXED8_VEC4:
         return BN_UFIXED8_RGBA;
       case ANARI_UFIXED8_RGBA_SRGB:
         return BN_UFIXED8_RGBA_SRGB;
       case ANARI_UFIXED16:
         return BN_UFIXED16;
+      case ANARI_UFIXED16_VEC2:
+        return BN_UFIXED16_VEC2;
       case ANARI_INT8:
         return BN_INT8;
       case ANARI_INT8_VEC2:
@@ -126,6 +130,14 @@ namespace BARNEY_NS {
         return BN_FLOAT32;
       case ANARI_FLOAT32_VEC2:
         return BN_FLOAT32_VEC2;
+      case ANARI_FLOAT16:
+        return BN_FLOAT16;
+      case ANARI_FLOAT16_VEC2:
+        return BN_FLOAT16_VEC2;
+      case ANARI_FLOAT16_VEC3:
+        return BN_FLOAT16_VEC3;
+      case ANARI_FLOAT16_VEC4:
+        return BN_FLOAT16_VEC4;
       case ANARI_FLOAT32_VEC3:
         return BN_FLOAT32_VEC3;
       case ANARI_FLOAT32_VEC4:

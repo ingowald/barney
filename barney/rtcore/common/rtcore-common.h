@@ -9,6 +9,9 @@
 
 #include <cstring>
 #include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <limits>
 // #include <mutex>
 #include <vector>
 // #include <map>
@@ -60,6 +63,12 @@ namespace BARNEY_NS {
       FLOAT4,
       
       USHORT=40,
+      UCHAR2=41,
+      USHORT2=42,
+      HALF=50,
+      HALF2=51,
+      HALF3=52,
+      HALF4=53,
     } DataType;
 
     typedef enum {
@@ -73,6 +82,26 @@ namespace BARNEY_NS {
     typedef enum {
       COLOR_SPACE_LINEAR, COLOR_SPACE_SRGB,
     } ColorSpace;
+
+    // IEEE 754 half decode - the only half support we need: plain
+    // bit math, portable to every backend and to device code (no
+    // CUDA headers required). inf/nan are built from ldexpf since
+    // std::numeric_limits is not device-callable.
+    inline __both__ float halfToFloat(uint16_t h)
+    {
+      const uint32_t sign = (uint32_t)(h >> 15);
+      const uint32_t exp  = (uint32_t)((h >> 10) & 0x1f);
+      const uint32_t man  = (uint32_t)(h & 0x3ff);
+      float v;
+      if (exp == 0)
+        v = ldexpf((float)man, -24);
+      else if (exp == 0x1f)
+        v = (man == 0u) ? ldexpf(1.f, 128)          // inf
+                        : ldexpf(1.f, 128) - ldexpf(1.f, 128); // inf-inf = nan
+      else
+        v = ldexpf((float)(man + 1024u), (int)exp - 25);
+      return sign ? -v : v;
+    }
   
     struct TextureDesc {
       FilterMode filterMode = FILTER_MODE_LINEAR;

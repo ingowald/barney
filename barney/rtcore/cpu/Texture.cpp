@@ -141,6 +141,30 @@ namespace BARNEY_NS {
         // readMode     = cudaReadModeNormalizedFloat;
         numScalarsPerTexel = 1;
         break;
+      case rtc::UCHAR2:
+        sizeOfScalar = 1;
+        numScalarsPerTexel = 2;
+        break;
+      case rtc::USHORT2:
+        sizeOfScalar = 2;
+        numScalarsPerTexel = 2;
+        break;
+      case rtc::HALF:
+        sizeOfScalar = 2;
+        numScalarsPerTexel = 1;
+        break;
+      case rtc::HALF2:
+        sizeOfScalar = 2;
+        numScalarsPerTexel = 2;
+        break;
+      case rtc::HALF3:
+        sizeOfScalar = 2;
+        numScalarsPerTexel = 3;
+        break;
+      case rtc::HALF4:
+        sizeOfScalar = 2;
+        numScalarsPerTexel = 4;
+        break;
       default:
         assert(0);
       };
@@ -168,6 +192,32 @@ namespace BARNEY_NS {
     struct TextureSamplerT
     {};
 
+
+    // distinct texel types for half - they share storage with
+    // uint16 variants, so getTexel<T> needs dedicated keys
+    struct half1 { uint16_t v; };
+    struct half2 { uint16_t v[2]; };
+    struct half3 { uint16_t v[3]; };
+    struct half4 { uint16_t v[4]; };
+
+    // sRGB decode matching the GPU's sampling-time texture decode
+    // (color channels only - alpha stays linear)
+    inline float srgbToLinear(float f)
+    {
+      return (f <= 0.04045f)
+        ? f / 12.92f
+        : powf((f + 0.055f) / 1.055f, 2.4f);
+    }
+
+    inline vec4f applyColorSpace(vec4f v, const rtc::TextureDesc &desc)
+    {
+      if (desc.colorSpace == rtc::COLOR_SPACE_SRGB) {
+        v.x = srgbToLinear(v.x);
+        v.y = srgbToLinear(v.y);
+        v.z = srgbToLinear(v.z);
+      }
+      return v;
+    }
 
     template<typename T>
     vec4f getTexel(TextureData *data,
@@ -210,7 +260,84 @@ namespace BARNEY_NS {
       if (idx < 0) return desc.borderColor;
       vec4uc v = ((const vec4uc*)data->data.data())[idx];
       vec4f  vf = vec4f(v);
-      return vf * 1.f/255.f;
+      vf = vf * 1.f/255.f;
+      return applyColorSpace(vf,desc);
+    }
+
+    template<>
+    vec4f getTexel<vec2uc>(TextureData *data,
+                            const rtc::TextureDesc &desc,
+                            int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      vec2uc v = ((const vec2uc*)data->data.data())[idx];
+      vec4f vf = vec4f(v.x * (1.f/255.f), v.y * (1.f/255.f), 0.f, 0.f);
+      return applyColorSpace(vf,desc);
+    }
+
+    template<>
+    vec4f getTexel<unsigned short>(TextureData *data,
+                                   const rtc::TextureDesc &desc,
+                                   int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      unsigned short v = ((const unsigned short*)data->data.data())[idx];
+      vec4f vf = vec4f(v * (1.f/65535.f));
+      return applyColorSpace(vf,desc);
+    }
+
+    template<>
+    vec4f getTexel<vec2us>(TextureData *data,
+                            const rtc::TextureDesc &desc,
+                            int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      vec2us v = ((const vec2us*)data->data.data())[idx];
+      vec4f vf = vec4f(v.x * (1.f/65535.f), v.y * (1.f/65535.f), 0.f, 0.f);
+      return applyColorSpace(vf,desc);
+    }
+
+    template<>
+    vec4f getTexel<half1>(TextureData *data,
+                          const rtc::TextureDesc &desc,
+                          int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      half1 v = ((const half1*)data->data.data())[idx];
+      return vec4f(rtc::halfToFloat(v.v), 0.f, 0.f, 0.f);
+    }
+
+    template<>
+    vec4f getTexel<half2>(TextureData *data,
+                          const rtc::TextureDesc &desc,
+                          int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      half2 v = ((const half2*)data->data.data())[idx];
+      return vec4f(rtc::halfToFloat(v.v[0]), rtc::halfToFloat(v.v[1]),
+                   0.f, 0.f);
+    }
+
+    template<>
+    vec4f getTexel<half3>(TextureData *data,
+                          const rtc::TextureDesc &desc,
+                          int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      half3 v = ((const half3*)data->data.data())[idx];
+      return vec4f(rtc::halfToFloat(v.v[0]), rtc::halfToFloat(v.v[1]),
+                   rtc::halfToFloat(v.v[2]), 0.f);
+    }
+
+    template<>
+    vec4f getTexel<half4>(TextureData *data,
+                          const rtc::TextureDesc &desc,
+                          int64_t idx)
+    {
+      if (idx < 0) return desc.borderColor;
+      half4 v = ((const half4*)data->data.data())[idx];
+      return vec4f(rtc::halfToFloat(v.v[0]), rtc::halfToFloat(v.v[1]),
+                   rtc::halfToFloat(v.v[2]), rtc::halfToFloat(v.v[3]));
     }
 
     template<>
@@ -221,7 +348,8 @@ namespace BARNEY_NS {
       if (idx < 0) return desc.borderColor;
       unsigned char v = ((const unsigned char*)data->data.data())[idx];
       vec4f  vf = vec4f(v);
-      return vf * 1.f/255.f;
+      vf = vf * 1.f/255.f;
+      return applyColorSpace(vf,desc);
     }
 
     
@@ -436,8 +564,29 @@ namespace BARNEY_NS {
       case rtc::UCHAR:
         return createSampler<unsigned char>(data,desc);
         break;
+      case rtc::UCHAR2:
+        return createSampler<vec2uc>(data,desc);
+        break;
       case rtc::UCHAR4:
         return createSampler<vec4uc>(data,desc);
+        break;
+      case rtc::USHORT:
+        return createSampler<unsigned short>(data,desc);
+        break;
+      case rtc::USHORT2:
+        return createSampler<vec2us>(data,desc);
+        break;
+      case rtc::HALF:
+        return createSampler<half1>(data,desc);
+        break;
+      case rtc::HALF2:
+        return createSampler<half2>(data,desc);
+        break;
+      case rtc::HALF3:
+        return createSampler<half3>(data,desc);
+        break;
+      case rtc::HALF4:
+        return createSampler<half4>(data,desc);
         break;
       case rtc::FLOAT4:
         return createSampler<vec4f>(data,desc);

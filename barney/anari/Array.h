@@ -26,10 +26,10 @@ namespace BARNEY_NS {
                                                                         \
       void unmap() override;                                            \
                                                                         \
-      BNData barneyData();                                              \
+      BNData barneyData() const;                                        \
                                                                         \
     private:                                                            \
-    BNData m_handle{nullptr};                                           \
+    mutable BNData m_handle{nullptr};                                   \
     };
 
     DEFINE_BARNEY_ARRAY(1D)

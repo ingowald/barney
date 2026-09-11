@@ -196,19 +196,19 @@ namespace BARNEY_NS {
 
       auto model = m_world->makeCurrent();
 
-      if (m_lastFrameWasFirstFrame && m_channelTypes.depth != ANARI_UNKNOWN
+      if (m_lastFrameWasFirstFrame && m_lastFrameChannelTypes.depth != ANARI_UNKNOWN
           && !m_didMapChannel.depth)
         reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
                       "last frame had a depth buffer request, but never mapped it");
-      if (m_lastFrameWasFirstFrame && m_channelTypes.primID != ANARI_UNKNOWN
+      if (m_lastFrameWasFirstFrame && m_lastFrameChannelTypes.primID != ANARI_UNKNOWN
           && !m_didMapChannel.primID)
         reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
                       "last frame had a primID buffer request, but never mapped it");
-      if (m_lastFrameWasFirstFrame && m_channelTypes.objID != ANARI_UNKNOWN
+      if (m_lastFrameWasFirstFrame && m_lastFrameChannelTypes.objID != ANARI_UNKNOWN
           && !m_didMapChannel.objID)
         reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
                       "last frame had a objID buffer request, but never mapped it");
-      if (m_lastFrameWasFirstFrame && m_channelTypes.instID != ANARI_UNKNOWN
+      if (m_lastFrameWasFirstFrame && m_lastFrameChannelTypes.instID != ANARI_UNKNOWN
           && !m_didMapChannel.instID)
         reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
                       "last frame had a instID buffer request, but never mapped it");
@@ -234,6 +234,7 @@ namespace BARNEY_NS {
       m_didMapChannel.primID = false;
       m_didMapChannel.instID = false;
       m_didMapChannel.objID = false;
+      m_lastFrameChannelTypes = m_channelTypes;
 
       auto end = std::chrono::steady_clock::now();
       m_duration = std::chrono::duration<float>(end - start).count();
@@ -322,6 +323,7 @@ namespace BARNEY_NS {
                           BN_FB_COLOR,
                           m_channelBuffers.color,
                           toBarney(m_channelTypes.color));
+        m_didMapChannel.color = true;
         *pixelType = m_channelTypes.color;
         return m_channelBuffers.color;
       } else if (channel == "channel.depthCUDA"
@@ -331,6 +333,7 @@ namespace BARNEY_NS {
                                    "trying to map depth buffer, but depth buffer already mapped");
         cudaMalloc((void **)&m_channelBuffers.depth, numPixels * sizeof(float));
         bnFrameBufferRead(m_bnFrameBuffer, BN_FB_DEPTH, m_channelBuffers.depth, BN_FLOAT);
+        m_didMapChannel.depth = true;
         *pixelType = ANARI_FLOAT32;
         return m_channelBuffers.depth;
       } else if (channel == "channel.primitiveIdCUDA"
@@ -340,6 +343,7 @@ namespace BARNEY_NS {
             ("trying to map primitiveId buffer, but buffer already mapped");
         cudaMalloc((void **)&m_channelBuffers.primID, numPixels * sizeof(uint32_t));
         bnFrameBufferRead(m_bnFrameBuffer, BN_FB_PRIMID, m_channelBuffers.primID, BN_INT);
+        m_didMapChannel.primID = true;
         *pixelType = ANARI_UINT32;
         return m_channelBuffers.primID;
       } else if (channel == "channel.objectIdCUDA"
@@ -349,6 +353,7 @@ namespace BARNEY_NS {
             ("trying to map objectId buffer, but buffer already mapped");
         cudaMalloc((void **)&m_channelBuffers.objID, numPixels * sizeof(uint32_t));
         bnFrameBufferRead(m_bnFrameBuffer, BN_FB_OBJID, m_channelBuffers.objID, BN_INT);
+        m_didMapChannel.objID = true;
         *pixelType = ANARI_UINT32;
         return m_channelBuffers.objID;
       } else if (channel == "channel.instanceIdCUDA"
@@ -358,6 +363,7 @@ namespace BARNEY_NS {
             ("trying to map instanceId buffer, but buffer already mapped");
         cudaMalloc((void **)&m_channelBuffers.instID, numPixels * sizeof(uint32_t));
         bnFrameBufferRead(m_bnFrameBuffer, BN_FB_INSTID, m_channelBuffers.instID, BN_INT);
+        m_didMapChannel.instID = true;
         *pixelType = ANARI_UINT32;
         return m_channelBuffers.instID;
       } else if (channel == "channel.normalCUDA"
@@ -367,6 +373,7 @@ namespace BARNEY_NS {
             ("trying to map normal buffer, but buffer already mapped");
         cudaMalloc((void **)&m_channelBuffers.normal, numPixels * 3 * sizeof(float));
         bnFrameBufferRead(m_bnFrameBuffer, BN_FB_NORMAL, m_channelBuffers.normal, BN_FLOAT3);
+        m_didMapChannel.normal = true;
         *pixelType = ANARI_FLOAT32_VEC3;
         return m_channelBuffers.normal;
 #endif

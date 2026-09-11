@@ -4,6 +4,7 @@
 
 #include "Geometry.h"
 #include "common.h"
+#include "TexelPolicy.h"
 // std
 #include <cassert>
 #include <iostream>
@@ -36,7 +37,42 @@ namespace BARNEY_NS {
       if (!attribute)
         return;
 
-      if (BNData attr = makeBarneyData(context, slot, attribute, object); attr)
+      const Routed routed = routeArray(attribute->elementType());
+      if (routed.route == Route::PRISTINE) {
+        // pristine: the cached handle is owned by the array and
+        // re-uploads on unmap, exactly like positions/normals
+        BNData attr = attribute->barneyData();
+        if (attr)
+          bnSetData(geom, name.c_str(), attr);
+        return;
+      }
+
+      // arrays have no fixed-width fetch, so they are never padded -
+      // anything not carried natively is narrowed to float32 of the
+      // same width
+      if (routed.forcedByCapability
+          && firstTimeSeen(attribute->elementType()))
+        object->reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                              "attribute element type %s has no native "
+                              "barney format yet and was converted to "
+                              "float32 on upload",
+                              anari::toString(attribute->elementType()));
+
+      std::vector<float> data;
+      int components = demoteToF32N(attribute, data);
+      if (components == 0) {
+        object->reportMessage(ANARI_SEVERITY_WARNING,
+          "unsupported attribute element type (%s) for parameter '%s'",
+          anari::toString(attribute->elementType()),
+          name.c_str());
+        return;
+      }
+
+      BNData attr = bnDataCreate(context, slot,
+                                 routed.target,
+                                 data.size()/components,
+                                 data.data());
+      if (attr)
         bnSetAndRelease(geom, name.c_str(), attr);
     }
 

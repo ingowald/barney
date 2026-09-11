@@ -48,6 +48,7 @@ namespace BARNEY_NS {
     
       bool m_linearFilter{true};
       BNTextureData m_bnTextureData{nullptr};
+      BNTextureColorSpace m_colorSpace{BN_COLOR_SPACE_LINEAR};
     
       math::float4  m_borderColor{0.f, 0.f, 0.f, 0.f};
     };

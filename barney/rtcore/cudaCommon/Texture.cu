@@ -51,6 +51,9 @@ namespace BARNEY_NS {
       textureDesc.addressMode[2]   = toCUDA(desc.addressMode[2]);
       textureDesc.filterMode       = toCUDA(desc.filterMode);
       textureDesc.readMode         = data->readMode;
+      // sRGB is a sampling-time decode flag in CUDA - the texel data
+      // itself stays pristine 8-bit
+      textureDesc.sRGB              = (desc.colorSpace == COLOR_SPACE_SRGB);
       textureDesc.borderColor[0]   = desc.borderColor.x;
       textureDesc.borderColor[1]   = desc.borderColor.y;
       textureDesc.borderColor[2]   = desc.borderColor.z;

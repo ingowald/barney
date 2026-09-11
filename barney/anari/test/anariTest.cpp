@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <array>
+#include <cstring>
+#include <vector>
 // anari
 #define ANARI_EXTENSION_UTILITY_IMPL
 #include "anari/anari_cpp.hpp"
@@ -64,7 +66,7 @@ int main(int argc, const char **argv)
   uvec2 imgSize = {1024 /*width*/, 768 /*height*/};
 
   // camera
-  vec3 cam_pos = {0.f, 0.f, 0.f};
+  vec3 cam_pos = {0.f, 0.f, -2.f};
   vec3 cam_up = {0.f, 1.f, 0.f};
   vec3 cam_view = {0.1f, 0.f, 1.f};
 
@@ -135,10 +137,215 @@ int main(int argc, const char **argv)
   anari::setParameter(d, surface, "id", 2u);
   anari::commitParameters(d, surface);
 
-  // put the surface directly onto the world
-  anari::setParameterArray1D(d, world, "surface", &surface, 1);
-  anari::setParameter(d, world, "id", 3u);
+  std::vector<ANARISurface> surfaces;
+  surfaces.push_back(surface);
   anari::release(d, surface);
+
+  // ---------------------------------------------------------------------
+  // type-matrix meshes: one quad per data route (see anari/TexelPolicy.h)
+  // ---------------------------------------------------------------------
+  auto quadGeometry = [&](float ox, float oy) {
+    vec3 v[] = {{ox - 1.f, oy - 1.f, 3.f},
+                {ox - 1.f, oy + 1.f, 3.f},
+                {ox + 1.f, oy - 1.f, 3.f},
+                {ox + 1.f, oy + 1.f, 3.f}};
+    uvec3 idx[] = {{0u, 1u, 2u}, {1u, 2u, 3u}};
+    auto m = anari::newObject<anari::Geometry>(d, "triangle");
+    anari::setParameterArray1D(d, m, "vertex.position", v, 4);
+    anari::setParameterArray1D(d, m, "primitive.index", idx, 2);
+    anari::commitParameters(d, m);
+    return m;
+  };
+
+  auto addSurface = [&](ANARIGeometry geom, ANARIMaterial matl) {
+    auto s = anari::newObject<anari::Surface>(d);
+    anari::setAndReleaseParameter(d, s, "geometry", geom);
+    anari::setAndReleaseParameter(d, s, "material", matl);
+    anari::commitParameters(d, s);
+    surfaces.push_back(s);
+    anari::release(d, s);
+  };
+
+  auto matteFromColorAttribute = [&]() {
+    auto m = anari::newObject<anari::Material>(d, "matte");
+    anari::setParameter(d, m, "color", "color");
+    anari::commitParameters(d, m);
+    return m;
+  };
+
+  { // pristine ufixed8 colors (read-time typedRead expansion)
+    ANARIArray1D colors = anariNewArray1D(
+        d, nullptr, nullptr, nullptr, ANARI_UFIXED8_VEC4, 4);
+    const uint8_t rgba8[] = {255, 80, 80, 255,
+                             80, 255, 80, 255,
+                             80, 80, 255, 255,
+                             255, 255, 80, 255};
+    memcpy(anariMapArray(d, colors), rgba8, sizeof(rgba8));
+    anariUnmapArray(d, colors);
+    auto m = quadGeometry(-2.5f, 0.f);
+    anari::setParameter(d, m, "vertex.color", colors);
+    anari::commitParameters(d, m);
+    anari::release(d, colors);
+    addSurface(m, matteFromColorAttribute());
+  }
+
+  { // primitive sampler over a pristine float32 array (scalar reads
+    // as (x,0,0,1) per ANARI semantics - solid red quad expected)
+    float primData[] = {0.7f, 0.25f};
+    auto arr = anari::newArray1D(d, primData, 2);
+    auto sampler = anari::newObject<anari::Sampler>(d, "primitive");
+    anari::setAndReleaseParameter(d, sampler, "array", arr);
+    anari::setParameter(d, sampler, "inAttribute", "color");
+    anari::commitParameters(d, sampler);
+    auto m = quadGeometry(-2.5f, 1.6f);
+    auto matl = anari::newObject<anari::Material>(d, "matte");
+    anari::setAndReleaseParameter(d, matl, "color", sampler);
+    anari::commitParameters(d, matl);
+    addSurface(m, matl);
+  }
+
+  { // pristine float3 colors
+    vec3 color[] = {{0.9f, 0.5f, 0.5f},
+                    {0.5f, 0.9f, 0.5f},
+                    {0.5f, 0.5f, 0.9f},
+                    {0.9f, 0.9f, 0.5f}};
+    auto m = quadGeometry(2.5f, 0.f);
+    anari::setParameterArray1D(d, m, "vertex.color", color, 4);
+    anari::commitParameters(d, m);
+    addSurface(m, matteFromColorAttribute());
+  }
+
+  { // float64 colors - upload-time demotion to float32
+    double color[][3] = {{0.9, 0.5, 0.5},
+                        {0.5, 0.9, 0.5},
+                        {0.5, 0.5, 0.9},
+                        {0.9, 0.9, 0.5}};
+    auto m = quadGeometry(2.5f, -1.6f);
+    anari::setParameterArray1D(d, m, "vertex.color", color, 4);
+    anari::commitParameters(d, m);
+    addSurface(m, matteFromColorAttribute());
+  }
+
+  { // 2-component float texture: no backend implements a 2-channel
+    // float texel format, so this must route through the float4
+    // demote rather than reaching rtcore (regression: it used to
+    // route pristine and abort the host in optixDenoiser-style
+    // uninitialized-descriptor UB)
+    ANARIArray2D img = anariNewArray2D(
+        d, nullptr, nullptr, nullptr, ANARI_FLOAT32_VEC2, 2u, 2u);
+    const float texels[] = {1.f, 0.f,  0.f, 1.f,
+                            0.5f, 0.5f,  0.25f, 0.75f};
+    memcpy(anariMapArray(d, img), texels, sizeof(texels));
+    anariUnmapArray(d, img);
+    auto sampler = anari::newObject<anari::Sampler>(d, "image2D");
+    anari::setAndReleaseParameter(d, sampler, "image", img);
+    anari::setParameter(d, sampler, "inAttribute", "attribute0");
+    anari::commitParameters(d, sampler);
+
+    auto m = quadGeometry(2.5f, 1.6f);
+    std::array<float, 2> uv[] = {{0.f, 0.f}, {1.f, 0.f},
+                                {1.f, 1.f}, {0.f, 1.f}};
+    anari::setParameterArray1D(d, m, "vertex.attribute0", uv, 4);
+    anari::commitParameters(d, m);
+
+    auto matl = anari::newObject<anari::Material>(d, "matte");
+    anari::setAndReleaseParameter(d, matl, "color", sampler);
+    anari::commitParameters(d, matl);
+    addSurface(m, matl);
+  }
+
+  { // pristine float16 texture - hardware promotes half on fetch
+    ANARIArray2D img = anariNewArray2D(
+        d, nullptr, nullptr, nullptr, ANARI_FLOAT16_VEC4, 2u, 2u);
+    const uint16_t h_one = 0x3C00, h_zero = 0x0000;
+    const uint16_t texels[] = {h_one, h_zero, h_zero, h_one,
+                              h_zero, h_one, h_zero, h_one,
+                              h_zero, h_zero, h_one, h_one,
+                              h_one, h_one, h_one, h_one};
+    memcpy(anariMapArray(d, img), texels, sizeof(texels));
+    anariUnmapArray(d, img);
+    auto sampler = anari::newObject<anari::Sampler>(d, "image2D");
+    anari::setAndReleaseParameter(d, sampler, "image", img);
+    anari::setParameter(d, sampler, "inAttribute", "attribute0");
+    anari::commitParameters(d, sampler);
+
+    auto m = quadGeometry(-2.5f, -1.6f);
+    std::array<float, 2> uv[] = {{0.f, 0.f}, {1.f, 0.f},
+                                {1.f, 1.f}, {0.f, 1.f}};
+    anari::setParameterArray1D(d, m, "vertex.attribute0", uv, 4);
+    anari::commitParameters(d, m);
+
+    auto matl = anari::newObject<anari::Material>(d, "matte");
+    anari::setAndReleaseParameter(d, matl, "color", sampler);
+    anari::commitParameters(d, matl);
+    addSurface(m, matl);
+  }
+
+  { // float16 colors - pristine (was upload-time demotion before
+    // native half; must render identically - regression check)
+    ANARIArray1D ah = anariNewArray1D(
+        d, nullptr, nullptr, nullptr, ANARI_FLOAT16_VEC4, 4);
+    uint16_t *mapped = (uint16_t *)anariMapArray(d, ah);
+    const uint16_t half_1_0 = 0x3C00, half_0_5 = 0x3800,
+                   half_0_25 = 0x3400, half_0_75 = 0x3B00;
+    const uint16_t halfs[] = {half_1_0, half_0_25, half_0_25, half_1_0,
+                              half_0_25, half_1_0, half_0_25, half_1_0,
+                              half_0_25, half_0_25, half_1_0, half_1_0,
+                              half_0_75, half_0_5, half_0_5, half_0_75};
+    memcpy(mapped, halfs, sizeof(halfs));
+    anariUnmapArray(d, ah);
+    auto m = quadGeometry(0.f, -1.6f);
+    anari::setParameter(d, m, "vertex.color", ah);
+    anari::commitParameters(d, m);
+    anari::release(d, ah);
+    addSurface(m, matteFromColorAttribute());
+  }
+
+  { // sRGB RA vertex colors: ANARI toFloat4 is (srgb(r),0,0,a), so
+    // this must demote to float4, not float2. (255,255) is opaque
+    // red; yellow would mean alpha leaked into G.
+    ANARIArray1D colors = anariNewArray1D(
+        d, nullptr, nullptr, nullptr, ANARI_UFIXED8_RA_SRGB, 4);
+    const uint8_t ra[] = {255, 255, 255, 255, 255, 255, 255, 255};
+    memcpy(anariMapArray(d, colors), ra, sizeof(ra));
+    anariUnmapArray(d, colors);
+    auto m = quadGeometry(0.f, 3.2f);
+    anari::setParameter(d, m, "vertex.color", colors);
+    anari::commitParameters(d, m);
+    anari::release(d, colors);
+    addSurface(m, matteFromColorAttribute());
+  }
+
+  { // sRGB image2D sampler - hardware decode at sampling time
+    uint8_t texels[] = {255, 0, 0, 255,
+                        0, 255, 0, 255,
+                        0, 0, 255, 255,
+                        255, 255, 255, 255};
+    ANARIArray2D img = anariNewArray2D(
+        d, nullptr, nullptr, nullptr, ANARI_UFIXED8_VEC4, 2u, 2u);
+    memcpy(anariMapArray(d, img), texels, sizeof(texels));
+    anariUnmapArray(d, img);
+    auto sampler = anari::newObject<anari::Sampler>(d, "image2D");
+    anari::setAndReleaseParameter(d, sampler, "image", img);
+    anari::setParameter(d, sampler, "inAttribute", "attribute0");
+    anari::commitParameters(d, sampler);
+
+    auto m = quadGeometry(0.f, 1.6f);
+    std::array<float, 2> uv[] = {{0.f, 0.f}, {1.f, 0.f},
+                                {1.f, 1.f}, {0.f, 1.f}};
+    anari::setParameterArray1D(d, m, "vertex.attribute0", uv, 4);
+    anari::commitParameters(d, m);
+
+    auto matl = anari::newObject<anari::Material>(d, "matte");
+    anari::setAndReleaseParameter(d, matl, "color", sampler);
+    anari::commitParameters(d, matl);
+    addSurface(m, matl);
+  }
+
+  // put the surfaces directly onto the world
+  anari::setParameterArray1D(d, world, "surface", surfaces.data(),
+                             (uint64_t)surfaces.size());
+  anari::setParameter(d, world, "id", 3u);
 
   anari::commitParameters(d, world);
 

@@ -9,139 +9,125 @@
 #include "Device.h"
 #include "Array.h"
 #include "Frame.h"
+#include "TexelPolicy.h"
 // std
 #include <cstring>
+#include <set>
 
 namespace BARNEY_NS {
   namespace anari {
 
     // Helper functions /////////////////////////////////////////////////////////
 
-    BNTextureData makeBarneyTextureData(Object *objectToReportErrorWith,
-                                        BarneyGlobalState *state,
-                                        helium::Array *input,
-                                        int width,
-                                        int height,
-                                        int depth=-1)
+    struct TextureDataRoute {
+      BNTextureData        data{0};
+      BNTextureColorSpace  colorSpace{BN_COLOR_SPACE_LINEAR};
+    };
+
+    /*! upload an ANARI array as barney texel data. the routing policy
+      itself lives in TexelPolicy.h; this only executes the route the
+      table picked */
+    static TextureDataRoute makeBarneyTextureData(Object *objectToReportErrorWith,
+                                                  BarneyGlobalState *state,
+                                                  helium::Array *input,
+                                                  int width,
+                                                  int height,
+                                                  int depth=-1)
     {
       int slot = state->slot;
       auto context = state->tether->context;
+      const auto type = input->elementType();
 
-      if (depth == -1) {
-        // this is 2D data
-        if (input->elementType() == ANARI_FLOAT32_VEC4) {
-          return bnTextureData2DCreate(context,
-                                       slot,
-                                       BN_FLOAT4,
-                                       width,
-                                       height,
-                                       input->dataAs<anari::math::float4>());
-        } else if (input->elementType() == ANARI_FLOAT32) {
-          return bnTextureData2DCreate(context,
-                                       slot,
-                                       BN_FLOAT,
-                                       width,
-                                       height,
-                                       input->dataAs<float>());
-        } else if (input->elementType() == ANARI_UFIXED8_VEC4) {
-          return bnTextureData2DCreate(context,
-                                       slot,
-                                       BN_UFIXED8_RGBA,
-                                       width,
-                                       height,
-                                       input->data());
-        } else {
-          std::vector<uint32_t> texels;
-          objectToReportErrorWith->reportMessage
-            (ANARI_SEVERITY_PERFORMANCE_WARNING,
-             "banari doing 2D texture format conversion (%s)",
-             anari::toString(input->elementType()));
-          if (!convert_to_rgba8(input, texels)) {
-            objectToReportErrorWith->reportMessage
-              (ANARI_SEVERITY_ERROR,
-               "unsupported texel type (%s) in 2D texture format conversion",
-               anari::toString(input->elementType()));
-            return {};
-          }
-          return bnTextureData2DCreate(context, slot, BN_UFIXED8_RGBA,
-                                       width, height, texels.data());
-        }
-      } else {
-        // this is 3D data
-        if (input->elementType() == ANARI_FLOAT32) {
-          return bnTextureData3DCreate(context,
-                                       slot,
-                                       BN_FLOAT,
-                                       width,
-                                       height,
-                                       depth,
-                                       input->dataAs<float>());
-        } else if (input->elementType() == ANARI_UFIXED8) {
-          return bnTextureData3DCreate(context,
-                                       slot,
-                                       BN_UFIXED8,
-                                       width,
-                                       height,
-                                       depth,
-                                       input->data());
-        } else if (input->elementType() == ANARI_INT8) {
-          return bnTextureData3DCreate(context,
-                                       slot,
-                                       BN_UINT8,
-                                       width,
-                                       height,
-                                       depth,
-                                       input->data());
-        } else if (input->elementType() == ANARI_UFIXED16) {
-          return bnTextureData3DCreate(context,
-                                       slot,
-                                       BN_UFIXED16,
-                                       width,
-                                       height,
-                                       depth,
-                                       input->data());
-        } else if (input->elementType() == ANARI_FLOAT32_VEC4) {
-          return bnTextureData3DCreate(context,
-                                       slot,
-                                       BN_FLOAT32_VEC4,
-                                       width,
-                                       height,
-                                       depth,
-                                       input->dataAs<anari::math::float4>());
-        } else if (input->elementType() == ANARI_FLOAT32_VEC3) {
-          size_t N = width*size_t(height)*depth;
-          std::vector<anari::math::float4> converted(N);
-          const anari::math::float3 *in = input->dataAs<anari::math::float3>();
-          for (size_t i=0;i<N;i++) {
-            converted[i].x = in[i].x;
-            converted[i].y = in[i].y;
-            converted[i].z = in[i].z;
-            converted[i].w = 1.f;
-          }
-          return bnTextureData3DCreate(context,
-                                       slot,
-                                       BN_FLOAT32_VEC4,
-                                       width,
-                                       height,
-                                       depth,
-                                       converted.data());
-        } else {
-          std::vector<uint32_t> texels;
-          objectToReportErrorWith->reportMessage
-            (ANARI_SEVERITY_PERFORMANCE_WARNING,
-             "banari doing 3D texture format conversion (%s)",
-             anari::toString(input->elementType()));
-          if (!convert_to_rgba8(input, texels)) {
-            objectToReportErrorWith->reportMessage
-              (ANARI_SEVERITY_ERROR,
-               "unsupported texel type (%s) in 3D texture format conversion",
-               anari::toString(input->elementType()));
-            return {};
-          }
-          return bnTextureData3DCreate(context, slot, BN_UFIXED8_RGBA,
-                                       width, height, depth, texels.data());
-        }
+      const Routed routed = routeTexel(type);
+      if (routed.route == Route::UNSUPPORTED) {
+        objectToReportErrorWith->reportMessage
+          (ANARI_SEVERITY_ERROR,
+           "unsupported texel type (%s)",
+           anari::toString(type));
+        return {};
       }
+      if (routed.forcedByCapability && firstTimeSeen(type))
+        objectToReportErrorWith->reportMessage
+          (ANARI_SEVERITY_PERFORMANCE_WARNING,
+           "texel type %s has no native barney format yet and was "
+           "converted to float32 on upload; this costs memory but not "
+           "accuracy",
+           anari::toString(type));
+
+      // host work buffers - only filled for the routes that convert
+      std::vector<math::float4> f32vec4;
+      std::vector<float>        f32scalar;
+      std::vector<uint8_t>      padded;
+      std::vector<uint8_t>      rgba8;
+
+      const void *texels = input->data();
+      switch (routed.route) {
+      case Route::PRISTINE:
+        break;
+      case Route::PAD: {
+        size_t bytesPerTexel = 0;
+        padToFourComponents(input, padded, bytesPerTexel);
+        texels = padded.data();
+      } break;
+      case Route::SPLAT_SRGB: {
+        // the sRGB decode flag covers the leading colour lanes and
+        // leaves alpha linear, so RA has to land as (r,0,0,a) and RGB
+        // as (r,g,b,255) - see ANARITypeProperties<>::toFloat4
+        const size_t N = input->totalSize();
+        const uint8_t *in = (const uint8_t *)input->data();
+        const int srcComponents = (int)::anari::componentsOf(type);
+        rgba8.resize(N*4);
+        for (size_t i = 0; i < N; ++i) {
+          if (srcComponents == 2) {
+            rgba8[i*4+0] = in[i*2+0];
+            rgba8[i*4+1] = 0;
+            rgba8[i*4+2] = 0;
+            rgba8[i*4+3] = in[i*2+1];
+          } else {
+            rgba8[i*4+0] = in[i*3+0];
+            rgba8[i*4+1] = in[i*3+1];
+            rgba8[i*4+2] = in[i*3+2];
+            rgba8[i*4+3] = 255;
+          }
+        }
+        texels = rgba8.data();
+      } break;
+      case Route::DEMOTE_F32: {
+        if (routed.target == BN_FLOAT32) {
+          if (demoteToF32N(input, f32scalar) != 1) {
+            objectToReportErrorWith->reportMessage
+              (ANARI_SEVERITY_ERROR,
+               "unsupported texel type (%s)",
+               anari::toString(type));
+            return {};
+          }
+          texels = f32scalar.data();
+        } else {
+          if (!demoteToF32Vec4(input, f32vec4)) {
+            objectToReportErrorWith->reportMessage
+              (ANARI_SEVERITY_ERROR,
+               "unsupported texel type (%s)",
+               anari::toString(type));
+            return {};
+          }
+          texels = f32vec4.data();
+        }
+      } break;
+      default:
+        return {};
+      }
+      const BNDataType targetType = routed.target;
+      const BNTextureColorSpace colorSpace = routed.colorSpace;
+
+      TextureDataRoute res;
+      res.colorSpace = colorSpace;
+      if (depth == -1)
+        res.data = bnTextureData2DCreate(context, slot, targetType,
+                                         width, height, texels);
+      else
+        res.data = bnTextureData3DCreate(context, slot, targetType,
+                                         width, height, depth, texels);
+      return res;
     }
 
     // Sampler definitions ////////////////////////////////////////////////////////
@@ -227,6 +213,7 @@ namespace BARNEY_NS {
       BNTextureFilterMode filterMode =
         m_linearFilter ? BN_TEXTURE_LINEAR : BN_TEXTURE_NEAREST;
       bnSet1i(m_bnSampler, "filterMode", (int)filterMode);
+      bnSet1i(m_bnSampler, "colorSpace", (int)m_colorSpace);
       bnSet4f(m_bnSampler, "borderColor",
               m_borderColor.x,
               m_borderColor.y,
@@ -277,19 +264,22 @@ namespace BARNEY_NS {
 
     void Image1D::finalize()
     {
-      if (!m_image) {
-        reportMessage(ANARI_SEVERITY_DEBUG,
-                      "Image1D::finalize() without a valid 'image' parameter");
-        return;
-      }
       if (m_bnTextureData) {
         bnRelease(m_bnTextureData);
         m_bnTextureData = 0;
       }
-      m_bnTextureData
-        = makeBarneyTextureData(this,
-                                deviceState(), m_image.ptr,
-                                (int)m_image->size(), 1);
+      if (!m_image) {
+        reportMessage(ANARI_SEVERITY_DEBUG,
+                      "Image1D::finalize() without a valid 'image' parameter");
+        TextureDataSampler::setBarneyParameters();
+        bnCommit(m_bnSampler);
+        return;
+      }
+      auto route = makeBarneyTextureData(this,
+                                         deviceState(), m_image.ptr,
+                                         (int)m_image->size(), 1);
+      m_bnTextureData = route.data;
+      m_colorSpace   = route.colorSpace;
       // ------------------------------------------------------------------
       // now, create sampler over those texels
       // ------------------------------------------------------------------
@@ -325,13 +315,16 @@ namespace BARNEY_NS {
       if (!m_image) {
         reportMessage(ANARI_SEVERITY_DEBUG,
                       "Image2D::finalize() without a valid 'image' parameter");
+        TextureDataSampler::setBarneyParameters();
+        bnCommit(m_bnSampler);
         return;
       }
 
-      m_bnTextureData
-        = makeBarneyTextureData(this,
-                                deviceState(), m_image.ptr,
-                                m_image->size().x, m_image->size().y);
+      auto route = makeBarneyTextureData(this,
+                                         deviceState(), m_image.ptr,
+                                         m_image->size().x, m_image->size().y);
+      m_bnTextureData = route.data;
+      m_colorSpace   = route.colorSpace;
 
       TextureDataSampler::setBarneyParameters();
     
@@ -372,13 +365,17 @@ namespace BARNEY_NS {
       if (!m_image) {
         reportMessage(ANARI_SEVERITY_DEBUG,
                       "Image3D::finalize() without a valid 'image' parameter");
+        TextureDataSampler::setBarneyParameters();
+        bnCommit(m_bnSampler);
         return;
       }
-      m_bnTextureData = makeBarneyTextureData(this,
-                                              deviceState(), m_image.ptr,
-                                              m_image->size().x,
-                                              m_image->size().y,
-                                              m_image->size().z);
+      auto route = makeBarneyTextureData(this,
+                                         deviceState(), m_image.ptr,
+                                         m_image->size().x,
+                                         m_image->size().y,
+                                         m_image->size().z);
+      m_bnTextureData = route.data;
+      m_colorSpace   = route.colorSpace;
 
       TextureDataSampler::setBarneyParameters();
     
@@ -420,7 +417,11 @@ namespace BARNEY_NS {
       : Sampler(s, "primitive")
     {}
 
-    PrimitiveSampler::~PrimitiveSampler() = default;
+    PrimitiveSampler::~PrimitiveSampler()
+    {
+      if (m_bnArrayData)
+        bnRelease(m_bnArrayData);
+    }
 
     void PrimitiveSampler::commitParameters()
     {
@@ -451,27 +452,38 @@ namespace BARNEY_NS {
         m_bnArrayData = 0;
       }
 
-      BNDataType barneyType;
-      size_t sizeOfType;
       auto type = m_array->elementType();
-      switch(type) {
-      case ANARI_UFIXED8_VEC4:
-        barneyType = BN_UFIXED8_RGBA;
-        sizeOfType = 4;
-        break;
-      default: throw std::runtime_error
-          ("unsupported anari primitive sampler data type #"
-           +std::to_string((int)type));
+      const Routed routed = routeArray(type);
+      BNDataType barneyType = routed.target;
+
+      if (routed.route == Route::PRISTINE) {
+        // pristine: original type, expanded on read by typedRead
+        m_bnArrayData
+          = bnDataCreate(context, slot, barneyType,
+                         m_array->totalSize(), m_array->data());
+      } else {
+        if (routed.forcedByCapability && firstTimeSeen(type))
+          reportMessage(ANARI_SEVERITY_PERFORMANCE_WARNING,
+                        "array element type %s has no native barney format "
+                        "yet and was converted to float32 on upload",
+                        anari::toString(type));
+        // upload-time demotion, same as the attribute path
+        std::vector<float> demoted;
+        int components = demoteToF32N(m_array, demoted);
+        if (components == 0) {
+          reportMessage
+            (ANARI_SEVERITY_ERROR,
+             "unsupported array element type (%s) on primitive sampler",
+             anari::toString(type));
+          bnSetData(m_bnSampler, "arrayData", (BNData)0);
+          bnCommit(m_bnSampler);
+          return;
+        }
+        m_bnArrayData
+          = bnDataCreate(context, slot, barneyType,
+                         demoted.size()/components, demoted.data());
       }
-      m_bnArrayData
-        = bnDataCreate(context,slot,barneyType,
-                       m_array->totalSize(),
-                       m_array->data()
-                       );
-      // ------------------------------------------------------------------
-      // now, create sampler over those texels
-      // ------------------------------------------------------------------
-    
+
       bnSetData(m_bnSampler, "arrayData", m_bnArrayData);
       bnSet1i(m_bnSampler, "arrayOffset", (int)m_offset);
       bnSet1i(m_bnSampler, "arrayType", (int)barneyType);

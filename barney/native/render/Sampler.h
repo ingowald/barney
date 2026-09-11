@@ -8,6 +8,7 @@
 #include "native/Object.h"
 #include "native/common/Data.h"
 #include "native/common/math.h"
+#include "native/render/TypedRead.h"
 #include <stack>
 
 namespace BARNEY_NS {
@@ -48,6 +49,7 @@ namespace BARNEY_NS {
           arrayData   = other.arrayData;
           arrayOffset = other.arrayOffset;
           arrayType   = other.arrayType;
+          arraySize   = other.arraySize;
           
           texture      = other.texture;
           inAttribute  = other.inAttribute;
@@ -65,6 +67,7 @@ namespace BARNEY_NS {
         // primitive sampler only:
         void              *arrayData;
         int                arrayOffset;
+        int                arraySize;
         BNDataType         arrayType;
         
         // all types
@@ -179,6 +182,7 @@ namespace BARNEY_NS {
       BNTextureAddressMode wrapModes[3]
       = { BN_TEXTURE_WRAP, BN_TEXTURE_WRAP, BN_TEXTURE_WRAP };
       BNTextureFilterMode  filterMode { BN_TEXTURE_LINEAR   };
+      BNTextureColorSpace  colorSpace { BN_COLOR_SPACE_LINEAR};
       const int            numDims;
       std::shared_ptr<TextureData> textureData{ 0 };
     };
@@ -202,12 +206,10 @@ namespace BARNEY_NS {
       if (type == PRIMITIVE) {
         if (!arrayData)
           return vec4f(0.f,0.f,0.f,1.f);
-          
-        if (arrayType == BN_UFIXED8_RGBA) {
-          vec4uc v = ((vec4uc*)arrayData)[arrayOffset+inputs.primID];
-          return vec4f(v)*(1.f/255.f);
-        }
-        return vec4f(0.f,0.f,0.f,1.f);
+
+        return typedRead(arrayData, arrayType,
+                         arrayOffset+inputs.primID,
+                         arraySize);
       }
       vec4f in  = inputs.get((AttributeKind)inAttribute,dbg);
       vec4f out = in;
