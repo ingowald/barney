@@ -156,6 +156,7 @@ namespace BARNEY_NS {
 
     void shadeRaysLocally(Renderer *renderer,
                           GlobalModel *model,
+                          Camera *camera,
                           FrameBuffer *fb,
                           int generation,
                           uint32_t rngSeed);

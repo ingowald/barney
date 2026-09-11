@@ -240,6 +240,52 @@ namespace BARNEY_NS {
                                gatheredTilesOnOwner.numActiveTiles);
     device->sync();
   }
+
+  void DistFB::gatherMotionChannel()
+  {
+    std::vector<MPI_Request> recv_requests(isOwner ? ownerGather.numGPUs : 0);
+    std::vector<MPI_Request> send_requests(context->isActiveWorker ? devices->size() : 0);
+
+    if (isOwner) {
+      MotionChannelTile *mv_recv = gatheredTilesOnOwner.auxChannelTiles.motion;
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++) {
+        auto thisDev = &context->topo->allDevices[ggID];
+        context->world.recv(thisDev->worldRank, thisDev->local,
+                            mv_recv + ownerGather.firstTileOnGPU[ggID],
+                            ownerGather.numTilesOnGPU[ggID],
+                            recv_requests[ggID]);
+      }
+    }
+    if (context->isActiveWorker) {
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        auto tiledFB = getFor(device);
+        MotionChannelTile *mv_send = tiledFB->auxTiles.motion;
+        context->world.send(owningRank, device->contextRank(),
+                            mv_send,
+                            tiledFB->numActiveTilesThisGPU,
+                            send_requests[device->contextRank()]);
+      }
+    }
+    if (isOwner)
+      for (int ggID = 0; ggID < ownerGather.numGPUs; ggID++)
+        context->world.wait(recv_requests[ggID]);
+    if (context->isActiveWorker)
+      for (auto device : *devices)
+        context->world.wait(send_requests[device->contextRank()]);
+  }
+
+  void DistFB::writeMotionChannel(void *stagingArea)
+  {
+    if (!isOwner) return;
+    auto device = getDenoiserDevice();
+    TiledFB::linearizeMotionTiles(device,
+                                  stagingArea, numPixels,
+                                  gatheredTilesOnOwner.auxChannelTiles.motion,
+                                  gatheredTilesOnOwner.tileDescs,
+                                  gatheredTilesOnOwner.numActiveTiles);
+    device->sync();
+  }
   
   /*! gather color (and optionally, if not null) linear normal, from
     all GPUs (and ranks). lienarColor and lienarNormal are
@@ -446,6 +492,10 @@ namespace BARNEY_NS {
         device->rtc->freeMem(gatheredTilesOnOwner.auxChannelTiles.objID);
         gatheredTilesOnOwner.auxChannelTiles.objID = 0;
       }
+      if (gatheredTilesOnOwner.auxChannelTiles.motion) {
+        device->rtc->freeMem(gatheredTilesOnOwner.auxChannelTiles.motion);
+        gatheredTilesOnOwner.auxChannelTiles.motion = 0;
+      }
       if (gatheredTilesOnOwner.tileDescs) {
         device->rtc->freeMem(gatheredTilesOnOwner.tileDescs);
         gatheredTilesOnOwner.tileDescs = 0;
@@ -586,6 +636,9 @@ namespace BARNEY_NS {
       if (channels & BN_FB_OBJID)
         gatheredTilesOnOwner.auxChannelTiles.objID
           = (AuxChannelTile*)frontDev->rtc->allocMem(sumTiles*sizeof(AuxChannelTile));
+      if (channels & BN_FB_MOTION)
+        gatheredTilesOnOwner.auxChannelTiles.motion
+          = (MotionChannelTile*)frontDev->rtc->allocMem(sumTiles*sizeof(MotionChannelTile));
 
       gatheredTilesOnOwner.tileDescs
         = (TileDesc *)frontDev->rtc->allocMem

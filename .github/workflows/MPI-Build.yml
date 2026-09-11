@@ -27,12 +27,12 @@ jobs:
             cuda: "none"
             gcc: 13
             config: Release
-            build_flags: "-DBARNEY_BACKEND_EMBREE=ON -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=OFF"
+            build_flags: "-DBARNEY_BACKEND_CPU=ON -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=OFF"
           - os: ubuntu-24.04
             cuda: "13.0.2"
             gcc: 13
             config: Release
-            build_flags: "-DBARNEY_BACKEND_EMBREE=OFF -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=ON"
+            build_flags: "-DBARNEY_BACKEND_CPU=OFF -DBARNEY_BACKEND_OPTIX=OFF -DBARNEY_BACKEND_CUDA=ON"
           - os: ubuntu-22.04
             cuda: "12.0.0"
             gcc: 11

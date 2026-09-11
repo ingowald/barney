@@ -155,6 +155,35 @@ namespace BARNEY_NS {
     }
   }
   
+  void ModelSlot::setInstanceMotionDeltas(const affine3f *deltas,
+                                          int numInstances)
+  {
+    if (!deltas || numInstances <= 0) {
+      world->setMotionDeltas({});
+      return;
+    }
+    if (numInstances != (int)instances.groups.size()) {
+      std::cout << "#barney: ignoring motion-delta update with mismatched instance count"
+                << std::endl;
+      return;
+    }
+    std::vector<affine3f> flat;
+    flat.reserve(instances.groups.size());
+    for (int i = 0; i < (int)instances.groups.size(); i++) {
+      Group *group = instances.groups[i].get();
+      if (!group) continue;
+      Group::PLD *groupPLD = group->getPLD((*devices)[0]);
+      int appendCount = 0;
+      if (groupPLD->userGeomGroup)     appendCount++;
+      if (groupPLD->volumeGeomsGroup)  appendCount++;
+      if (groupPLD->triangleGeomGroup) appendCount++;
+      appendCount += (int)groupPLD->volumeGroups.size();
+      for (int k = 0; k < appendCount; k++)
+        flat.push_back(deltas[i]);
+    }
+    world->setMotionDeltas(flat);
+  }
+
   void ModelSlot::updateInstanceTransforms(const affine3f *xfms,
                                            int numInstances)
   {

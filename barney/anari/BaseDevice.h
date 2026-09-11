@@ -1,0 +1,26 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+// helium
+#include "helium/BaseDevice.h"
+#include "barneyDeviceConfig.h"
+
+namespace barney {
+  
+  struct BarneyBaseDevice : public helium::BaseDevice
+  {
+    BarneyBaseDevice() = default;
+    BarneyBaseDevice(ANARIStatusCallback cb, const void *userPtr)
+      : helium::BaseDevice(cb,userPtr)
+    {}
+    BarneyBaseDevice(ANARILibrary library)
+      : helium::BaseDevice(library)
+    {}
+    
+    virtual const char **extensions() = 0;
+  };
+  
+}

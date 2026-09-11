@@ -1,0 +1,44 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA
+// CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#include "rtcore/common/rtcore-common.h"
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP) || defined(__HIPCC__)
+# include "rtcore/cudaCommon/cuda_to_hip.h"
+#endif
+#ifdef __CUDACC__
+# include <cuda/std/limits>
+# include <cuda.h>
+#endif
+#include "cuda-helper.h"
+
+#define __rtc_device __device__
+#define __rtc_both   __device__ __host__
+
+namespace BARNEY_NS {
+  namespace rtc {
+       
+    using namespace owl::common;    
+    
+    // ------------------------------------------------------------------
+    // cuda vector types - import those into namesapce so we can
+    // always disambiguate by writing rtc::float4 no matter what
+    // backend we use
+    // ------------------------------------------------------------------
+    using ::float2;
+    using ::float3;
+    using ::float4;
+    using ::int2;
+    using ::int3;
+    using ::int4;
+    
+    inline __rtc_both vec3f load(const float3 &v)
+    { return vec3f(v.x,v.y,v.z); }
+    inline __rtc_both vec4f load(const float4 &vv)
+    { float4 v = vv; return vec4f(v.x,v.y,v.z,v.w); }
+
+  }
+}
+

@@ -9,6 +9,7 @@
 
 namespace BARNEY_NS {
 
+
   rtc::DataType toRTC(BNDataType type)
   {
     switch (type) {
@@ -90,6 +91,16 @@ namespace BARNEY_NS {
     case BN_UINT8_VEC3: return "BN_UINT8_VEC3";
     case BN_UINT8_VEC4: return "BN_UINT8_VEC4";
 
+    case BN_INT16:      return "BN_INT16";
+    case BN_INT16_VEC2: return "BN_INT16_VEC2";
+    case BN_INT16_VEC3: return "BN_INT16_VEC3";
+    case BN_INT16_VEC4: return "BN_INT16_VEC4";
+
+    case BN_UINT16:      return "BN_UINT16";
+    case BN_UINT16_VEC2: return "BN_UINT16_VEC2";
+    case BN_UINT16_VEC3: return "BN_UINT16_VEC3";
+    case BN_UINT16_VEC4: return "BN_UINT16_VEC4";
+
     case BN_INT32:      return "BN_INT32";
     case BN_INT32_VEC2: return "BN_INT32_VEC2";
     case BN_INT32_VEC3: return "BN_INT32_VEC3";
@@ -120,8 +131,14 @@ namespace BARNEY_NS {
     case BN_FLOAT64_VEC3: return "BN_FLOAT64_VEC3";
     case BN_FLOAT64_VEC4: return "BN_FLOAT64_VEC4";
 
+    case BN_UFIXED8:
+      return "BN_UFIXED8";
     case BN_UFIXED8_RGBA: 
       return "BN_UFIXED8_RGBA";
+    case BN_UFIXED8_RGBA_SRGB:
+      return "BN_UFIXED8_RGBA_SRGB";
+    case BN_UFIXED16:
+      return "BN_UFIXED16";
       
     default:
       throw std::runtime_error
@@ -139,6 +156,7 @@ namespace BARNEY_NS {
     case BN_FB_INSTID: return "BN_FB_INSTID";
     case BN_FB_OBJID:  return "BN_FB_OBJID";
     case BN_FB_NORMAL: return "BN_FB_NORMAL";
+    case BN_FB_MOTION: return "BN_FB_MOTION";
     default:
       throw std::runtime_error
         ("#bn internal error: to_string not implemented for "

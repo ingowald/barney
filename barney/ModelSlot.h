@@ -35,6 +35,7 @@ namespace BARNEY_NS {
                       const affine3f *xfms,
                       int numInstances);
     void updateInstanceTransforms(const affine3f *xfms, int numInstances);
+    void setInstanceMotionDeltas(const affine3f *deltas, int numInstances);
     void setInstanceAttributes(const std::string &which, const PODData::SP &data);
     void updateWorldLightsFromInstances();
     void flattenInstancesForDevice(Device *device,

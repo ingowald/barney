@@ -169,7 +169,7 @@ namespace BARNEY_NS {
         uint32_t rngSeed = fb->accumID*16+generation;
         traceRaysGlobally(model,rngSeed,needHitIDs);
 
-        shadeRaysLocally(renderer, model, fb, generation, rngSeed);
+        shadeRaysLocally(renderer, model, camera, fb, generation, rngSeed);
 
         const int numActiveGlobally = numRaysActiveGlobally();
         if (FromEnv::get()->logQueues)

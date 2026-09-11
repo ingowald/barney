@@ -87,5 +87,13 @@ namespace BARNEY_NS {
     for (auto device : *devices)
       device->sync();
   }
-  
+
+  void LocalFB::writeMotionChannel(void *stagingArea)
+  {
+    for (auto device : *devices)
+      getFor(device)->linearizeAuxChannel(stagingArea, BN_FB_MOTION);
+    for (auto device : *devices)
+      device->sync();
+  }
+
 } // ::BARNEY_NS

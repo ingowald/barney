@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 
+DEPRECATED !?
+
 #pragma once
 
 #include "barney/Context.h"
@@ -45,6 +47,11 @@ namespace BARNEY_NS {
                                   const affine3f *xfms,
                                   int numInstances) override
     { getSlot(slot)->updateInstanceTransforms(xfms,numInstances); }
+
+    void setInstanceMotionDeltas(int slot,
+                                 const affine3f *deltas,
+                                 int numInstances) override
+    { getSlot(slot)->setInstanceMotionDeltas(deltas,numInstances); }
 
     void setInstanceAttributes(int slot,
                                const std::string &which,
