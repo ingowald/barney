@@ -21,6 +21,10 @@ namespace BARNEY_NS {
       math::mat4 xfm = anari::math::identity;
       getParam("transform", ANARI_FLOAT32_MAT4, &xfm);
 
+      math::mat4 prevXfm = xfm;
+      m_hasPrevTransform = getParam("motion.transform",
+                                    ANARI_FLOAT32_MAT4, &prevXfm);
+      
       Attributes attributes;
       for (int i=0;i<attributes.count;i++)
         attributes.values[i] = math::float4(NAN);
@@ -48,7 +52,8 @@ namespace BARNEY_NS {
         *this->attributes = attributes;
       }
     
-      m_transform = xfm;
+      m_transform     = xfm;
+      m_prevTransform = prevXfm;
       m_previousGroup = m_group.ptr;
       m_group = getParamObject<Group>("group");
     }
@@ -85,6 +90,17 @@ namespace BARNEY_NS {
       out->l.vz = (const bn_float3&)m_transform[2];
       out->p    = (const bn_float3&)m_transform[3];
     };
+  
+    void Instance::writeMotionDelta(BNTransform *out) const
+    {
+      const math::mat4 delta = m_hasPrevTransform
+        ? math::mul(m_prevTransform, math::inverse(m_transform))
+        : math::mat4(anari::math::identity);
+      out->l.vx = (const bn_float3&)delta[0];
+      out->l.vy = (const bn_float3&)delta[1];
+      out->l.vz = (const bn_float3&)delta[2];
+      out->p    = (const bn_float3&)delta[3];
+    }
   
     box3 Instance::bounds() const
     {

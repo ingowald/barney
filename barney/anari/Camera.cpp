@@ -48,6 +48,23 @@ namespace BARNEY_NS {
                       "app set camera.up to NAN coordinates");
       m_imageRegion = math::float4(0.f, 0.f, 1.f, 1.f);
       getParam("imageRegion", ANARI_FLOAT32_BOX2, &m_imageRegion);
+
+      const bool haveCurr = getParam("motion.viewProjection",
+                                     ANARI_FLOAT32_MAT4, &m_currViewProj);
+      const bool havePrev = getParam("motion.previousViewProjection",
+                                     ANARI_FLOAT32_MAT4, &m_prevViewProj);
+      m_haveMotionMatrices = haveCurr && havePrev;
+    }
+
+    void Camera::applyMotionMatrices()
+    {
+      bnSet1i(m_barneyCamera, "motion.enabled", m_haveMotionMatrices ? 1 : 0);
+      if (m_haveMotionMatrices) {
+        bnSet4x4fv(m_barneyCamera, "motion.viewProjection",
+                   (const bn_float4 *)&m_currViewProj);
+        bnSet4x4fv(m_barneyCamera, "motion.previousViewProjection",
+                   (const bn_float4 *)&m_prevViewProj);
+      }
     }
 
     BNCamera Camera::barneyCamera() const
@@ -84,6 +101,7 @@ namespace BARNEY_NS {
       bnSet1f(m_barneyCamera, "height", m_height);
       bnSet1f(m_barneyCamera, "near", m_near);
       bnSet1f(m_barneyCamera, "far", m_far);
+      applyMotionMatrices();
       bnCommit(m_barneyCamera);
     }
 
@@ -111,6 +129,7 @@ namespace BARNEY_NS {
       bnSetVec(m_barneyCamera, "up", m_up);
       bnSetVec(m_barneyCamera, "position", m_pos);
       bnSetVec(m_barneyCamera, "direction", m_dir);
+      applyMotionMatrices();
       bnCommit(m_barneyCamera);
     }
 
@@ -143,6 +162,7 @@ namespace BARNEY_NS {
       bnSet1f(m_barneyCamera, "focusDistance", m_focusDistance);
       bnSet1f(m_barneyCamera, "apertureRadius", m_apertureRadius);
       bnSet1f(m_barneyCamera, "fovy", anari::degrees(m_fovy));
+      applyMotionMatrices();
       bnCommit(m_barneyCamera);
     }
 

@@ -99,6 +99,9 @@ namespace BARNEY_NS {
       void writeAuxChannel(void *stagingArea,
                            BNFrameBufferChannel channel) override;
 
+      void gatherMotionChannel() override;
+      void writeMotionChannel(void *stagingArea) override;
+      
       /*! allocated whatever temporary tile memory we may have allocated */
       void freeChannelData();
     

@@ -33,6 +33,13 @@ namespace BARNEY_NS {
         inline ~DD() = default;
       
         Type  type = UNDEFINED;
+        
+        /* Motion-vector reprojection matrices (world -> clip). When
+           haveMotionMatrices is false, BN_FB_MOTION writes are skipped
+           regardless of whether per-instance deltas were supplied. */
+        bool     haveMotionMatrices = false;
+        float    currViewProj[16]   = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+        float    prevViewProj[16]   = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
         union {
           /* vector along u direction, for ONE pixel */
@@ -67,10 +74,22 @@ namespace BARNEY_NS {
 
       Camera(Context *owner);
       virtual ~Camera() = default;
-    
+
+      /*! subtypes call from their commit() so motion params propagate
+        into DD after subtype-specific fields are populated */
+      void commitMotionFields();
+      
+      bool set1i(const std::string &member, const int &value) override;
+      bool set4x4f(const std::string &member, const vec4f *value) override;
+      
       static Camera::SP create(Context *owner, const std::string &type);
-    
+
       DD getDD() { return dd; }
+    protected:
+      bool  motionEnabled = false;
+      float motionCurrViewProj[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+      float motionPrevViewProj[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+      
     };
 
   }

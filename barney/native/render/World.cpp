@@ -33,9 +33,10 @@ namespace BARNEY_NS {
         SetActiveGPU forDuration(device);
         PLD *pld = getPLD(device);
         auto rtc = device->rtc;
-        if (pld->quadLights)  rtc->freeMem(pld->quadLights);
-        if (pld->dirLights)   rtc->freeMem(pld->dirLights);
-        if (pld->pointLights) rtc->freeMem(pld->pointLights);
+        if (pld->quadLights)   rtc->freeMem(pld->quadLights);
+        if (pld->dirLights)    rtc->freeMem(pld->dirLights);
+        if (pld->pointLights)  rtc->freeMem(pld->pointLights);
+        if (pld->motionDeltas) rtc->freeMem(pld->motionDeltas);
       }
     }
 
@@ -64,10 +65,11 @@ namespace BARNEY_NS {
         = envMapLight.light
         ? envMapLight.light->getDD(device,envMapLight.xfm)
         : EnvMapLight::DD{};
-      dd.rank = ldgContext->context->myRank();
-      
-      dd.samplers  = ldgContext->samplerRegistry->getDD(device);
-      dd.materials = ldgContext->materialRegistry->getDD(device);
+      dd.rank            = ldgContext->context->myRank();
+      dd.motionDeltas    = pld->motionDeltas;
+      dd.numMotionDeltas = pld->numMotionDeltas;
+      dd.samplers        = ldgContext->samplerRegistry->getDD(device);
+      dd.materials       = ldgContext->materialRegistry->getDD(device);
       
       for (int i=0;i<5;i++)
         dd.instanceAttributes[i]
@@ -123,6 +125,23 @@ namespace BARNEY_NS {
     {
       this->envMapLight.light = envMapLight;
       this->envMapLight.xfm = xfm;
+    }
+
+    void World::setMotionDeltas(const std::vector<affine3f> &deltas)
+    {
+      for (auto device : *devices) {
+        SetActiveGPU forDuration(device);
+        auto pld = getPLD(device);
+        auto rtc = device->rtc;
+        if (pld->motionDeltas) rtc->freeMem(pld->motionDeltas);
+        pld->motionDeltas = nullptr;
+        pld->numMotionDeltas = 0;
+        if (deltas.empty()) continue;
+        const size_t numBytes = deltas.size() * sizeof(affine3f);
+        pld->motionDeltas = (affine3f *)rtc->allocMem(numBytes);
+        rtc->copy(pld->motionDeltas, deltas.data(), numBytes);
+        pld->numMotionDeltas = (int)deltas.size();
+      }
     }
 
   } // ::BARNEY_NS::native

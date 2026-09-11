@@ -81,6 +81,8 @@ namespace BARNEY_NS {
         getParam<anari::DataType>("channel.objectId", ANARI_UNKNOWN);
       m_channelTypes.normal =
         getParam<anari::DataType>("channel.normal", ANARI_UNKNOWN);
+      m_channelTypes.motion =
+        getParam<anari::DataType>("channel.motion", ANARI_UNKNOWN);
       m_size = getParam<math::uint2>("size", math::uint2(10, 10));
       m_displaySize = m_size;  /* updated in finalize() from actual FB when slot==0 */
     }
@@ -310,6 +312,16 @@ namespace BARNEY_NS {
         m_didMapChannel.normal = true;
         *pixelType = ANARI_FLOAT32_VEC3;
         return m_channelBuffers.normal;
+      } else if (channel == "channel.motion") {
+        if (m_channelBuffers.motion)
+          throw std::runtime_error
+            ("trying to map channel.motion, but seems already mapped");
+        m_channelBuffers.motion = new float[numPixels * 2];
+        bnFrameBufferRead(m_bnFrameBuffer, BN_FB_MOTION,
+                          m_channelBuffers.motion, BN_FLOAT32_VEC2);
+        m_didMapChannel.motion = true;
+        *pixelType = ANARI_FLOAT32_VEC2;
+        return m_channelBuffers.motion;
 #if HAVE_NV_FRAMEBUFFER_EXTENSION
       } else if (channel == "channel.colorCUDA") {
         if (m_channelBuffers.color)
@@ -392,54 +404,71 @@ namespace BARNEY_NS {
     void Frame::unmap(std::string_view channel)
     {
       if (channel == "channel.color") {
-        if (m_channelBuffers.color)
+        if (m_channelBuffers.color) {
           delete[] m_channelBuffers.color;
-        m_channelBuffers.color = 0;
-      } else if (channel == "channel.depth" && m_channelBuffers.depth) {
-        if (m_channelBuffers.depth)
+          m_channelBuffers.color = 0;
+        }
+      } else if (channel == "channel.depth") {
+        if (m_channelBuffers.depth) {
           delete[] m_channelBuffers.depth;
-        m_channelBuffers.depth = 0;
-      } else if (channel == "channel.primitiveId" && m_channelBuffers.primID) {
-        if (m_channelBuffers.primID)
+          m_channelBuffers.depth = 0;
+        }
+      } else if (channel == "channel.primitiveId" ) {
+        if (m_channelBuffers.primID) {
           delete[] m_channelBuffers.primID;
-        m_channelBuffers.primID = 0;
-      } else if (channel == "channel.objectId" && m_channelBuffers.objID) {
-        if (m_channelBuffers.objID)
+          m_channelBuffers.primID = 0;
+        }
+      } else if (channel == "channel.objectId") {
+        if (m_channelBuffers.objID) {
           delete[] m_channelBuffers.objID;
-        m_channelBuffers.objID = 0;
-      } else if (channel == "channel.instanceId" && m_channelBuffers.instID) {
-        if (m_channelBuffers.instID)
+          m_channelBuffers.objID = 0;
+        }
+      } else if (channel == "channel.instanceId") {
+        if (m_channelBuffers.instID) {
           delete[] m_channelBuffers.instID;
-        m_channelBuffers.instID = 0;
-      } else if (channel == "channel.normal" && m_channelBuffers.normal) {
-        if (m_channelBuffers.normal)
+          m_channelBuffers.instID = 0;
+        }
+      } else if (channel == "channel.normal") {
+        if (m_channelBuffers.normal) {
           delete[] m_channelBuffers.normal;
-        m_channelBuffers.normal = 0;
+          m_channelBuffers.normal = 0;
+        }
+      } else if (channel == "channel.motion") {
+        if (m_channelBuffers.motion) {
+          delete[] m_channelBuffers.motion;
+          m_channelBuffers.motion = 0;
+        }
 #if HAVE_NV_FRAMEBUFFER_EXTENSION
       } else if (channel == "channel.colorCUDA") {
-        if (m_channelBuffers.color)
+        if (m_channelBuffers.color) {
           cudaFree(m_channelBuffers.color);
-        m_channelBuffers.color = 0;
+          m_channelBuffers.color = 0;
+        }
       } else if (channel == "channel.depthCUDA") {
-        if (m_channelBuffers.depth)
+        if (m_channelBuffers.depth) {
           cudaFree(m_channelBuffers.depth);
-        m_channelBuffers.depth = 0;
+          m_channelBuffers.depth = 0;
+        }
       } else if (channel == "channel.primitiveIdCUDA") {
-        if (m_channelBuffers.primID)
+        if (m_channelBuffers.primID) {
           cudaFree(m_channelBuffers.primID);
-        m_channelBuffers.primID = 0;
+          m_channelBuffers.primID = 0;
+        }
       } else if (channel == "channel.objectIdCUDA") {
-        if (m_channelBuffers.objID)
+        if (m_channelBuffers.objID) {
           cudaFree(m_channelBuffers.objID);
-        m_channelBuffers.objID = 0;
+          m_channelBuffers.objID = 0;
+        }
       } else if (channel == "channel.instanceIdCUDA") {
-        if (m_channelBuffers.instID)
+        if (m_channelBuffers.instID) {
           cudaFree(m_channelBuffers.instID);
-        m_channelBuffers.instID = 0;
+          m_channelBuffers.instID = 0;
+        }
       } else if (channel == "channel.normalCUDA") {
-        if (m_channelBuffers.normal)
+        if (m_channelBuffers.normal) {
           cudaFree(m_channelBuffers.normal);
-        m_channelBuffers.normal = 0;
+          m_channelBuffers.normal = 0;
+        }
 #endif
       }
     }
@@ -485,6 +514,9 @@ namespace BARNEY_NS {
 
       delete[] m_channelBuffers.normal;
       m_channelBuffers.normal = nullptr;
+      
+      delete[] m_channelBuffers.motion;
+      m_channelBuffers.motion = nullptr;
     }
 
   } // namespace anari

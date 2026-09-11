@@ -359,7 +359,19 @@ namespace BARNEY_NS {
                                               (const affine3f *)xfms,
                                               numInstances);
   }
-  
+
+  BARNEY_API
+  void bnSetInstanceMotionDeltas(BNModel model,
+                                 int slot,
+                                 BNTransform *deltas,
+                                 int numInstances)
+  {
+    LOG_API_ENTRY;
+    checkGet(model)->setInstanceMotionDeltas(slot,
+                                             (const affine3f *)deltas,
+                                             numInstances);
+  }
+
   BARNEY_API
   void  bnRelease(BNObject _object)
   {

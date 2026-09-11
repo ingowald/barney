@@ -57,6 +57,11 @@ namespace BARNEY_NS {
     void GlobalModel::build(int slot)
     { getSlot(slot)->build(); }
       
+
+    void GlobalModel::setInstanceMotionDeltas(int slot,
+                                              const affine3f *deltas,
+                                              int numInstances) 
+    { getSlot(slot)->setInstanceMotionDeltas(deltas,numInstances); }
     
   }
 }
