@@ -28,12 +28,6 @@ namespace BARNEY_NS {
 
       ModelSlot(GlobalModel *model,
                 LDGContext *ldgContext);
-                // const DevGroup::SP &devices
-                // // ,
-                // // /*! index with which the given rank's context will refer
-                // //   to this _locally_; not the data rank in it */
-                // // int slotID
-                // );
       virtual ~ModelSlot();
 
       /*! pretty-printer for printf-debugging */
@@ -44,6 +38,7 @@ namespace BARNEY_NS {
                         int numInstances);
       void updateInstanceTransforms(const affine3f *xfms, int numInstances);
       void setInstanceAttributes(const std::string &which, const PODData::SP &data);
+      void setInstanceMotionDeltas(const affine3f *deltas, int numInstances);
       void updateWorldLightsFromInstances();
       void flattenInstancesForDevice(Device *device,
                                      std::vector<rtc::Group *> *rtcGroups,
@@ -75,9 +70,7 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
       // do not change order of these:
       // ------------------------------------------------------------------
-      // int            const slotID;
       GlobalModel   *const model;
-      // SlotContext   *const slotContext;
       LDGContext    *const ldgContext;
       World::SP    world;
 

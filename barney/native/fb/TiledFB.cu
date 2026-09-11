@@ -50,7 +50,50 @@ namespace BARNEY_NS {
         out_normal[idx] = tile->normal[subIdx];
 #endif
     }
-  
+
+
+
+    __rtc_global
+    void linearizeMotionTilesKernel(const rtc::ComputeInterface &ci,
+                                    void              *linearOut,
+                                    vec2i              numPixels,
+                                    MotionChannelTile *tiles,
+                                    TileDesc          *descs)
+    {
+#if RTC_DEVICE_CODE
+      int      tileIdx = ci.getBlockIdx().x;
+      TileDesc desc    = descs[tileIdx];
+
+      int subIdx = ci.getThreadIdx().x;
+      int iix = subIdx % tileSize;
+      int iiy = subIdx / tileSize;
+      int ix = desc.lower.x + iix;
+      int iy = desc.lower.y + iiy;
+      if (ix >= numPixels.x) return;
+      if (iy >= numPixels.y) return;
+      int idx = ix + numPixels.x*iy;
+
+      ((vec2f*)linearOut)[idx] = tiles[tileIdx].mv[subIdx];
+#endif
+    }
+
+    void TiledFB::linearizeMotionTiles(Device *device,
+                                       void *linearOut,
+                                       vec2i numPixels,
+                                       MotionChannelTile *tilesIn,
+                                       TileDesc          *descsIn,
+                                       int numTiles)
+    {
+      SetActiveGPU forDuration(device);
+      __rtc_launch(device->rtc,
+                   linearizeMotionTilesKernel,
+                   numTiles,pixelsPerTile,
+                   linearOut,
+                   numPixels,
+                   tilesIn,
+                   descsIn);
+    }
+    
 
     /*! take this GPU's tiles, and write those tiles' color (and
       optionally normal) channels into the linear frame buffers
@@ -158,6 +201,19 @@ namespace BARNEY_NS {
         tgt_aux = appDevice?appAuxTiles.objID:auxTiles.objID;
         loc_aux = auxTiles.objID;
         break;
+      case BN_FB_MOTION: {
+        MotionChannelTile *tgt_mv = appDevice?appAuxTiles.motion:auxTiles.motion;
+        MotionChannelTile *loc_mv = auxTiles.motion;
+        if (loc_mv != tgt_mv)
+          appDevice->rtc->copyAsync(tgt_mv,loc_mv,
+                                    numActiveTilesThisGPU*sizeof(*tgt_mv));
+        linearizeMotionTiles(appDevice?appDevice:device,
+                             linearChannel,numPixels,
+                             tgt_mv,
+                             appDevice?appTileDescs:tileDescs,
+                             numActiveTilesThisGPU);
+        return;
+      }        
       default:
         throw std::runtime_error("unsupported aux channel in sending aux!?");
       };
@@ -214,7 +270,8 @@ namespace BARNEY_NS {
       freeAndSetNull(device,auxTiles.instID);
       freeAndSetNull(device,auxTiles.objID);
       freeAndSetNull(device,auxTiles.depth);
-
+      freeAndSetNull(device,auxTiles.motion);
+      
       if (appDevice) {
         SetActiveGPU forDuration(appDevice);
         freeAndSetNull(appDevice,appTileDescs);
@@ -223,6 +280,7 @@ namespace BARNEY_NS {
         freeAndSetNull(appDevice,appAuxTiles.instID);
         freeAndSetNull(appDevice,appAuxTiles.objID);
         freeAndSetNull(appDevice,appAuxTiles.depth);
+        freeAndSetNull(device,auxTiles.motion);
       }
     }
 
@@ -278,17 +336,26 @@ namespace BARNEY_NS {
         tiles = (AuxChannelTile *)device->rtc->allocMem
           (numActiveTilesThisGPU*sizeof(*tiles));
       };
+      auto allocMotion = [&](Device *device, MotionChannelTile *&tiles)
+      {
+        const size_t bytes = numActiveTilesThisGPU * sizeof(*tiles);
+        tiles = (MotionChannelTile *)device->rtc->allocMem(bytes);
+        if (tiles) device->rtc->memsetAsync(tiles, 0, bytes);
+      };
+      
 
       if (channels & BN_FB_PRIMID) alloc(device,auxTiles.primID);
       if (channels & BN_FB_INSTID) alloc(device,auxTiles.instID);
       if (channels & BN_FB_OBJID)  alloc(device,auxTiles.objID);
       if (channels & BN_FB_DEPTH)  alloc(device,auxTiles.depth);
+      if (channels & BN_FB_MOTION) allocMotion(device,auxTiles.motion);      
       if (appDevice) {
         SetActiveGPU forDuration(appDevice);
         if (channels & BN_FB_PRIMID) alloc(appDevice,appAuxTiles.primID);
         if (channels & BN_FB_INSTID) alloc(appDevice,appAuxTiles.instID);
         if (channels & BN_FB_OBJID)  alloc(appDevice,appAuxTiles.objID);
         if (channels & BN_FB_DEPTH)  alloc(appDevice,appAuxTiles.depth);
+        if (channels & BN_FB_MOTION) allocMotion(device,auxTiles.motion);      
       }
     
       // ------------------------------------------------------------------

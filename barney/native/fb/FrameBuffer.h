@@ -32,8 +32,8 @@ namespace BARNEY_NS {
       virtual void resize(BNDataType colorFormat,
                   vec2i size,
                   uint32_t channels);
-      virtual void resetAccumulation()
-      {  /* whatever we may have in compressed tiles is dirty */ accumID = 0; }
+      virtual void resetAccumulation();
+
       void freeResources();
 
       bool needHitIDs() const;
@@ -59,6 +59,21 @@ namespace BARNEY_NS {
       virtual void writeAuxChannel(void *stagingArea,
                                    BNFrameBufferChannel channel) = 0;
 
+      /*! MPI-side gather of motion tiles from workers to the owner.
+        Called from finalizeFrame() on all ranks so the send/recv
+        pair matches. Default no-op suits single-node LocalFB. */
+      virtual void gatherMotionChannel() {}
+
+      /*! parallel to writeAuxChannel but for BN_FB_MOTION: assembles
+        motion-vector tiles into a vec2f-per-pixel linear staging area
+        on the owner. Runs only on the owner rank (after
+        gatherMotionChannel has completed on all ranks). Default
+        throws; LocalFB + DistFB override. */
+      virtual void writeMotionChannel(void *stagingArea)
+      {
+        throw std::runtime_error("writeMotionChannel not implemented for this framebuffer");
+      }
+      
       /*! read given frame buffer channel into given application memory
         (which may be either host or device memory), in requested
         format. Requeseted color format (currently) has to match the
@@ -87,6 +102,9 @@ namespace BARNEY_NS {
 
       /*! staging area for the normal channel (vec3f per pixel) */
       void *linearNormalChannel = 0;
+
+      /*! staging area for the motion channel (vec2f per pixel) */
+      void *linearMotionChannel = 0;
 
       /*! when upscaling, the render-resolution staging buffers that
         tile linearization writes into (before nearest-neighbor

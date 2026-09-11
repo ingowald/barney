@@ -116,6 +116,9 @@ namespace BARNEY_NS {
     virtual void updateInstanceTransforms(int slot,
                                           const affine3f *xfms,
                                           int numInstances) = 0;
+    virtual void setInstanceMotionDeltas(int slot,
+                                         const affine3f *deltas,
+                                         int numInstances) {}
     virtual void setInstanceAttributes(int slot,
                                        const std::string &which,
                                        Data::SP data) = 0;
