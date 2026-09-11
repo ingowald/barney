@@ -34,6 +34,7 @@ namespace BARNEY_NS {
 
       void buildBarneyModel();
       void uploadInstanceAttributes(const InstanceAttributes &attributes);
+      void uploadMotionDeltas();
       void fullRebuild();
       void transformOnlyUpdate();
 

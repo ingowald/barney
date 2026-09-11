@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Object.h"
+#include "barney/anari/Object.h"
 
 namespace BARNEY_NS {
   namespace anari {
@@ -29,6 +29,15 @@ namespace BARNEY_NS {
       math::float3 m_dir;
       math::float3 m_up;
       math::float4 m_imageRegion;
+
+      bool         m_haveMotionMatrices = false;
+      math::mat4   m_currViewProj;
+      math::mat4   m_prevViewProj;
+
+      /*! forwards motion.viewProjection and motion.previousViewProjection
+        to the underlying bnCamera. Subtypes call this from finalize()
+        before bnCommit. */
+      void applyMotionMatrices();
 
       BNCamera m_barneyCamera{nullptr};
     };

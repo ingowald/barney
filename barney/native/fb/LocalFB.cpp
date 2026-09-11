@@ -12,6 +12,14 @@ namespace BARNEY_NS {
       : FrameBuffer(context, devices, true)
     {}
 
+    void LocalFB::writeMotionChannel(void *stagingArea)
+    {
+      for (auto device : *devices)
+        getFor(device)->linearizeAuxChannel(stagingArea, BN_FB_MOTION);
+      for (auto device : *devices)
+        device->sync();
+    }
+    
     void LocalFB::resize(BNDataType colorFormat,
                          vec2i size,
                          uint32_t channels)
