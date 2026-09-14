@@ -610,7 +610,9 @@ namespace BARNEY_NS {
           st.emissive = rtc::float3(emissive.x, emissive.y, emissive.z);
           const vec3f bc = (vec3f)baseColor;
           st.baseColor = rtc::float3(bc.x, bc.y, bc.z);
-          const vec3f n = (vec3f)normal;
+          // Half packing changes length; GGX and its sampling frame require
+          // unit normals, especially when the specular lobe is very narrow.
+          const vec3f n = normalize((vec3f)normal);
           st.normal = rtc::float3(n.x, n.y, n.z);
           st.metallic = metallic;
           st.roughness = roughness;
@@ -622,7 +624,7 @@ namespace BARNEY_NS {
           st.specularColor = rtc::float3(sc.x, sc.y, sc.z);
           st.clearcoat = clearcoat;
           st.clearcoatRoughness = clearcoatRoughness;
-          const vec3f ccn = (vec3f)clearcoatNormal;
+          const vec3f ccn = normalize((vec3f)clearcoatNormal);
           st.clearcoatNormal = rtc::float3(ccn.x, ccn.y, ccn.z);
           st.thickness = thickness;
           st.attenuationDistance = attenuationDistance;

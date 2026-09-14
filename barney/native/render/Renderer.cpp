@@ -31,6 +31,7 @@ namespace BARNEY_NS {
       bgTexture       = staged.bgTexture;
       cutPlane        = staged.cutPlane;
       maxVolumeBounces = staged.maxVolumeBounces;
+      sampleLimit     = staged.sampleLimit;
       // volumeMultiScatter = staged.volumeMultiScatter;
     }
   
@@ -71,6 +72,10 @@ namespace BARNEY_NS {
       }
       if (member == "maxVolumeBounces") {
         staged.maxVolumeBounces = value;
+        return true;
+      }
+      if (member == "sampleLimit") {
+        staged.sampleLimit = value;
         return true;
       }
       // if (member == "volumeMultiScatter") {

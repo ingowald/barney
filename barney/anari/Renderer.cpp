@@ -34,6 +34,7 @@ namespace BARNEY_NS {
          be only two possible configs for multiscatter: which voluem
          type (ie which phase function), and then how many bounces */
       m_maxVolumeBounces = getParam<int>("maxVolumeBounces", 0);
+      m_sampleLimit = std::clamp(getParam<int>("sampleLimit", 1024), 1, INT_MAX);
       // m_maxVolumeBounces = getParam<int>("maxVolumeBounces", 8);
     }
 
@@ -44,6 +45,7 @@ namespace BARNEY_NS {
       bnSet1i(barneyRenderer, "pathsPerPixel", (int)m_pixelSamples);
       bnSet1f(barneyRenderer, "ambientRadiance", m_ambientRadiance);
       bnSet1i(barneyRenderer, "maxVolumeBounces", m_maxVolumeBounces);
+      bnSet1i(barneyRenderer, "sampleLimit", m_sampleLimit);
       // bnSet1i(barneyRenderer, "volumeMultiScatter", (int)m_volumeMultiScatter);
       bnSet4f(barneyRenderer, "cutPlane",
               m_cutPlane.x, m_cutPlane.y, m_cutPlane.z, m_cutPlane.w);
