@@ -38,6 +38,7 @@ namespace BARNEY_NS {
       anari::math::float4 m_background{0.f, 0.f, 0.f, 1.f};
       anari::math::float4 m_cutPlane{0.f, 0.f, 0.f, -1e30f};
       int m_maxVolumeBounces{8};
+      int m_sampleLimit{1024};
       helium::ChangeObserverPtr<Array2D> m_backgroundImage;
     };
 

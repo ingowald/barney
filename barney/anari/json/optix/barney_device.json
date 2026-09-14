@@ -54,6 +54,14 @@
           "description": "number of pixel samples per-frame"
         },
         {
+          "name": "sampleLimit",
+          "types": ["ANARI_INT32"],
+          "tags": [],
+          "default": 1024,
+          "minimum": 0,
+          "description": "stop refining the frame after this number of samples"
+        },
+        {
           "name": "denoise",
           "types": [
             "ANARI_BOOL"

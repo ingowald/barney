@@ -6,6 +6,7 @@
 #include "native/fb/LocalFB.h"
 #include "native/globalTrace/RQSLocal.h"
 #include "native/render/RayQueue.h"
+#include "native/render/Renderer.h"
 #include "native/WorkerTopo.h"
 
 namespace BARNEY_NS {
@@ -81,6 +82,9 @@ namespace BARNEY_NS {
     {
       assert(model);
       assert(fb);
+
+      if (fb->accumID >= renderer->sampleLimit)
+        return;
 
       renderTiles(renderer,model,camera,fb);
       finalizeTiles(fb);

@@ -57,6 +57,7 @@ namespace BARNEY_NS {
         int         crosshairs;
         int         maxVolumeBounces;
         int         volumeMultiScatter;
+        int         sampleLimit;
       } staged;
       vec4f       bgColor         = vec4f(0,0,0,1.f);
       Texture::SP bgTexture       = 0;
@@ -75,6 +76,8 @@ namespace BARNEY_NS {
       int         maxVolumeBounces = 0;// ap original value: 8;
       /* iw - @ap: axed this; setting maxbounces to 0 should do the trick? */
       // int         volumeMultiScatter = 1;
+      // maximum number of samples accumulated:
+      int         sampleLimit = 1024;
     };
 
   }
