@@ -14,7 +14,9 @@ namespace BARNEY_NS {
       dd.edge0 = xfmVector(instanceXfm,staged.edge0);
       dd.edge1 = xfmVector(instanceXfm,staged.edge1);
       dd.emission = staged.emission;
-      dd.area = length(cross(dd.edge0,dd.edge1));
+      vec3f Nl = cross(dd.edge0,dd.edge1);
+      dd.area = length(Nl);
+      dd.normal = Nl*(1.f/dd.area);
       return dd;
     }
   
