@@ -18,8 +18,8 @@ namespace BARNEY_NS {
     Triangles::~Triangles()
     {}
   
-    /*! handle data arrays for vertices, indices, normals, etc; note
-      that 'general' geometry attributes of the ANARI material system
+    /*! handle data arrays for vertices and indices; note that
+      'general' geometry attributes of the ANARI material system
       are already handled in parent class */
     bool Triangles::setData(const std::string &member,
                             const Data::SP &value)
@@ -33,10 +33,6 @@ namespace BARNEY_NS {
       }
       if (member == "indices") {
         indices = value->as<PODData>();
-        return true;
-      }
-      if (member == "texcoords") {
-        texcoords = value->as<PODData>();
         return true;
       }
     
@@ -69,7 +65,6 @@ namespace BARNEY_NS {
         Geometry::writeDD(dd,device);
         dd.vertices  = (vec3f*)vertices->getDD(device);
         dd.indices   = (vec3i*)indices->getDD(device);
-        dd.texcoords = (vec2f*)(texcoords?texcoords->getDD(device):0);
 
         // done:
         geom->setDD(&dd);
