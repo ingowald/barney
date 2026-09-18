@@ -35,10 +35,6 @@ namespace BARNEY_NS {
         indices = value->as<PODData>();
         return true;
       }
-      if (member == "normals") {
-        normals = value->as<PODData>();
-        return true;
-      }
       if (member == "texcoords") {
         texcoords = value->as<PODData>();
         return true;
@@ -73,7 +69,6 @@ namespace BARNEY_NS {
         Geometry::writeDD(dd,device);
         dd.vertices  = (vec3f*)vertices->getDD(device);
         dd.indices   = (vec3i*)indices->getDD(device);
-        dd.normals   = (vec3f*)(normals?normals->getDD(device):0);
         dd.texcoords = (vec2f*)(texcoords?texcoords->getDD(device):0);
 
         // done:

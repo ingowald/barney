@@ -17,8 +17,10 @@ namespace BARNEY_NS {
 
       - "vertices"  (BNData<float3>)
       - "indices"   (BNData<int3>)
-      - "normals"   (BNData<float3>)
       - "texcoords" (BNData<float2>)
+
+      Per-vertex normals arrive through the ANARI attribute system
+      (vertex.normal -> normalAttribute), not a bespoke array.
     */
     struct Triangles : public Geometry {
       typedef std::shared_ptr<Triangles> SP;
@@ -26,7 +28,6 @@ namespace BARNEY_NS {
       struct DD : public Geometry::DD {
         const vec3i *indices;
         const vec3f *vertices;
-        const vec3f *normals;
         const vec2f *texcoords;
         // const vec4f *vertexAttribute[5];
       };
@@ -48,7 +49,6 @@ namespace BARNEY_NS {
 
       PODData::SP vertices;
       PODData::SP indices;
-      PODData::SP normals;
       // TODO: do we still need this in times of ANARI?
       PODData::SP texcoords;
     };

@@ -743,7 +743,7 @@ namespace BARNEY_NS {
 
       bnSetData(geom, "vertices", m_vertexPosition->barneyData());
       if (m_vertexNormal)
-        bnSetData(geom, "normals", m_vertexNormal->barneyData());
+        bnSetData(geom, "vertex.normal", m_vertexNormal->barneyData());
 
       setAttributes(geom);
     }
@@ -895,7 +895,7 @@ namespace BARNEY_NS {
 
       bnSetData(geom, "vertices", m_vertexPosition->barneyData());
       if (m_vertexNormal)
-        bnSetData(geom, "normals", m_vertexNormal->barneyData());
+        bnSetData(geom, "vertex.normal", m_vertexNormal->barneyData());
 
       setAttributes(geom);
     }
