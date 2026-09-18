@@ -686,6 +686,8 @@ namespace BARNEY_NS {
       m_vertexAttributes[2] = getParamObject<Array1D>("vertex.attribute2");
       m_vertexAttributes[3] = getParamObject<Array1D>("vertex.attribute3");
       m_vertexAttributes[4] = getParamObject<Array1D>("vertex.color");
+      m_vertexTangent = getParamObject<Array1D>("vertex.tangent");
+      m_faceVaryingTangent = getParamObject<Array1D>("faceVarying.tangent");
     }
 
     void Quad::finalize()
@@ -744,6 +746,51 @@ namespace BARNEY_NS {
         bnSetData(geom, "normals", m_vertexNormal->barneyData());
 
       setAttributes(geom);
+    }
+
+    void Quad::setAttributes(BNGeom geom)
+    {
+      Geometry::setAttributes(geom);
+      int slot = deviceState()->slot;
+      auto context = deviceState()->tether->context;
+
+      // vertex.tangent is indexed by the generated triangle indices, just
+      // like vertex.normal/position, so it forwards unchanged.
+      addAttribute(geom, context, slot,
+                   m_vertexTangent, "vertex.tangent", this);
+
+      // faceVarying.tangent supplies one value per quad corner (4/quad),
+      // but the underlying triangles read faceVarying at 3*primID+{0,1,2}
+      // (6/quad). Expand each quad's 4 corners into the two triangles'
+      // 6 corners following finalize()'s split: (0,1,2) and (0,2,3).
+      if (m_faceVaryingTangent) {
+        std::vector<float> src;
+        int components = demoteToF32N(m_faceVaryingTangent, src);
+        if (components == 0) {
+          reportMessage(ANARI_SEVERITY_WARNING,
+            "unsupported element type (%s) for parameter 'faceVarying.tangent'",
+            anari::toString(m_faceVaryingTangent->elementType()));
+        } else {
+          const size_t numCorners = src.size() / components;
+          const size_t numQuads = numCorners / 4;
+          auto corner = [&](size_t c) {
+            const float *v = &src[c * components];
+            // VEC3 tangents default to +1 handedness, matching typedRead.
+            return math::float4(v[0], v[1], v[2],
+                                components >= 4 ? v[3] : 1.f);
+          };
+          static const int localCorners[6] = { 0, 1, 2, 0, 2, 3 };
+          std::vector<math::float4> expanded(numQuads * 6);
+          for (size_t q = 0; q < numQuads; ++q)
+            for (int k = 0; k < 6; ++k)
+              expanded[q * 6 + k] = corner(q * 4 + localCorners[k]);
+
+          BNData attr = bnDataCreate(context, slot, BN_FLOAT4,
+                                     expanded.size(), expanded.data());
+          if (attr)
+            bnSetAndRelease(geom, "faceVarying.tangent", attr);
+        }
+      }
     }
 
     const char *Quad::bnSubtype() const
