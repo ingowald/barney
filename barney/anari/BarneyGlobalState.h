@@ -29,7 +29,11 @@ namespace BARNEY_NS {
 
     struct BarneyDevice;
     struct Tether;
-  
+
+    struct Geometry;
+    struct SpatialField;
+    struct BarneyGlobalState;
+    
     struct TetheredModel : public std::enable_shared_from_this<TetheredModel> {
       typedef std::shared_ptr<TetheredModel> SP;
       TetheredModel(Tether *tether, int uniqueID);
@@ -63,6 +67,57 @@ namespace BARNEY_NS {
       std::vector<BarneyDevice *> devices;
     };
 
+    /*! plugin infrastructure. barney allows for conditionally
+        including plugins at build type; these can then load and
+        initialize themselves at runtime by having the plugin name
+        encoded in the spatial field / geometry / etc type string. Ie,
+        if the app calls `anariNewGeometry(myFancyGeom@myFancyPlugin)`
+        barney will check if any plugin registerd itself - during
+        build time - under the name of 'myFancyPlugin'; and if so,
+        will ask this plugin to register whatever geometry, spatial
+        field, etc, it will provide; then barney can look up this
+        plugin and ask it create the respective object instance */
+    struct PluginInfrastructure {
+      /*! this is what the plugin's own registration function will
+          create, and declares what kind of objects this plugin can
+          create */
+      struct Plugin {
+        friend class PluginInfrastructure;
+        // called by plugin registry function to declare a new geometry type */
+        void exportGeometry(const std::string &typeName,
+                            Geometry*(*)(BarneyGlobalState*));
+        // called by plugin registry function to declare a new spatial field type */
+        void exportSpatialField(const std::string &typeName,
+                                SpatialField*(*)(BarneyGlobalState*));
+      private:
+        std::map<std::string,
+                 Geometry*(*)(BarneyGlobalState*)
+                 > supportedGeometries;
+        std::map<std::string,
+                 SpatialField*(*)(BarneyGlobalState*)
+                 > supportedSpatialFields;
+      };
+
+      /*! expects a string of the form '<geomtype>@<pluginname>'. may
+        return null if either the plugin cannot be found (ie, it's not
+        included in the build), or that plugin for some reason cannot
+        create that geometry. */
+      Geometry *newGeometry(const std::string_view &typeAtPlugin,
+                            BarneyGlobalState *banari);
+      
+      /*! expects a string of the form '<geomtype>@<pluginname>' may
+        return null if either the plugin cannot be found (ie, it's not
+        included in the build), or that plugin for some reason cannot
+        create that geometry. */
+      SpatialField *newSpatialField(const std::string_view &typeAtPlugin,
+                                    BarneyGlobalState *banari);
+    private:
+      Plugin *loadPlugin(const std::string_view &pluginName);
+      Plugin *findPlugin(const std::string_view &typeAtPlugin,
+                         std::string &typeInsidePlugin);
+      std::map<std::string,Plugin *> alreadyLoadedPlugins;
+    };
+    
     struct BarneyGlobalState : public helium::BaseGlobalDeviceState
     {
       struct ObjectUpdates
@@ -84,6 +139,11 @@ namespace BARNEY_NS {
 
       bool hasBeenCommitted = false;
 
+      /*! list of already registered plugins, and infrastructure to
+          add new plugins, register new object types, and create such
+          object types */
+      PluginInfrastructure plugins;
+      
       // Helper methods //
 
       BarneyGlobalState(ANARIDevice d);
@@ -99,7 +159,7 @@ namespace BARNEY_NS {
     {
       return (BarneyGlobalState *)s;
     }
-
+    
   }
 }
 

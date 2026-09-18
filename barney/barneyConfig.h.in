@@ -40,4 +40,20 @@
 // that creates an instance of the anari library for this backend.
 #define BARNEY_LIBRARY_ENTRYPOINT_NAME anari_library_@BARNEY_LIBRARY_NAME@_new_library
 
+/*! constructs the symbol name that plugins should use to be
+    findable/initializable when loading geometries, spatial fields,
+    etc, of type '<subtype>@<plugin>`. If any newGeometry(),
+    newSpatialField() etc sees a name like that it first tries to load
+    the plugin '<plugin>' which in turn will try to find a symbol of
+    this name to let this function then register its respective anari
+    types */
+#define BARNEY_REGISTER_PLUGIN(name)                                    \
+  extern "C"                                                            \
+  __attribute__((visibility("default")))                                \
+  BARNEY_NS::anari::PluginInfrastructure::Plugin *                      \
+  registerPlugin_barney_@BARNEY_BACKEND_NAME@_##name()
+
+
+
+
 

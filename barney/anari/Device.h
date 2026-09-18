@@ -8,10 +8,11 @@
 #include "helium/BaseDevice.h"
 #include "anari/BaseDevice.h"
 #include "anari/BarneyGlobalState.h"
+#include <map>
 
 namespace BARNEY_NS {
   namespace anari {
-    
+
     // struct BarneyDevice : public helium::BaseDevice
     struct BarneyDevice : public BARNEY_LIBRARY_NAME::BarneyBaseDevice
     {

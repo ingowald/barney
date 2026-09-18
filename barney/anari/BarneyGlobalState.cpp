@@ -8,6 +8,16 @@
 #include "anari/Frame.h"
 #include "anari/common.h"
 
+// for dlsym
+#ifdef _WIN32
+# include <windows.h>
+#else
+# include <dlfcn.h>
+#endif
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 namespace BARNEY_NS {
   namespace anari {
     
@@ -89,5 +99,95 @@ namespace BARNEY_NS {
       }
     }
 
+    // ==================================================================
+    // plugin infrastructure - should at some point more to a separate
+    // compilation unit
+    // ==================================================================
+
+    /*! expects a string of the form '<geomtype>@<pluginname>'. may
+      return null if either the plugin cannot be found (ie, it's not
+      included in the build), or that plugin for some reason cannot
+      create that geometry. */
+    Geometry *PluginInfrastructure::newGeometry(const std::string_view &typeAtPlugin,
+                                                BarneyGlobalState *banari)
+    {
+      std::string realName;
+      Plugin *plugin = findPlugin(typeAtPlugin,realName);
+      if (!plugin) return nullptr;
+
+      auto creatorFromPlugin = plugin->supportedGeometries[realName];
+      if (!creatorFromPlugin) return nullptr;
+
+      return creatorFromPlugin(banari);
+    }
+
+    /*! takes a "<providedType>@<registeredPlugin>" string, splits it
+        into its two components, looks up the respective plugin, and
+        either returns already loaed plugin or tries to load it if
+        required. If all went well this returns the fully loaded
+        plugin, as well as the properly stripped 'providedType'
+        string; if anything went wrong (not a valid plugin object
+        string or plugin not found and could not be loaded) this
+        returns nullptr */
+    PluginInfrastructure::Plugin *
+    PluginInfrastructure::findPlugin(const std::string_view &typeAtPlugin,
+                                     std::string &requestedType)
+    {
+      int pos = typeAtPlugin.find("@");
+      if (pos == typeAtPlugin.npos)
+        return nullptr;
+
+      const std::string pluginName = std::string(typeAtPlugin.substr(pos+1));
+      requestedType = typeAtPlugin.substr(0,pos);
+
+      if (alreadyLoadedPlugins.find(pluginName) == alreadyLoadedPlugins.end()) 
+        alreadyLoadedPlugins[pluginName] = loadPlugin(pluginName);
+
+      Plugin *plugin = alreadyLoadedPlugins[pluginName];
+      // may still be null if plugin loading failed:
+      return plugin;
+    }
+
+    PluginInfrastructure::Plugin *
+    PluginInfrastructure::loadPlugin(const std::string_view &pluginName)
+    {
+      Plugin *plugin = nullptr;
+      const std::string symbolName
+        = std::string("registerPlugin_barney_")
+        + std::string(TOSTRING(BARNEY_BACKEND_NAME))
+        + "_"
+        + std::string(pluginName);
+
+      PluginInfrastructure::Plugin *(*registerPlugin)() = 0;
+#ifdef _WIN32
+      auto module = GetModuleHandle(NULL);
+      registerPlugin
+        = (PluginInfrastructure::Plugin *(*)())
+        GetProcAddress(hSelf, symbolName.c_str());
+#else
+      registerPlugin
+        = (PluginInfrastructure::Plugin *(*)())
+        dlsym(nullptr,symbolName.c_str());
+#endif
+      if (!registerPlugin) return nullptr;
+      return registerPlugin();
+    }
+
+        // called by plugin registry function to declare a new geometry type */
+    void PluginInfrastructure::Plugin
+    ::exportGeometry(const std::string &typeName,
+                     Geometry*(*creatorFunction)(BarneyGlobalState*))
+    {
+      supportedGeometries[typeName] = creatorFunction;
+    }
+    
+    // called by plugin registry function to declare a new spatial field type */
+    void PluginInfrastructure::Plugin
+    ::exportSpatialField(const std::string &typeName,
+                         SpatialField*(*creatorFunction)(BarneyGlobalState*))
+    {
+      supportedSpatialFields[typeName] = creatorFunction;
+    }
+    
   }
 }
