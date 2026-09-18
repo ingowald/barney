@@ -142,6 +142,7 @@ namespace BARNEY_NS {
       }
       set(hit.color,this->attributes.colorAttribute,world.instanceAttributes[4],dbg);
       set(hit.objectNormal,this->attributes.normalAttribute,nullptr,dbg);
+      set(hit.objectTangent,this->attributes.tangentAttribute,nullptr,dbg);
     }
 
   }

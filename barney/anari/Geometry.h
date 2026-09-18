@@ -161,6 +161,8 @@ namespace BARNEY_NS {
       helium::ChangeObserverPtr<Array1D> m_index;
       helium::ChangeObserverPtr<Array1D> m_vertexPosition;
       helium::ChangeObserverPtr<Array1D> m_vertexNormal;
+      helium::IntrusivePtr<Array1D> m_vertexTangent;
+      helium::IntrusivePtr<Array1D> m_faceVaryingTangent;
       std::array<helium::IntrusivePtr<Array1D>, 6> m_faceVaryingAttributes;
       std::vector<int> m_generatedIndices;
     };

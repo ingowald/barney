@@ -191,6 +191,10 @@ namespace BARNEY_NS {
       addAttribute(geom, context, slot,
                    m_faceVaryingAttributes[5],
                    "faceVarying.normal", this);
+      addAttribute(geom, context, slot,
+                   m_vertexTangent, "vertex.tangent", this);
+      addAttribute(geom, context, slot,
+                   m_faceVaryingTangent, "faceVarying.tangent", this);
     }
 
     void Geometry::commitParameters()
@@ -806,6 +810,8 @@ namespace BARNEY_NS {
       m_faceVaryingAttributes[3] = getParamObject<Array1D>("faceVarying.attribute3");
       m_faceVaryingAttributes[4] = getParamObject<Array1D>("faceVarying.color");
       m_faceVaryingAttributes[5] = getParamObject<Array1D>("faceVarying.normal");
+      m_vertexTangent = getParamObject<Array1D>("vertex.tangent");
+      m_faceVaryingTangent = getParamObject<Array1D>("faceVarying.tangent");
     }
 
     void Triangle::finalize()
