@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regression test: to_string(BNDataType) must handle all public enum values.
 #
-# Bug: to_string(BNDataType) in barney/common/Data.cpp threw
+# Bug: to_string(BNDataType) in barney/native/common/Data.cpp threw
 #   "#bn internal error: to_string not implemented for numerical BNDataType #N"
 # for the valid public values BN_INT16 family, BN_UINT16 family, BN_UFIXED8,
 # BN_UFIXED8_RGBA_SRGB and BN_UFIXED16, producing a misleading "internal
@@ -9,18 +9,18 @@
 #
 # The full project cannot build standalone (CUDA/OptiX/Embree + submodules),
 # so this harness extracts the *actual* to_string(BNDataType) implementation
-# from barney/common/Data.cpp, compiles it against the real BNDataType enum
-# from barney/include/barney.h, and exercises every fixed value.
+# from barney/native/common/Data.cpp, compiles it against the real BNDataType enum
+# from barney/native/include/barney.h, and exercises every fixed value.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DATA_CPP="$REPO_ROOT/barney/common/Data.cpp"
+DATA_CPP="$REPO_ROOT/barney/native/common/Data.cpp"
 
 TMPDIR_TEST="$(mktemp -d)"
 trap 'rm -rf "$TMPDIR_TEST"' EXIT
 
 # Extract the real to_string(BNDataType) function from Data.cpp.
-sed -n '/std::string to_string(BNDataType type)/,/^}$/p' "$DATA_CPP" \
+sed -n '/^    std::string to_string(BNDataType type)/,/^    }$/p' "$DATA_CPP" \
   > "$TMPDIR_TEST/to_string.inc"
 
 if ! grep -q 'switch' "$TMPDIR_TEST/to_string.inc"; then
@@ -28,9 +28,8 @@ if ! grep -q 'switch' "$TMPDIR_TEST/to_string.inc"; then
   exit 1
 fi
 
-# barney.h is a CMake template: materialize #cmakedefine01 lines as 0.
-sed 's/^#cmakedefine01 \([A-Za-z_0-9]*\)/#define \1 0/' \
-  "$REPO_ROOT/barney/include/barney.h" > "$TMPDIR_TEST/barney.h"
+# Use the header from the same native implementation.
+cp "$REPO_ROOT/barney/native/include/barney.h" "$TMPDIR_TEST/barney.h"
 
 cat > "$TMPDIR_TEST/main.cpp" <<'EOF'
 #include <cstdio>
@@ -40,10 +39,15 @@ cat > "$TMPDIR_TEST/main.cpp" <<'EOF'
 #include "barney.h"
 
 // The implementation under test, extracted verbatim from
-// barney/common/Data.cpp:
+// barney/native/common/Data.cpp:
+namespace BARNEY_NS {
+namespace native {
 #include "to_string.inc"
+}
+}
 
 using namespace BARNEY_NS;
+using BARNEY_NS::native::to_string;
 
 static int failures = 0;
 
@@ -96,7 +100,7 @@ int main()
 }
 EOF
 
-g++ -std=c++17 -Wall \
+g++ -std=c++17 -Wall -DBARNEY_NS=barney_test \
   -I"$TMPDIR_TEST" \
   "$TMPDIR_TEST/main.cpp" -o "$TMPDIR_TEST/test_to_string"
 
