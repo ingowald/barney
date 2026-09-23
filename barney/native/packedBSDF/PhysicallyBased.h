@@ -92,10 +92,11 @@ namespace BARNEY_NS {
 
         // Transform a tangent-space normal (e.g. from a normal-map sampler,
         // already remapped to [-1,1]) into world space around the geometric
-        // normal `N`. Barney does not carry per-vertex tangents, so the
-        // tangent frame is built deterministically from `N` (arbitrary but
-        // stable tangent directions) — this preserves the perturbation
-        // magnitude, which is what matters without UV-aligned tangents.
+        // normal `N`. This N-only overload is the fallback used when the
+        // geometry carries no per-vertex tangent: the frame is built
+        // deterministically from `N` (arbitrary but stable tangent
+        // directions) — this preserves the perturbation magnitude, which is
+        // what matters without UV-aligned tangents.
         inline __rtc_device vec3f
         applyNormalMap(const vec3f &tangentSpaceNormal, const vec3f &N)
         {
@@ -106,6 +107,33 @@ namespace BARNEY_NS {
           // Negated comparison catches NaN (zero-decoded texels) as well as
           // zero-length results — fall back to the geometric normal so the
           // shading frame is always usable.
+          return (dot(result, result) > 1e-12f) ? result : N;
+        }
+
+        // Transform a tangent-space normal into world space using a
+        // UV-aligned TBN frame built from an interpolated per-vertex
+        // tangent. `worldTangent.xyz` is the world-space tangent and
+        // `worldTangent.w` its glTF handedness (+/-1); when w==0 no tangent
+        // was supplied and we fall back to the deterministic N-only frame.
+        inline __rtc_device vec3f
+        applyNormalMap(const vec3f &tangentSpaceNormal,
+                       const vec3f &N,
+                       const vec4f &worldTangent)
+        {
+          if (worldTangent.w == 0.f)
+            return applyNormalMap(tangentSpaceNormal, N);
+
+          const vec3f T0 = (const vec3f&)worldTangent;
+          // Gram-Schmidt: orthogonalize the tangent against the shading
+          // normal, then derive the bitangent honoring handedness.
+          const vec3f T = T0 - N * dot(N, T0);
+          if (dot(T, T) <= 1e-12f)
+            return applyNormalMap(tangentSpaceNormal, N);
+          const vec3f Tn = normalize(T);
+          const vec3f B = cross(N, Tn) * worldTangent.w;
+          const vec3f result = normalize(tangentSpaceNormal.x * Tn
+                                         + tangentSpaceNormal.y * B
+                                         + tangentSpaceNormal.z * N);
           return (dot(result, result) > 1e-12f) ? result : N;
         }
 
