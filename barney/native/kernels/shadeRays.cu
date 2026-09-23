@@ -332,6 +332,7 @@ namespace BARNEY_NS {
                els.pdf);
       // = world.envMapLight.sample(random,dbg);
 #else
+      Light::Sample els;
       float elsWeight = 0.f;
 #endif
 
@@ -364,8 +365,8 @@ namespace BARNEY_NS {
       plsWeight *= 1.f/sumWeights;
       
       float r = random();
-      if (dbg) printf(" light sample %f in cdf %f %f %f\n",
-                      r,alsWeight,elsWeight,dlsWeight);
+      if (dbg) printf(" light sample %f in cdf %f %f %f %f\n",
+                      r,alsWeight,elsWeight,dlsWeight,plsWeight);
       if (r <= alsWeight) {
         ls = als;
         //   ls.pdf *= alsWeight;
