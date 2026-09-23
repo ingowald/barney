@@ -149,7 +149,12 @@ namespace BARNEY_NS {
                        vec3f _tp, vec3f _org, vec3f _dir, float len)
     {
       ray.bsdfType = PackedBSDF::NONE;
-      ray.isShadowRay = true;
+      ray.isShadowRay = 1;
+      // iw: issue #66: initialize the dbg and crosshair flags; they
+      // can still be overwritten but shouldn't be left uninitialized.
+      ray._dbg        = 0;
+      ray.crosshair   = 0;
+
       ray.dir = _dir;
       ray.org = _org;
       ray.tMax = len;
