@@ -65,15 +65,10 @@ namespace BARNEY_NS {
         vec3f v0 = self.vertices[triangle.x];
         vec3f v1 = self.vertices[triangle.y];
         vec3f v2 = self.vertices[triangle.z];
-        vec3f n = normalize(cross(v1-v0,v2-v0));
-        if (self.normals) {
-          vec3f Ns
-            = (1.f-u-v) * self.normals[triangle.x]
-            + (    u  ) * self.normals[triangle.y]
-            + (      v) * self.normals[triangle.z];
-          Ns = normalize(Ns);
-          n = Ns;
-        }
+        // Geometric face normal is the seed/fallback; a per-vertex
+        // vertex.normal (if any) overrides it via normalAttribute in
+        // setHitAttributes below, exactly like tangents.
+        const vec3f n = normalize(cross(v1 - v0, v2 - v0));
         const vec3f osN = normalize(n);
         // n = ti.transformNormalFromObjectToWorldSpace(n);
         // n = normalize(n);
