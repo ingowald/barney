@@ -76,9 +76,9 @@ namespace BARNEY_NS {
       Camera(Context *owner);
       virtual ~Camera() = default;
 
-      /*! subtypes call from their commit() so shared params propagate
+      /*! subtypes call from their commit() so base camera state propagates
         into DD after subtype-specific fields are populated */
-      void commitSharedFields();
+      void commitBaseDeviceData();
       
       bool set1i(const std::string &member, const int &value) override;
       bool set4f(const std::string &member, const vec4f &value) override;

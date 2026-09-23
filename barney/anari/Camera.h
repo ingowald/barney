@@ -32,9 +32,9 @@ namespace BARNEY_NS {
       math::mat4   m_currViewProj;
       math::mat4   m_prevViewProj;
 
-      /*! forwards shared parameters to the underlying bnCamera. Subtypes
+      /*! forwards base camera parameters to the underlying bnCamera. Subtypes
         call this from finalize() before bnCommit. */
-      void applySharedParameters();
+      void applyBaseCameraParameters();
 
       BNCamera m_barneyCamera{nullptr};
     };

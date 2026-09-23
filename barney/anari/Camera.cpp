@@ -56,7 +56,7 @@ namespace BARNEY_NS {
       m_haveMotionMatrices = haveCurr && havePrev;
     }
 
-    void Camera::applySharedParameters()
+    void Camera::applyBaseCameraParameters()
     {
       bnSet4f(m_barneyCamera, "imageRegion",
               m_imageRegion.x, m_imageRegion.y,
@@ -104,7 +104,7 @@ namespace BARNEY_NS {
       bnSet1f(m_barneyCamera, "height", m_height);
       bnSet1f(m_barneyCamera, "near", m_near);
       bnSet1f(m_barneyCamera, "far", m_far);
-      applySharedParameters();
+      applyBaseCameraParameters();
       bnCommit(m_barneyCamera);
     }
 
@@ -132,7 +132,7 @@ namespace BARNEY_NS {
       bnSetVec(m_barneyCamera, "up", m_up);
       bnSetVec(m_barneyCamera, "position", m_pos);
       bnSetVec(m_barneyCamera, "direction", m_dir);
-      applySharedParameters();
+      applyBaseCameraParameters();
       bnCommit(m_barneyCamera);
     }
 
@@ -165,7 +165,7 @@ namespace BARNEY_NS {
       bnSet1f(m_barneyCamera, "focusDistance", m_focusDistance);
       bnSet1f(m_barneyCamera, "apertureRadius", m_apertureRadius);
       bnSet1f(m_barneyCamera, "fovy", anari::degrees(m_fovy));
-      applySharedParameters();
+      applyBaseCameraParameters();
       bnCommit(m_barneyCamera);
     }
 

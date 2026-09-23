@@ -44,7 +44,7 @@ namespace BARNEY_NS {
     return false;
   }
 
-  void Camera::commitSharedFields()
+  void Camera::commitBaseDeviceData()
   {
     dd.imageRegion = imageRegion;
     dd.haveMotionMatrices = motionEnabled;
@@ -138,7 +138,7 @@ namespace BARNEY_NS {
     dd.perspective.lens_00 = from;
     dd.perspective.focusDistance = focusDistance;
     dd.perspective.apertureRadius = apertureRadius;
-    commitSharedFields();
+    commitBaseDeviceData();
   }
     
 
@@ -224,7 +224,7 @@ namespace BARNEY_NS {
     dd.orthographic.org_dv  = dir_dv;
     dd.orthographic.height  = height;
     dd.orthographic.aspect  = aspect;
-    commitSharedFields();
+    commitBaseDeviceData();
   }
     
 
@@ -293,7 +293,7 @@ namespace BARNEY_NS {
     dd.type = Camera::OMNIDIRECTIONAL;
     dd.omni.toWorld.l = toWorld;
     dd.omni.toWorld.p = position;
-    commitSharedFields();
+    commitBaseDeviceData();
   }
     
 
