@@ -22,6 +22,15 @@ namespace BARNEY_NS {
     return false;
   }
 
+  bool Camera::set4f(const std::string &member, const vec4f &value)
+  {
+    if (member == "imageRegion") {
+      imageRegion = value;
+      return true;
+    }
+    return false;
+  }
+
   bool Camera::set4x4f(const std::string &member, const vec4f *value)
   {
     if (member == "motion.viewProjection") {
@@ -35,8 +44,9 @@ namespace BARNEY_NS {
     return false;
   }
 
-  void Camera::commitMotionFields()
+  void Camera::commitSharedFields()
   {
+    dd.imageRegion = imageRegion;
     dd.haveMotionMatrices = motionEnabled;
     std::memcpy(dd.currViewProj, motionCurrViewProj, 16 * sizeof(float));
     std::memcpy(dd.prevViewProj, motionPrevViewProj, 16 * sizeof(float));
@@ -128,7 +138,7 @@ namespace BARNEY_NS {
     dd.perspective.lens_00 = from;
     dd.perspective.focusDistance = focusDistance;
     dd.perspective.apertureRadius = apertureRadius;
-    commitMotionFields();
+    commitSharedFields();
   }
     
 
@@ -214,7 +224,7 @@ namespace BARNEY_NS {
     dd.orthographic.org_dv  = dir_dv;
     dd.orthographic.height  = height;
     dd.orthographic.aspect  = aspect;
-    commitMotionFields();
+    commitSharedFields();
   }
     
 
@@ -283,7 +293,7 @@ namespace BARNEY_NS {
     dd.type = Camera::OMNIDIRECTIONAL;
     dd.omni.toWorld.l = toWorld;
     dd.omni.toWorld.p = position;
-    commitMotionFields();
+    commitSharedFields();
   }
     
 
@@ -304,4 +314,3 @@ namespace BARNEY_NS {
 
   }
 }
-

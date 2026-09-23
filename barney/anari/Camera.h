@@ -20,8 +20,6 @@ namespace BARNEY_NS {
       static Camera *createInstance(std::string_view subtype,
                                     BarneyGlobalState *state);
 
-      math::float4 imageRegion() const;
-
       BNCamera barneyCamera() const;
 
     protected:
@@ -34,10 +32,9 @@ namespace BARNEY_NS {
       math::mat4   m_currViewProj;
       math::mat4   m_prevViewProj;
 
-      /*! forwards motion.viewProjection and motion.previousViewProjection
-        to the underlying bnCamera. Subtypes call this from finalize()
-        before bnCommit. */
-      void applyMotionMatrices();
+      /*! forwards shared parameters to the underlying bnCamera. Subtypes
+        call this from finalize() before bnCommit. */
+      void applySharedParameters();
 
       BNCamera m_barneyCamera{nullptr};
     };

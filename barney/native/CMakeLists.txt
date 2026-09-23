@@ -32,6 +32,7 @@ set(HOST_SOURCES
   FromEnv.cpp
   Camera.h
   Camera.cu
+  ImageRegion.h
   
   # all frame buffer related stuff (DistFB in barney_mpi)
   fb/FrameBuffer.h
@@ -222,4 +223,3 @@ else()
 endif()
 
 rtc_library_properties(barney_${backend}_static)
-
