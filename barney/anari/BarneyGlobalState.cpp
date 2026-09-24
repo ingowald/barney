@@ -121,6 +121,23 @@ namespace BARNEY_NS {
       return creatorFromPlugin(banari);
     }
 
+    /*! expects a string of the form '<geomtype>@<pluginname>'. may
+      return null if either the plugin cannot be found (ie, it's not
+      included in the build), or that plugin for some reason cannot
+      create that geometry. */
+    SpatialField *PluginInfrastructure::newSpatialField(const std::string_view &typeAtPlugin,
+                                                BarneyGlobalState *banari)
+    {
+      std::string realName;
+      Plugin *plugin = findPlugin(typeAtPlugin,realName);
+      if (!plugin) return nullptr;
+
+      auto creatorFromPlugin = plugin->supportedSpatialFields[realName];
+      if (!creatorFromPlugin) return nullptr;
+
+      return creatorFromPlugin(banari);
+    }
+
     /*! takes a "<providedType>@<registeredPlugin>" string, splits it
         into its two components, looks up the respective plugin, and
         either returns already loaed plugin or tries to load it if
