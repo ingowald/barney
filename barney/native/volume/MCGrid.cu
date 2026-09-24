@@ -75,7 +75,7 @@ namespace BARNEY_NS {
     /*! re-set all cells' ranges to "infinite empty" */
     void MCGrid::clearCells()
     {
-      size_t numCells = owl::common::volume(dims);
+      size_t numCells = owl::common::reduce_mul(dims);
       const int bs = 1024;
       // cuda num blocks
       // const int nb = (int)divRoundUp((size_t)numCells,(size_t)bs);
@@ -121,7 +121,7 @@ namespace BARNEY_NS {
       assert(dims.x > 0);
       assert(dims.y > 0);
       assert(dims.z > 0);
-      size_t numCells = owl::common::volume(dims);
+      size_t numCells = owl::common::reduce_mul(dims);
       const int bs = 1024;
       const int nb = (int)dru(numCells,bs);
       for (auto device : *devices) 
@@ -150,7 +150,7 @@ namespace BARNEY_NS {
         return;
       mcGrid->resize(dims);
       this->dims = dims;
-      size_t numCells = owl::common::volume(dims);
+      size_t numCells = owl::common::reduce_mul(dims);
     
       for (auto device : *devices) {
         SetActiveGPU forDuration(device);
@@ -174,7 +174,7 @@ namespace BARNEY_NS {
       if (dims == this->dims)
         return;
       this->dims = dims;
-      size_t numCells = owl::common::volume(dims);
+      size_t numCells = owl::common::reduce_mul(dims);
       for (auto device : *devices) {
         SetActiveGPU forDuration(device);
         PLD *pld = getPLD(device);
