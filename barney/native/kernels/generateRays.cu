@@ -10,6 +10,7 @@
 #include "native/render/Ray.h"
 #include "native/render/RayQueue.h"
 #include "native/Camera.h"
+#include "native/ImageRegion.h"
 #include "native/render/Renderer.h"
 #include "native/fb/FrameBuffer.h"
 #include "native/FromEnv.h"
@@ -88,8 +89,16 @@ namespace BARNEY_NS {
 
       float pixel_u = ((accumID == 0) ? .5f : rand());
       float pixel_v = ((accumID == 0) ? .5f : rand());
-      float image_u = ((ix+pixel_u)/float(fbSize.x));
-      float image_v = ((iy+pixel_v)/float(fbSize.y));
+      const float pixelNDC_u = ((ix+pixel_u)/float(fbSize.x));
+      const float pixelNDC_v = ((iy+pixel_v)/float(fbSize.y));
+      const float image_u
+        = remapImageRegionCoordinate(camera.imageRegion.x,
+                                     camera.imageRegion.z,
+                                     pixelNDC_u);
+      const float image_v
+        = remapImageRegionCoordinate(camera.imageRegion.y,
+                                     camera.imageRegion.w,
+                                     pixelNDC_v);
       float aspect = fbSize.x / float(fbSize.y);
       if (camera.type == Camera::PERSPECTIVE) {
         auto &perspective = camera.perspective;
@@ -300,10 +309,9 @@ namespace BARNEY_NS {
         device->rtc->sync();
         device->rayQueue->swapAfterGeneration();
         device->rayQueue->numActive = device->rayQueue->readNumActive();
-      }
-    }
-  
   }
 }
 
 
+  }
+}
