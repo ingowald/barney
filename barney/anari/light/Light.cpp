@@ -6,6 +6,7 @@
 #include "anari/light/Directional.h"
 #include "anari/light/HDRI.h"
 #include "anari/light/Point.h"
+#include "anari/light/Quad.h"
 
 namespace BARNEY_NS {
   namespace anari {
@@ -29,6 +30,8 @@ namespace BARNEY_NS {
       return new HDRILight(s);
     if (subtype == "point")
       return new PointLight(s);
+    if (subtype == "quad")
+      return new QuadLight(s);
     else
       return (Light *)new UnknownObject(ANARI_LIGHT, subtype, s);
   }

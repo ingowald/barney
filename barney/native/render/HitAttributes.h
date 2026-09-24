@@ -41,6 +41,11 @@ namespace BARNEY_NS {
       // this is a float*FOUR* because it can come from the attribute system
       vec4f objectNormal;
       // vec3f objectNormal;
+      // per-vertex tangent (xyz) with glTF handedness in w; the frame is
+      // only valid when a vertex.tangent/faceVarying.tangent array was set,
+      // signalled by w != 0.
+      vec4f objectTangent { 0.f,0.f,0.f,0.f };
+      vec4f worldTangent  { 0.f,0.f,0.f,0.f };
       int   primID;
       int   instID;
       float t;

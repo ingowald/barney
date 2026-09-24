@@ -332,6 +332,7 @@ namespace BARNEY_NS {
                els.pdf);
       // = world.envMapLight.sample(random,dbg);
 #else
+      Light::Sample els;
       float elsWeight = 0.f;
 #endif
 
@@ -364,8 +365,8 @@ namespace BARNEY_NS {
       plsWeight *= 1.f/sumWeights;
       
       float r = random();
-      if (dbg) printf(" light sample %f in cdf %f %f %f\n",
-                      r,alsWeight,elsWeight,dlsWeight);
+      if (dbg) printf(" light sample %f in cdf %f %f %f %f\n",
+                      r,alsWeight,elsWeight,dlsWeight,plsWeight);
       if (r <= alsWeight) {
         ls = als;
         //   ls.pdf *= alsWeight;
@@ -725,6 +726,7 @@ namespace BARNEY_NS {
           //                        ti.getPrimitiveIndex())));
 
           shadowRay._dbg = ray._dbg;
+          shadowRay.crosshair = ray.crosshair;
           shadowState.pixelID = state.pixelID;
             
           shadowState.misWeight = 1.f;
@@ -904,6 +906,7 @@ namespace BARNEY_NS {
       if (tid >= numRays) return;
 
       Ray ray = readQueue.rays[tid];
+
       PathState state = readQueue.states[tid];
 #ifdef NDEBUG
       enum { dbg = false };
@@ -952,16 +955,17 @@ namespace BARNEY_NS {
              generation);
 
 #ifndef NDEBUG
-      if (ray.crosshair && !dbg) {
+      if (ray.crosshair && !dbg)
+        // create a red crosshair pattern around the debug pixel by
+        // setting these pixel fragments to red.
         fragment = vec3f(1.f,0.f,0.f);
-      }
 #endif
       
       // write shadow and bounce ray(s), if any were generated
-      if (dbg)
-        printf("ray.tmax %f shadowray.tmax %f frag %f %f %f\n",
-               ray.tMax,shadowRay.tMax,
-               fragment.x,fragment.y,fragment.z);
+      // if (dbg)
+      //   printf("ray.tmax %f shadowray.tmax %f frag %f %f %f\n",
+      //          ray.tMax,shadowRay.tMax,
+      //          fragment.x,fragment.y,fragment.z);
       if (shadowRay.tMax > 0.f) {
         int pos = rt.atomicAdd(d_nextWritePos,1);
         writeQueue.rays[pos] = shadowRay;

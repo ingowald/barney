@@ -49,6 +49,8 @@ namespace BARNEY_NS {
           this->colorAttribute,"color");
       set(attributes.normalAttribute,
           this->normalAttribute,"normal");
+      set(attributes.tangentAttribute,
+          this->tangentAttribute,"tangent");
       return attributes;
     }
     

@@ -224,6 +224,10 @@ namespace BARNEY_NS {
         attributes.normalAttribute.perVertex = value->as<PODData>();
         return true;
       }
+      if (member == "vertex.tangent") {
+        attributes.tangentAttribute.perVertex = value->as<PODData>();
+        return true;
+      }
 
       // ----------- per face-varying -----------
       if (member == "faceVarying.attribute0") {
@@ -248,6 +252,10 @@ namespace BARNEY_NS {
       }
       if (member == "faceVarying.normal") {
         attributes.normalAttribute.faceVarying = value->as<PODData>();
+        return true;
+      }
+      if (member == "faceVarying.tangent") {
+        attributes.tangentAttribute.faceVarying = value->as<PODData>();
         return true;
       }
     

@@ -213,9 +213,7 @@ functionality to applications using the ANARI API. If enabled in the
 cmake build (it's on by default)---and properly installed via `make
 install` or `cmake --install`---this builds a implements an ANARI
 device that any ANARI app can load as a ANARI device named
-`"barney"`. If barney is built with MPI support for MPI-based
-data-parallel ray tracing it will also build a ANARI `"barney_mpi"`
-device as well. 
+`"barney"`.
 
 Note: To distinguish between the (general) ANARI *API* and the
 specific barney-based implementation of this API we typically refer to
@@ -242,8 +240,7 @@ sohld also be able to just set `ANARI_LIBRARY=barney`, and have the
 app load the `"default"` device. 
 
 For data-parallel rendering across multiple collaborating ranks use
-`"barney_mpi"`instead. Also see
-https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://arxiv.org/abs/2407.00179&ved=2ahUKEwj2rPmKuqGMAxVLJUQIHVIvFSsQFnoECBoQAQ&usg=AOvVaw0z7wpXQQyZwSdPhd6effC8
+the `"mpi"` device subtype. Also see https://arxiv.org/abs/2407.00179
 for the conventions on how to properly use data-parallel ANARI (which
 barney implements).
 
