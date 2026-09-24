@@ -177,10 +177,10 @@ namespace BARNEY_NS {
 
       PluginInfrastructure::Plugin *(*registerPlugin)() = 0;
 #ifdef _WIN32
-      auto module = GetModuleHandle(NULL);
+      auto myOwnModule = GetModuleHandle(NULL);
       registerPlugin
         = (PluginInfrastructure::Plugin *(*)())
-        GetProcAddress(hSelf, symbolName.c_str());
+        GetProcAddress(myOwnModule, symbolName.c_str());
 #else
       registerPlugin
         = (PluginInfrastructure::Plugin *(*)())
