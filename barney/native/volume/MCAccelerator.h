@@ -549,6 +549,8 @@ namespace BARNEY_NS {
         }
       }
       material.setHit(ray,hitData,world.samplers,dbg);
+      
+      ti.reportIntersection(tHit, 0);
 
       // Write hit IDs for AOV channels
       const OptixGlobals &globals = OptixGlobals::get(ti);
