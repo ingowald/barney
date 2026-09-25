@@ -15,7 +15,7 @@
 namespace BARNEY_NS {
   namespace native {
 
-#define PROFILE 0
+// #define PROFILE 1
     
     void Context::traceRaysLocally(GlobalModel *globalModel,
                                    uint32_t rngSeed,
@@ -110,12 +110,12 @@ namespace BARNEY_NS {
 
 #if PROFILE
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launch[0]-t0));
-      PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launch[1]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launched[0]-t0));
+      PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launch[1]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launched[1]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_sync[0]-t0));
-      PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_sync[1]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_synched[0]-t0));
+      PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_sync[1]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_synched[1]-t0));
 #endif
     }
