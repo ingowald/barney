@@ -144,7 +144,7 @@ namespace BARNEY_NS {
     void InstanceGroup::buildAccel()
     {
       SetActiveGPU forDuration(device);
-
+      
       BARNEY_CUDA_SYNC_CHECK();
       
       // ------------------------------------------------------------------
@@ -509,9 +509,11 @@ namespace BARNEY_NS {
       cuBQL::bvh3f bvh;
       cuBQL::DeviceMemoryResource memResource;
       cuBQL::BuildConfig buildConfig;
-      buildConfig.maxAllowedLeafSize = 4;
-      buildConfig.enableSAH();
+      // buildConfig.maxAllowedLeafSize = 4;
+      buildConfig.maxAllowedLeafSize = 1;
+      // buildConfig.enableSAH();
       // buildConfig.makeLeafThreshold = 4;
+
 #if FORCE_HOST_BUILDER
       BARNEY_CUDA_SYNC_CHECK();
       std::vector<cuBQL::box3f> h_boxes(numPrims);
@@ -542,12 +544,21 @@ namespace BARNEY_NS {
       delete[] bvh.primIDs; bvh.primIDs = d_primIDs;
       
 #else
+# if 0
+      cuBQL::cuda::sahBuilder(bvh,
+                        (const cuBQL::box_t<float,3>*)primBounds,
+                        numPrims,
+                        buildConfig,
+                        device->stream,
+                        memResource);
+# else
       cuBQL::gpuBuilder(bvh,
                         (const cuBQL::box_t<float,3>*)primBounds,
                         numPrims,
                         buildConfig,
                         device->stream,
                         memResource);
+# endif
       device->sync();
 #endif
       BARNEY_CUDA_CALL(Free(primBounds));
