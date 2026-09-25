@@ -44,7 +44,7 @@ namespace BARNEY_NS {
       if (subType == "structuredRegular")
         return new StructuredRegularField(s);
       
-      SpatialField *fromPlugin = s->plugins.newSpatialField(subType,s);
+      SpatialField *fromPlugin = PluginInfrastructure::get()->newSpatialField(subType,s);
       if (fromPlugin) return fromPlugin;
       
       // Try to create a custom Barney scalar field by type name

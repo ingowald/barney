@@ -25,8 +25,12 @@
 
 #cmakedefine01 BARNEY_USE_MULTI_SCATTERING
 
+#define BARNEY_STRINGIFY(x) #x
+#define BARNEY_TOSTRING(x) BARNEY_STRINGIFY(x)
+
 #define BARNEY_LIBRARY_NAME barney
 #define BARNEY_BACKEND_NAME @BARNEY_BACKEND_NAME@
+#define BARNEY_BACKEND_STRING BARNEY_TOSTRING(@BARNEY_BACKEND_NAME@)
 #define BARNEY_DEVICE_NAME  barney_@BARNEY_BACKEND_NAME@
 #define BARNEY_NS           barney_@BARNEY_BACKEND_NAME@
 #define BARNEY_NS_OPTIX     barney_optix
@@ -46,12 +50,10 @@
     newSpatialField() etc sees a name like that it first tries to load
     the plugin '<plugin>' which in turn will try to find a symbol of
     this name to let this function then register its respective anari
-    types */
-#define BARNEY_REGISTER_PLUGIN(name)                                    \
-  extern "C"                                                            \
-  __attribute__((visibility("default")))                                \
-  BARNEY_NS::anari::PluginInfrastructure::Plugin *                      \
-  registerPlugin_barney_@BARNEY_BACKEND_NAME@_##name()
+    types */ 
+#define BARNEY_REGISTER_PLUGIN(name, initFct)                           \
+  const int registerPlugin_barney_@BARNEY_BACKEND_NAME@_##name          \
+  = BARNEY_NS::anari::PluginInfrastructure::registerPlugin(name,initFct);
 
 
 

@@ -106,7 +106,7 @@ namespace BARNEY_NS {
       if (subType == "triangle")
         return new Triangle(s);
 
-      Geometry *fromPlugin = s->plugins.newGeometry(subType,s);
+      Geometry *fromPlugin = PluginInfrastructure::get()->newGeometry(subType,s);
       if (fromPlugin) return fromPlugin;
       
       return (Geometry *)new UnknownObject(ANARI_GEOMETRY, subType, s);

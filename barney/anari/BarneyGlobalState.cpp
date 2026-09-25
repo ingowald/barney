@@ -30,7 +30,9 @@ namespace BARNEY_NS {
 
     BarneyGlobalState::BarneyGlobalState(ANARIDevice d)
       : helium::BaseGlobalDeviceState(d)
-    {}
+    {
+      PluginInfrastructure::get()->initPlugins();
+    }
 
     BarneyGlobalState::~BarneyGlobalState()
     {
@@ -104,20 +106,23 @@ namespace BARNEY_NS {
     // compilation unit
     // ==================================================================
 
+    PluginInfrastructure *PluginInfrastructure::get()
+    {
+      static PluginInfrastructure *singleton = nullptr;
+      if (!singleton) singleton = new PluginInfrastructure;
+      return singleton;
+    }
+    
     /*! expects a string of the form '<geomtype>@<pluginname>'. may
       return null if either the plugin cannot be found (ie, it's not
       included in the build), or that plugin for some reason cannot
       create that geometry. */
-    Geometry *PluginInfrastructure::newGeometry(const std::string_view &typeAtPlugin,
+    Geometry *PluginInfrastructure::newGeometry(const std::string_view &name,
                                                 BarneyGlobalState *banari)
     {
-      std::string realName;
-      Plugin *plugin = findPlugin(typeAtPlugin,realName);
-      if (!plugin) return nullptr;
-
-      auto creatorFromPlugin = plugin->supportedGeometries[realName];
+      auto creatorFromPlugin = supportedGeometries[std::string(name)];
       if (!creatorFromPlugin) return nullptr;
-
+      
       return creatorFromPlugin(banari);
     }
 
@@ -125,73 +130,17 @@ namespace BARNEY_NS {
       return null if either the plugin cannot be found (ie, it's not
       included in the build), or that plugin for some reason cannot
       create that geometry. */
-    SpatialField *PluginInfrastructure::newSpatialField(const std::string_view &typeAtPlugin,
+    SpatialField *PluginInfrastructure::newSpatialField(const std::string_view &name,
                                                 BarneyGlobalState *banari)
     {
-      std::string realName;
-      Plugin *plugin = findPlugin(typeAtPlugin,realName);
-      if (!plugin) return nullptr;
-
-      auto creatorFromPlugin = plugin->supportedSpatialFields[realName];
+      auto creatorFromPlugin = supportedSpatialFields[std::string(name)];
       if (!creatorFromPlugin) return nullptr;
 
       return creatorFromPlugin(banari);
     }
 
-    /*! takes a "<providedType>@<registeredPlugin>" string, splits it
-        into its two components, looks up the respective plugin, and
-        either returns already loaed plugin or tries to load it if
-        required. If all went well this returns the fully loaded
-        plugin, as well as the properly stripped 'providedType'
-        string; if anything went wrong (not a valid plugin object
-        string or plugin not found and could not be loaded) this
-        returns nullptr */
-    PluginInfrastructure::Plugin *
-    PluginInfrastructure::findPlugin(const std::string_view &typeAtPlugin,
-                                     std::string &requestedType)
-    {
-      int pos = typeAtPlugin.find("@");
-      if (pos == typeAtPlugin.npos)
-        return nullptr;
-
-      const std::string pluginName = std::string(typeAtPlugin.substr(pos+1));
-      requestedType = typeAtPlugin.substr(0,pos);
-
-      if (alreadyLoadedPlugins.find(pluginName) == alreadyLoadedPlugins.end()) 
-        alreadyLoadedPlugins[pluginName] = loadPlugin(pluginName);
-
-      Plugin *plugin = alreadyLoadedPlugins[pluginName];
-      // may still be null if plugin loading failed:
-      return plugin;
-    }
-
-    PluginInfrastructure::Plugin *
-    PluginInfrastructure::loadPlugin(const std::string_view &pluginName)
-    {
-      Plugin *plugin = nullptr;
-      const std::string symbolName
-        = std::string("registerPlugin_barney_")
-        + std::string(TOSTRING(BARNEY_BACKEND_NAME))
-        + "_"
-        + std::string(pluginName);
-
-      PluginInfrastructure::Plugin *(*registerPlugin)() = 0;
-#ifdef _WIN32
-      auto myOwnModule = GetModuleHandle(NULL);
-      registerPlugin
-        = (PluginInfrastructure::Plugin *(*)())
-        GetProcAddress(myOwnModule, symbolName.c_str());
-#else
-      registerPlugin
-        = (PluginInfrastructure::Plugin *(*)())
-        dlsym(nullptr,symbolName.c_str());
-#endif
-      if (!registerPlugin) return nullptr;
-      return registerPlugin();
-    }
-
-        // called by plugin registry function to declare a new geometry type */
-    void PluginInfrastructure::Plugin
+    // called by plugin registry function to declare a new geometry type */
+    void PluginInfrastructure
     ::exportGeometry(const std::string &typeName,
                      Geometry*(*creatorFunction)(BarneyGlobalState*))
     {
@@ -199,11 +148,33 @@ namespace BARNEY_NS {
     }
     
     // called by plugin registry function to declare a new spatial field type */
-    void PluginInfrastructure::Plugin
+    void PluginInfrastructure
     ::exportSpatialField(const std::string &typeName,
                          SpatialField*(*creatorFunction)(BarneyGlobalState*))
     {
       supportedSpatialFields[typeName] = creatorFunction;
+    }
+
+    /*! we defer initializing the plugins until the first device
+      gets created, to make sure that all other stuff is already
+      loaded and initialized */
+    void PluginInfrastructure::initPlugins()
+    {
+      for (auto pluginInit : registeredPluginInitFunctions)
+        pluginInit.second();
+    }
+    
+    int PluginInfrastructure::registerPlugin(const std::string &name,
+                                             void (*initFct)())
+    {
+      std::cout << OWL_TERMINAL_LIGHT_BLUE;
+      std::cout << "#banari: globally registering plugin '"
+                << BARNEY_BACKEND_STRING << "::" << name << "'\n";
+      std::cout << OWL_TERMINAL_DEFAULT;
+      
+      PluginInfrastructure *pi = PluginInfrastructure::get();
+      pi->registeredPluginInitFunctions[name] = initFct;
+      return pi->registeredPluginInitFunctions.size();
     }
     
   }
