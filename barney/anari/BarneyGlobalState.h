@@ -128,7 +128,6 @@ namespace BARNEY_NS {
       void initPlugins();
       int size() const { return registeredPluginInitFunctions.size(); }
     private:
-
       std::map<std::string,void (*)()> registeredPluginInitFunctions;
       
       std::map<std::string,
