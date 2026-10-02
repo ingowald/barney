@@ -132,10 +132,10 @@ namespace BARNEY_NS {
     SpatialField *PluginInfrastructure::newSpatialField(const std::string_view &name,
                                                 BarneyGlobalState *banari)
     {
-      auto creatorFromPlugin = supportedSpatialFields[std::string(name)];
-      if (!creatorFromPlugin) return nullptr;
-
-      return creatorFromPlugin(banari);
+      if (auto creatorIt = supposedSpatialFields.find(name); creatorIt != cend(supportedSpatialFields)) {
+        return creatorIt->second(banari);
+      }
+      return null;
     }
 
     // called by plugin registry function to declare a new geometry type */
