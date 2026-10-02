@@ -128,14 +128,14 @@ namespace BARNEY_NS {
       void initPlugins();
       int size() const { return registeredPluginInitFunctions.size(); }
     private:
-      std::map<std::string,void (*)()> registeredPluginInitFunctions;
+      std::map<std::string,void (*)(),std::less<>> registeredPluginInitFunctions;
       
       std::map<std::string,
-               Geometry*(*)(BarneyGlobalState*)
-               > supportedGeometries;
+               Geometry*(*)(BarneyGlobalState*),
+               std::less<>> supportedGeometries;
       std::map<std::string,
-               SpatialField*(*)(BarneyGlobalState*)
-               > supportedSpatialFields;
+               SpatialField*(*)(BarneyGlobalState*),
+               std::less<>> supportedSpatialFields;
     };
     
     struct BarneyGlobalState : public helium::BaseGlobalDeviceState
