@@ -159,15 +159,11 @@ namespace BARNEY_NS {
       loaded and initialized */
     void PluginInfrastructure::initPlugins()
     {
-      // in case there's more than one device/barneyglobalstate we
-      // don't want to re-initialze
-      static bool alreadyInitialized = false;
-      if (alreadyInitialized)
-        return;
-      alreadyInitialized = true;
-      
-      for (auto pluginInit : registeredPluginInitFunctions)
-        pluginInit.second();
+      [[maybe_unused]] static const bool initialized = [this] {
+        for (auto &[name, init] : registeredPluginInitFunctions)
+          init();
+        return true;
+      }();
     }
     
     int PluginInfrastructure::registerPlugin(const std::string &name,
