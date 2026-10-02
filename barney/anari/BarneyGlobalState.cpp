@@ -112,10 +112,10 @@ namespace BARNEY_NS {
     Geometry *PluginInfrastructure::newGeometry(const std::string_view &name,
                                                 BarneyGlobalState *banari)
     {
-      auto creatorFromPlugin = supportedGeometries[std::string(name)];
-      if (!creatorFromPlugin) return nullptr;
-      
-      return creatorFromPlugin(banari);
+      if (auto creatorIt = supportedGeometries.find(name); creatorIt != cend(supportedGeometries)) {
+        return creatorIt->second(banari);
+      }
+      return null;
     }
 
     /*! expects a string of the form '<geomtype>@<pluginname>'. may
