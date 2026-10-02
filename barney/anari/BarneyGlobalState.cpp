@@ -108,9 +108,8 @@ namespace BARNEY_NS {
 
     PluginInfrastructure *PluginInfrastructure::get()
     {
-      static PluginInfrastructure *singleton = nullptr;
-      if (!singleton) singleton = new PluginInfrastructure;
-      return singleton;
+      static PluginInfrastructure singleton;
+      return &singleton;
     }
     
     /*! expects a string of the form '<geomtype>@<pluginname>'. may
