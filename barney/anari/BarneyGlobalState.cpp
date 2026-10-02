@@ -8,13 +8,6 @@
 #include "anari/Frame.h"
 #include "anari/common.h"
 
-// for dlsym
-#ifdef _WIN32
-# include <windows.h>
-#else
-# include <dlfcn.h>
-#endif
-
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
