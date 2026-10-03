@@ -19,7 +19,7 @@ option(BARNEY_MPI            "Enable MPI Support"          OFF)
 # cmake project/output config
 # ------------------------------------------------------------------
 set(BARNEY_VERSION_MAJOR 1)
-set(BARNEY_VERSION_MINOR 4)
+set(BARNEY_VERSION_MINOR 5)
 set(BARNEY_VERSION_PATCH 0)
 set(BARNEY_VERSION ${BARNEY_VERSION_MAJOR}.${BARNEY_VERSION_MINOR}.${BARNEY_VERSION_PATCH})
 
