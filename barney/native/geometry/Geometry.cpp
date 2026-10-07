@@ -25,6 +25,11 @@ namespace BARNEY_NS {
     }
 
     Geometry::SP Geometry::create(Context *context,
+                                  int slot,
+                                  const std::string &type)
+    { return create(context,context->getDevices(slot),type); }
+    
+    Geometry::SP Geometry::create(Context *context,
                                   DevGroup::SP devices,
                                   const std::string &type)
     {

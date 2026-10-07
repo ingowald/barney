@@ -22,8 +22,11 @@
 #endif
 
 namespace BARNEY_NS {
+  namespace native {
+    struct Context;
+  };
   namespace anari {
-
+    
     struct Frame;
     struct World;
 
@@ -164,6 +167,13 @@ namespace BARNEY_NS {
       BarneyGlobalState(ANARIDevice d);
       ~BarneyGlobalState();
 
+      /*! this allows for bypassing the (now-deprecated) native API */
+      native::Context *getNativeContext() const {
+        assert(tether);
+        assert(tether->context);
+        return (native::Context *)tether->context;
+      }
+      
       void markSceneChanged();
       void markStructuralSceneChanged();
     };

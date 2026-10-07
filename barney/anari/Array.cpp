@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "anari/Array.h"
+#include "native/common/Data.h"
 
 namespace BARNEY_NS {
   namespace anari {
@@ -39,7 +40,20 @@ namespace BARNEY_NS {
                                 data());                                \
       }                                                                 \
       return m_handle;                                                  \
-    }
+    }                                                                   \
+    std::shared_ptr<native::PODData>                                    \
+    Array##DIM::asNativePOD() const                                     \
+    {                                                                   \
+      auto bnData = barneyData();                                       \
+      return ((native::BaseData*)bnData)->as<native::PODData>();        \
+    }                                                                   \
+    std::shared_ptr<native::ObjectRefsData>                             \
+    Array##DIM::asNativeObjects() const                                 \
+    {                                                                   \
+      auto bnData = barneyData();                                       \
+      return ((native::BaseData*)bnData)->as<native::ObjectRefsData>(); \
+    }                                                                   \
+
 
     DEFINE_BARNEY_ARRAY_IMPL(1D)
     DEFINE_BARNEY_ARRAY_IMPL(2D)

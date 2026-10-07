@@ -9,6 +9,8 @@
 #include <cassert>
 #include <iostream>
 #include <numeric>
+// native geometry
+#include "barney/native/geometry/Geometry.h"
 
 namespace BARNEY_NS {
   namespace anari {
@@ -91,6 +93,15 @@ namespace BARNEY_NS {
     Geometry *Geometry::createInstance(std::string_view subType,
                                        BarneyGlobalState *s)
     {
+      // ==================================================================
+      // allow plugins to override existing types by checking for
+      // plugins first
+      // ==================================================================
+      Geometry *fromPlugin
+        = PluginInfrastructure::get()->newGeometry(subType,s);
+      if (fromPlugin)
+        return fromPlugin;
+
       // ==================================================================
       // create hard-coded types
       // ==================================================================
@@ -278,10 +289,15 @@ namespace BARNEY_NS {
       return m_field && (m_isoValues || !isnan(m_isoValue));
     }
 
-    const char *IsoSurface::bnSubtype() const
+    std::shared_ptr<native::Geometry> IsoSurface::createNative(BarneyGlobalState *s)
     {
-      return "iso_surface";
+      return native::Geometry::create(s->getNativeContext(),s->slot,"iso_surface");
     }
+    
+    // const char *IsoSurface::bnSubtype() const
+    // {
+    //   return "iso_surface";
+    // }
 
     box3 IsoSurface::bounds() const
     {
@@ -295,7 +311,10 @@ namespace BARNEY_NS {
     // Sphere //
 
     Sphere::Sphere(BarneyGlobalState *s)
-      : Geometry(s), m_index(this), m_vertexPosition(this), m_vertexRadius(this)
+      : Geometry(s),
+        m_index(this),
+        m_vertexPosition(this),
+        m_vertexRadius(this)
     {}
 
     void Sphere::commitParameters()
@@ -337,10 +356,17 @@ namespace BARNEY_NS {
       return m_vertexPosition;
     }
 
-    const char *Sphere::bnSubtype() const
+    // const char *Sphere::bnSubtype() const
+    // {
+    //   return "spheres";
+    // }
+
+    std::shared_ptr<native::Geometry> Sphere::createNative(BarneyGlobalState *s)
     {
-      return "spheres";
+      return native::Geometry::create(s->getNativeContext(),s->slot,"spheres");
     }
+    
+    
 
     box3 Sphere::bounds() const
     {
@@ -441,9 +467,13 @@ namespace BARNEY_NS {
       return m_vertexPosition;
     }
 
-    const char *Cylinder::bnSubtype() const
+    // const char *Cylinder::bnSubtype() const
+    // {
+    //   return "cylinders";
+    // }
+    std::shared_ptr<native::Geometry> Cylinder::createNative(BarneyGlobalState *s)
     {
-      return "cylinders";
+      return native::Geometry::create(s->getNativeContext(),s->slot,"cylinders");
     }
 
     box3 Cylinder::bounds() const
@@ -538,9 +568,13 @@ namespace BARNEY_NS {
       return m_vertexPosition && m_vertexRadius;
     }
 
-    const char *Cone::bnSubtype() const
+    // const char *Cone::bnSubtype() const
+    // {
+    //   return "cones";
+    // }
+    std::shared_ptr<native::Geometry> Cone::createNative(BarneyGlobalState *s)
     {
-      return "cones";
+      return native::Geometry::create(s->getNativeContext(),s->slot,"cones");
     }
 
     box3 Cone::bounds() const
@@ -653,10 +687,15 @@ namespace BARNEY_NS {
       return m_vertexPosition;
     }
 
-    const char *Curve::bnSubtype() const
+    // const char *Curve::bnSubtype() const
+    // {
+    //   return "capsules";
+    // }
+    std::shared_ptr<native::Geometry> Curve::createNative(BarneyGlobalState *s)
     {
-      return "capsules";
+      return native::Geometry::create(s->getNativeContext(),s->slot,"capsules");
     }
+
 
     box3 Curve::bounds() const
     {
@@ -797,9 +836,13 @@ namespace BARNEY_NS {
       }
     }
 
-    const char *Quad::bnSubtype() const
+    // const char *Quad::bnSubtype() const
+    // {
+    //   return "triangles";
+    // }
+    std::shared_ptr<native::Geometry> Quad::createNative(BarneyGlobalState *s)
     {
-      return "triangles";
+      return native::Geometry::create(s->getNativeContext(),s->slot,"triangles");
     }
 
     box3 Quad::bounds() const
@@ -904,9 +947,13 @@ namespace BARNEY_NS {
       setAttributes(geom);
     }
 
-    const char *Triangle::bnSubtype() const
+    // const char *Triangle::bnSubtype() const
+    // {
+    //   return "triangles";
+    // }
+    std::shared_ptr<native::Geometry> Triangle::createNative(BarneyGlobalState *s)
     {
-      return "triangles";
+      return native::Geometry::create(s->getNativeContext(),s->slot,"triangles");
     }
 
     box3 Triangle::bounds() const

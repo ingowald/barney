@@ -44,8 +44,12 @@ namespace BARNEY_NS {
                DevGroup::SP devices);
       virtual ~Geometry();
 
+      // deprecated:
       static Geometry::SP create(Context *context,
                                  DevGroup::SP devices,
+                                 const std::string &type);
+      static Geometry::SP create(Context *context,
+                                 int slot,
                                  const std::string &type);
     
       /*! pretty-printer for printf-debugging */

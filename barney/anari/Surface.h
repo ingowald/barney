@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "Geometry.h"
-#include "Material.h"
+#include "barney/anari/Geometry.h"
+#include "barney/anari/Material.h"
 
 namespace BARNEY_NS {
   namespace anari {
@@ -23,6 +23,12 @@ namespace BARNEY_NS {
       const Geometry *geometry() const;
       const Material *material() const;
 
+      /* iw - note this function still returns old native-api 'BNGeom'
+         type even though below e alrady use
+         native::Geometry::SP. BNGeom is simply a pointer to that
+         native geom, plus some internal refcounting on the native
+         layer, which we don't need becuase we use the shared_ptr
+         directly. */
       BNGeom getBarneyGeom();
 
       bool isValid() const override;
@@ -37,8 +43,9 @@ namespace BARNEY_NS {
       helium::ChangeObserverPtr<Geometry> m_geometry;
       helium::ChangeObserverPtr<Material> m_material;
 
-      BNGeom m_bnGeom{nullptr};
+      
       BNMaterial m_bnMat{nullptr};
+      std::shared_ptr<native::Geometry> m_nativeGeom;
     };
 
   }

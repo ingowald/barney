@@ -59,16 +59,15 @@ namespace BARNEY_NS {
 
     BNGeom Surface::getBarneyGeom()
     {
-      int slot = deviceState()->slot;
-      auto context = deviceState()->tether->context;
+      auto state = deviceState();
+      int slot = state->slot;
+      auto context = state->tether->context;
 
-      if (!m_bnGeom) {
-        cleanup();
-        m_bnGeom = bnGeometryCreate(context, slot, m_geometry->bnSubtype());
-      }
+      if (!m_nativeGeom) 
+        m_nativeGeom = m_geometry->createNative(state);
+
       setBarneyParameters();
-
-      return m_bnGeom;
+      return (BNGeom)m_nativeGeom.get();
     }
 
     bool Surface::isValid() const
@@ -87,19 +86,21 @@ namespace BARNEY_NS {
 
     void Surface::setBarneyParameters()
     {
-      if (!isValid() || !m_bnGeom)
+      auto bnGeom = (BNGeom)m_nativeGeom.get();
+      if (!isValid() || !bnGeom)
         return;
-      bnSetObject(m_bnGeom, "material", m_material->getBarneyMaterial());
-      bnSet1i(m_bnGeom, "userID", m_id);
-      m_geometry->setBarneyParameters(m_bnGeom);
-      bnCommit(m_bnGeom);
+      bnSetObject(bnGeom, "material", m_material->getBarneyMaterial());
+      bnSet1i(bnGeom, "userID", m_id);
+      m_geometry->setBarneyParameters(bnGeom);
+      bnCommit(bnGeom);
     }
 
     void Surface::cleanup()
     {
-      if (m_bnGeom)
-        bnRelease(m_bnGeom);
-      m_bnGeom = nullptr;
+      // if (m_bnGeom)
+      //   bnRelease(m_bnGeom);
+      // m_bnGeom = nullptr;
+      m_nativeGeom = {};
     }
 
   }

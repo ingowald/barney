@@ -13,6 +13,10 @@
 #include <helium/array/ObjectArray.h>
 
 namespace BARNEY_NS {
+  namespace native {
+    struct PODData;
+    struct ObjectRefsData;
+  }
   namespace anari {
   
     using ObjectArray = helium::ObjectArray;
@@ -27,6 +31,8 @@ namespace BARNEY_NS {
       void unmap() override;                                            \
                                                                         \
       BNData barneyData() const;                                        \
+      std::shared_ptr<native::PODData> asNativePOD() const;             \
+      std::shared_ptr<native::ObjectRefsData> asNativeObjects() const;  \
                                                                         \
     private:                                                            \
     mutable BNData m_handle{nullptr};                                   \

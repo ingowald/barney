@@ -4,11 +4,14 @@
 
 #pragma once
 
-#include "Array.h"
-#include "Object.h"
-#include "SpatialField.h"
+#include "barney/anari/Array.h"
+#include "barney/anari/Object.h"
+#include "barney/anari/SpatialField.h"
 
 namespace BARNEY_NS {
+  namespace native {
+    struct Geometry;
+  }
   namespace anari {
     
     struct Geometry : public Object
@@ -16,13 +19,32 @@ namespace BARNEY_NS {
       Geometry(BarneyGlobalState *s);
       ~Geometry() override;
 
+      /*! implements the anariNewGeometry, and returns a anariGeometry */
       static Geometry *createInstance(std::string_view subtype,
                                       BarneyGlobalState *s);
 
       void commitParameters() override;
       void markFinalized() override;
 
-      virtual const char *bnSubtype() const = 0;
+      /*! \brief return an instance of the corresponding native geometrby
+
+        \detailed arney native geometries are actually a baked fusion
+        of anari::geometry and anari::surface (ie, they are geometries
+        but do contain the material and attributes), so each anari
+        geometry may possibly get instantiated multiple times from
+        different surfaces. To allow this we have the anari::geometry
+        be a creator for a (shared pointer to) its corresponding
+        native geometry type - each surface can thus create its own
+        native instance, and set its material data thereon.  */
+      virtual std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) = 0;
+
+      /*! set (our) parameters, attributes, etc, on a given instance
+          of our corresponding native geometry. this is guaranteed to
+          be a native geometry that we have created via createNative,
+          but here might be multiple such ones around (one per
+          anari::surface that uses this geometry. note this still uses
+          the now-deprated barney-native-api's 'BNGeom', but this is
+          just a 'native::Geometry*' */
       virtual void setBarneyParameters(BNGeom geom) = 0;
       virtual box3 bounds() const = 0;
 
@@ -43,7 +65,7 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
+      std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) override;
       box3 bounds() const override;
 
     private:
@@ -61,7 +83,7 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
+      std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) override;
       box3 bounds() const override;
 
     private:
@@ -78,7 +100,7 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
+      std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) override;
       box3 bounds() const override;
 
     private:
@@ -98,7 +120,7 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
+      std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) override;
       box3 bounds() const override;
 
     private:
@@ -116,7 +138,7 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
+      std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) override;
       box3 bounds() const override;
 
     private:
@@ -134,7 +156,7 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
+      std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) override;
       box3 bounds() const override;
 
       void setAttributes(BNGeom geom) override;
@@ -156,7 +178,7 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
+      std::shared_ptr<native::Geometry> createNative(BarneyGlobalState *s) override;
       box3 bounds() const override;
 
       void setAttributes(BNGeom geom) override;
