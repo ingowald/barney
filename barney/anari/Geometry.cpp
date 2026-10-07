@@ -91,6 +91,9 @@ namespace BARNEY_NS {
     Geometry *Geometry::createInstance(std::string_view subType,
                                        BarneyGlobalState *s)
     {
+      // ==================================================================
+      // create hard-coded types
+      // ==================================================================
       if (subType == "sphere")
         return new Sphere(s);
       if (subType == "isosurface")
@@ -106,9 +109,6 @@ namespace BARNEY_NS {
       if (subType == "triangle")
         return new Triangle(s);
 
-      Geometry *fromPlugin = PluginInfrastructure::get()->newGeometry(subType,s);
-      if (fromPlugin) return fromPlugin;
-      
       return (Geometry *)new UnknownObject(ANARI_GEOMETRY, subType, s);
     }
 
