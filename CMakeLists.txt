@@ -9,7 +9,7 @@
 # ----------- enable/disable different devices we can build
 option(BARNEY_BACKEND_CPU    "Build Embree/CPU Backend"    OFF)
 option(BARNEY_BACKEND_CUDA   "Build (native) CUDA Backend" OFF)
-option(BARNEY_BACKEND_OPTIX  "Build OptiX Backend"         OFF)
+option(BARNEY_BACKEND_OPTIX  "Build OptiX Backend"         ON)
 option(BARNEY_BACKEND_HIP    "Build HIP Backend"           OFF)
 option(BARNEY_BACKEND_HIPRT  "Build HIPRT Backend"         OFF)
 option(BARNEY_MPI            "Enable MPI Support"          OFF)
