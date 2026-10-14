@@ -35,6 +35,18 @@ namespace BARNEY_NS {
     SpatialField *SpatialField::createInstance(std::string_view subType,
                                                BarneyGlobalState *s)
     {
+      // ==================================================================
+      // allow plugins to override existing types by checking for
+      // plugins first
+      // ==================================================================
+      SpatialField *fromPlugin
+        = PluginInfrastructure::get()->newSpatialField(subType,s);
+      if (fromPlugin)
+        return fromPlugin;
+
+      // ==================================================================
+      // create hard-coded types
+      // ==================================================================
       if (subType == "unstructured")
         return new UnstructuredField(s);
       if (subType == "nanovdb")
@@ -43,9 +55,6 @@ namespace BARNEY_NS {
         return new BlockStructuredField(s);
       if (subType == "structuredRegular")
         return new StructuredRegularField(s);
-      
-      SpatialField *fromPlugin = PluginInfrastructure::get()->newSpatialField(subType,s);
-      if (fromPlugin) return fromPlugin;
       
       // Try to create a custom Barney scalar field by type name
       // This supports custom field types registered via ScalarFieldRegistry
