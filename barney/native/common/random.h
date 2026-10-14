@@ -13,6 +13,27 @@ inline __rtc_device uint32_t pcg(uint32_t v)
 	return (word >> 22u) ^ word;
 }
 
+inline __rtc_device owl::common::vec2ui
+operator^(owl::common::vec2ui a, owl::common::vec2ui b)
+{ return {a.x ^ b.x, a.y ^ b.y}; }
+
+inline __rtc_device owl::common::vec2ui pcg(owl::common::vec2ui v)
+{
+    v = v * 1664525u + 1013904223u;
+
+    v.x += v.y * 1664525u;
+    v.y += v.x * 1664525u;
+
+    v = v ^ owl::common::vec2ui(v.x>>16u,v.y>>16u);
+
+    v.x += v.y * 1664525u;
+    v.y += v.x * 1664525u;
+
+    // v = v ^ (v>>16u);
+    v = v ^ owl::common::vec2ui(v.x>>16u,v.y>>16u);
+    return v;
+}
+
 #if 0
 uvec2 pcg2d(uvec2 v)
 {
