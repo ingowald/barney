@@ -94,22 +94,17 @@ namespace BARNEY_NS {
       void setBarneyParameters() override;
 
     private:
-      float m_density{1.f};
-      math::float3 m_color{0.8f, 0.8f, 0.8f};
-      math::float3 m_absorptionColor{0.f, 0.f, 0.f};
-      float m_densityThreshold{0.f};
       float m_emissionStrength{0.f};
-      math::float3 m_emissionColor{1.f, 1.f, 1.f};
-      float m_blackbodyIntensity{0.f};
-      math::float3 m_blackbodyTint{1.f, 1.f, 1.f};
-      float m_temperature{0.f};
 
       math::float4 m_uniformColor{1.f, 1.f, 1.f, 1.f};
       float m_uniformOpacity{1.f};
       helium::ChangeObserverPtr<helium::Array1D> m_colorData;
       helium::ChangeObserverPtr<helium::Array1D> m_opacityData;
+      helium::ChangeObserverPtr<helium::Array1D> m_emissionMapData;
+      std::vector<math::float4> m_emissionRGBAMap;
 
       void rebuildRGBAMapFromTransferFunction();
+      void rebuildEmissionMap();
     };
 
 // #else

@@ -464,6 +464,26 @@ namespace BARNEY_NS {
                             _values,numValues,
                             densityAt1);
   }
+
+  BARNEY_API
+  void bnVolumeSetEmissionXF(BNVolume volume,
+                             bn_float2 domain,
+                             const bn_float4 *_values,
+                             int numValues)
+  {
+    LOG_API_ENTRY;
+    assert(_values);
+
+    checkGet(volume)->setEmissionXF(range1f(domain.x,domain.y),
+                                    _values,numValues);
+  }
+
+  BARNEY_API
+  void bnVolumeClearEmissionXF(BNVolume volume)
+  {
+    LOG_API_ENTRY;
+    checkGet(volume)->clearEmissionXF();
+  }
   
   BARNEY_API
   BNVolume bnVolumeCreate(BNContext _context,

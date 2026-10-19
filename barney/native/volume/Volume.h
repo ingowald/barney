@@ -63,13 +63,6 @@ namespace BARNEY_NS {
         {
           float f = sfSampler.sample(point,dbg);
           if (isnan(f)) return vec4f(0.f);
-          if (principled.enabled) {
-            vec4f tf = xf.map(f, dbg);
-            if (tf.w <= 0.f)
-              return vec4f(0.f);
-            vec4f p = principledSampleMap(f, principled);
-            return vec4f(getPos(p) * getPos(tf), p.w * tf.w);
-          }
           return xf.map(f,dbg);
         }
 
@@ -82,6 +75,8 @@ namespace BARNEY_NS {
         ScalarField::DD               sfCommon;
         typename SFSampler::DD        sfSampler;
         TransferFunction::DD          xf;
+        TransferFunction::DD          emissionXf;
+        int                           emissionXfActive;
         PrincipledVolumeParams::DD    principled;
         float                         anisotropy;
         float                         scatteringAlbedo;
@@ -95,6 +90,8 @@ namespace BARNEY_NS {
         dd.sfCommon = sf->getDD(device);
         dd.sfSampler = sampler->getDD(device);
         dd.xf = xf.getDD(device);
+        dd.emissionXf = emissionXf.getDD(device);
+        dd.emissionXfActive = emissionXfActive ? 1 : 0;
         dd.userID = userID;
         dd.principled = principled.getDD(device);
         dd.anisotropy = anisotropy;
@@ -123,6 +120,10 @@ namespace BARNEY_NS {
                          const bn_float4 *values,
                          int numValues,
                          float baseDensity);
+      void setEmissionXF(const range1f &domain,
+                         const bn_float4 *values,
+                         int numValues);
+      void clearEmissionXF();
       void commit() override;
       bool set1i(const std::string &member,
                  const int   &value) override;
@@ -136,6 +137,8 @@ namespace BARNEY_NS {
       ScalarField::SP  sf;
       VolumeAccel::SP  accel;
       TransferFunction xf;
+      TransferFunction emissionXf;
+      bool emissionXfActive = false;
       PrincipledVolumeParams principled;
       float anisotropy = 0.6f;
       float scatteringAlbedo = 0.9f;

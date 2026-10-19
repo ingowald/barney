@@ -574,6 +574,15 @@ void bnVolumeSetXF(BNVolume         volume,
                    int              numColorMapValues,
                    float            densityAt1);
 
+BARNEY_API
+void bnVolumeSetEmissionXF(BNVolume         volume,
+                           bn_float2        domain,
+                           const bn_float4 *colorMap,
+                           int              numValues);
+
+BARNEY_API
+void bnVolumeClearEmissionXF(BNVolume volume);
+
 
 
 #ifdef __cplusplus
