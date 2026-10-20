@@ -96,19 +96,14 @@ namespace BARNEY_NS {
     __rtc_global
     void mapMCs(const rtc::ComputeInterface &ci,
                 MajorantsGrid::DD grid,
-                TransferFunction::DD xf,
-                PrincipledVolumeParams::DD principled)
+                TransferFunction::DD xf)
     {
 #if RTC_DEVICE_CODE
       int ix = ci.getThreadIdx().x
         +ci.getBlockIdx().x*ci.getBlockDim().x;
       if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
       range1f scalarRange = grid.scalarRanges[ix];
-      const float tfMaj = xf.majorant(scalarRange);
-      const float maj = principled.enabled
-        ? principledMajorant(scalarRange, principled) * tfMaj
-        : tfMaj;
-      grid.majorants[ix] = maj;
+      grid.majorants[ix] = xf.majorant(scalarRange);
 #endif
     }
   
@@ -129,12 +124,11 @@ namespace BARNEY_NS {
     
       for (auto device : *devices) {
         auto d_xf = volume->xf.getDD(device);
-        auto d_principled = volume->principled.getDD(device);
         auto dd = getDD(device);
         __rtc_launch(device->rtc,
                      mapMCs,
                      nb,bs,
-                     dd,d_xf,d_principled);
+                     dd,d_xf);
       }
       for (auto device : *devices) 
         device->sync();
