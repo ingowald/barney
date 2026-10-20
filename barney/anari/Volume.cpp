@@ -10,11 +10,6 @@
 namespace BARNEY_NS {
   namespace anari {
     
-    inline __rtc_both float luminance(const math::float3 &c)
-    {
-      return 0.2126f * c.x + 0.7152f * c.y + 0.0722f * c.z;
-    }
-
     Volume::Volume(BarneyGlobalState *s) : Object(ANARI_VOLUME, s) {}
 
     Volume::~Volume()
@@ -238,7 +233,8 @@ namespace BARNEY_NS {
     PrincipledVolume::PrincipledVolume(BarneyGlobalState *s)
       : FieldMappedVolume(s),
         m_colorData(this),
-        m_opacityData(this)
+        m_opacityData(this),
+        m_emissionMapData(this)
     {}
 
     void PrincipledVolume::rebuildRGBAMapFromTransferFunction()
@@ -291,20 +287,45 @@ namespace BARNEY_NS {
       }
     }
 
+    void PrincipledVolume::rebuildEmissionMap()
+    {
+      m_emissionRGBAMap.clear();
+      if (!m_emissionMapData || m_emissionMapData->size() == 0)
+        return;
+
+      const size_t n = m_emissionMapData->size();
+      switch (m_emissionMapData->elementType()) {
+      case ANARI_FLOAT32_VEC4: {
+        auto *src = (const math::float4 *)m_emissionMapData->data();
+        m_emissionRGBAMap.assign(src, src + n);
+        break;
+      }
+      case ANARI_FLOAT32_VEC3: {
+        auto *src = (const math::float3 *)m_emissionMapData->data();
+        m_emissionRGBAMap.resize(n);
+        for (size_t i = 0; i < n; ++i)
+          m_emissionRGBAMap[i] = math::float4(src[i], 1.f);
+        break;
+      }
+      case ANARI_FLOAT32: {
+        auto *src = (const float *)m_emissionMapData->data();
+        m_emissionRGBAMap.resize(n);
+        for (size_t i = 0; i < n; ++i)
+          m_emissionRGBAMap[i] = math::float4(1.f, 1.f, 1.f, src[i]);
+        break;
+      }
+      default:
+        reportMessage(ANARI_SEVERITY_WARNING,
+                      "principledVolume 'emissionMap' must be FLOAT32,"
+                      " FLOAT32_VEC3 or FLOAT32_VEC4 -- ignoring");
+        break;
+      }
+    }
+
     void PrincipledVolume::commitParameters()
     {
       FieldMappedVolume::commitParameters();
-      m_density = getParam<float>("density", 1.f);
-      m_color = getParam<math::float3>("scatterColor",
-                                       getParam<math::float3>("color",
-                                                              math::float3(0.8f)));
-      m_absorptionColor = getParam<math::float3>("absorptionColor", math::float3(0.f));
-      m_densityThreshold = getParam<float>("densityThreshold", 0.f);
       m_emissionStrength = getParam<float>("emissionStrength", 0.f);
-      m_emissionColor = getParam<math::float3>("emissionColor", math::float3(1.f));
-      m_blackbodyIntensity = getParam<float>("blackbodyIntensity", 0.f);
-      m_blackbodyTint = getParam<math::float3>("blackbodyTint", math::float3(1.f));
-      m_temperature = getParam<float>("temperature", 0.f);
 
       m_colorData = getParamObject<helium::Array1D>("color");
       math::float4 uniformColor(1.f);
@@ -313,12 +334,9 @@ namespace BARNEY_NS {
       m_uniformColor = uniformColor;
       m_opacityData = getParamObject<helium::Array1D>("opacity");
       m_uniformOpacity = getParam<float>("opacity", 1.f) * m_uniformColor.w;
+      m_emissionMapData = getParamObject<helium::Array1D>("emissionMap");
       rebuildRGBAMapFromTransferFunction();
-
-      if (!hasParam("scatteringAlbedo")) {
-        float absorb = luminance(m_absorptionColor);
-        m_scatteringAlbedo = absorb < 0.f ? 0.f : (absorb > 1.f ? 1.f : 1.f - absorb);
-      }
+      rebuildEmissionMap();
 
       if (m_unitDistance <= 0.f)
         m_densityScale = 1.f;
@@ -345,22 +363,8 @@ namespace BARNEY_NS {
       BNVolume vol = m_bnVolume;
       bnSet1i(vol, "userID", m_id);
       bnSet1f(vol, "anisotropy", m_anisotropy);
-      bnSet1f(vol, "scatteringAlbedo", m_scatteringAlbedo);
       bnSet1i(vol, "principledVolume", 1);
-      bnSet1f(vol, "principledDensity", m_density);
-      bnSet3f(vol, "principledScatterColor", m_color.x, m_color.y, m_color.z);
-      bnSet3f(vol, "principledAbsorptionColor",
-              m_absorptionColor.x, m_absorptionColor.y, m_absorptionColor.z);
-      bnSet1f(vol, "principledDensityThreshold", m_densityThreshold);
-      bnSet1f(vol, "principledDensityScale", m_densityScale);
-      bnSet2f(vol, "principledValueRange", m_valueRange.lower, m_valueRange.upper);
       bnSet1f(vol, "principledEmissionStrength", m_emissionStrength);
-      bnSet3f(vol, "principledEmissionColor",
-              m_emissionColor.x, m_emissionColor.y, m_emissionColor.z);
-      bnSet1f(vol, "principledBlackbodyIntensity", m_blackbodyIntensity);
-      bnSet3f(vol, "principledBlackbodyTint",
-              m_blackbodyTint.x, m_blackbodyTint.y, m_blackbodyTint.z);
-      bnSet1f(vol, "principledTemperature", m_temperature);
 
       if (!m_rgbaMap.empty()) {
         bnVolumeSetXF(vol,
@@ -368,6 +372,14 @@ namespace BARNEY_NS {
                       (const bn_float4 *)m_rgbaMap.data(),
                       (int)m_rgbaMap.size(),
                       m_densityScale);
+      }
+      if (!m_emissionRGBAMap.empty()) {
+        bnVolumeSetEmissionXF(vol,
+                              (bn_float2 &)m_valueRange,
+                              (const bn_float4 *)m_emissionRGBAMap.data(),
+                              (int)m_emissionRGBAMap.size());
+      } else {
+        bnVolumeClearEmissionXF(vol);
       }
       bnCommit(vol);
     }
@@ -381,6 +393,7 @@ namespace BARNEY_NS {
       }
 
       rebuildRGBAMapFromTransferFunction();
+      rebuildEmissionMap();
 
       if (m_unitDistance <= 0.f) {
         reportMessage(ANARI_SEVERITY_WARNING,

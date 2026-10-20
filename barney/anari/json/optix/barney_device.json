@@ -99,6 +99,21 @@
           "description": "enable crosshairs"
         },
         {
+          "name": "volumeMultiScatter",
+          "types": ["ANARI_BOOL"],
+          "tags": [],
+          "default": false,
+          "description": "enable principled volume multi-scattering"
+        },
+        {
+          "name": "maxVolumeBounces",
+          "types": ["ANARI_INT32"],
+          "tags": [],
+          "default": 8,
+          "minimum": 0,
+          "description": "maximum number of in-volume scattering bounces"
+        },
+        {
           "name": "cutPlane",
           "types": ["ANARI_FLOAT32_VEC4"],
           "tags": [],
