@@ -9,6 +9,8 @@
 #include "native/Context.h"
 #include "native/common/Texture.h"
 #include "native/volume/MCGrid.cuh"
+#include <nanovdb/HostBuffer.h>
+#include <nanovdb/GridHandle.h>
 
 namespace BARNEY_NS {
   namespace native {
