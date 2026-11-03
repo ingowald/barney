@@ -48,26 +48,26 @@ namespace BARNEY_NS {
         }
       }
 
-    __rtc_global 
-    void computeElementBBs(rtc::ComputeInterface ci,
-                           box3f *primBounds,
-                           int numSplats,
-                           int *indices,
-                           vec3f *positions,
-                           float *radii,
-                           float globalRadius)
-    {
+      __rtc_global 
+      void computeElementBBs(rtc::ComputeInterface ci,
+                             box3f *primBounds,
+                             int numSplats,
+                             int *indices,
+                             vec3f *positions,
+                             float *radii,
+                             float globalRadius)
+      {
 #if RTC_DEVICE_CODE
-      const int tid = ci.launchIndex().x;
-      if (tid >= numSplats) return;
+        const int tid = ci.launchIndex().x;
+        if (tid >= numSplats) return;
 
-      int idx = (indices?indices[tid]:tid);
-      vec3f pos = positions[idx];
-      float radius = radii?radii[idx]:globalRadius;
-      box3f bb(pos-radius,pos+radius);
-      primBounds[tid] = bb;
+        int idx = (indices?indices[tid]:tid);
+        vec3f pos = positions[idx];
+        float radius = radii?radii[idx]:globalRadius;
+        box3f bb(pos-radius,pos+radius);
+        primBounds[tid] = bb;
 #endif
-    }
+      }
       
       void Splats::build()
       {
@@ -111,6 +111,7 @@ namespace BARNEY_NS {
                             0,
                             memResource);
 #endif
+          std::cout << "splat bvh built" << std::endl;
           device->rtc->sync();
           device->rtc->freeMem(primBounds);
           device->rtc->freeMem(valueRanges);

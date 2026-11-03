@@ -19,8 +19,8 @@ namespace BARNEY_NS {
         m_vertexPosition(this),
         m_vertexRadius(this)
       {}
-
-        /*! return an instance of the corresponding native geometry */
+      
+      /*! return an instance of the corresponding native geometry */
       std::shared_ptr<native::Geometry> Splats::createNative(BarneyGlobalState *s)
       {
         return std::make_shared<native::Splats>(s->getNativeContext(),s->slot);
