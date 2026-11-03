@@ -23,6 +23,27 @@ namespace BARNEY_NS {
       needsMajorantRebuild = true;
     }
 
+    void Volume::setEmissionXF(const range1f &domain,
+                               const bn_float4 *_values,
+                               int numValues)
+    {
+      if (numValues <= 0) {
+        clearEmissionXF();
+        return;
+      }
+      std::vector<vec4f> values(numValues);
+      memcpy(values.data(),_values,numValues*sizeof(*_values));
+      if (values.size() == 1)
+        values.push_back(values.front());
+      emissionXf.set(domain,values,1.f);
+      emissionXfActive = true;
+    }
+
+    void Volume::clearEmissionXF()
+    {
+      emissionXfActive = false;
+    }
+
     void Volume::commit()
     {
       if (!accel)
@@ -61,31 +82,8 @@ namespace BARNEY_NS {
         scatteringAlbedo = clamp(value, 0.f, 1.f);
         return true;
       }
-      if (member == "principledDensity") {
-        principled.density = value;
-        needsMajorantRebuild = true;
-        return true;
-      }
-      if (member == "principledDensityThreshold") {
-        principled.densityThreshold = max(value, 0.f);
-        needsMajorantRebuild = true;
-        return true;
-      }
-      if (member == "principledDensityScale") {
-        principled.densityScale = value > 0.f ? value : 1.f;
-        needsMajorantRebuild = true;
-        return true;
-      }
       if (member == "principledEmissionStrength") {
         principled.emissionStrength = max(value, 0.f);
-        return true;
-      }
-      if (member == "principledBlackbodyIntensity") {
-        principled.blackbodyIntensity = max(value, 0.f);
-        return true;
-      }
-      if (member == "principledTemperature") {
-        principled.temperature = max(value, 0.f);
         return true;
       }
       return false;
@@ -94,35 +92,16 @@ namespace BARNEY_NS {
     bool Volume::set2f(const std::string &member,
                        const vec2f &value)
     {
-      if (member == "principledValueRange") {
-        principled.valueRange = range1f(value.x, value.y);
-        needsMajorantRebuild = true;
-        return true;
-      }
+      (void)member;
+      (void)value;
       return false;
     }
 
     bool Volume::set3f(const std::string &member,
                        const vec3f &value)
     {
-      if (member == "principledScatterColor") {
-        principled.scatterColor = max(value, vec3f(0.f));
-        needsMajorantRebuild = true;
-        return true;
-      }
-      if (member == "principledAbsorptionColor") {
-        principled.absorptionColor = max(value, vec3f(0.f));
-        needsMajorantRebuild = true;
-        return true;
-      }
-      if (member == "principledEmissionColor") {
-        principled.emissionColor = max(value, vec3f(0.f));
-        return true;
-      }
-      if (member == "principledBlackbodyTint") {
-        principled.blackbodyTint = max(value, vec3f(0.f));
-        return true;
-      }
+      (void)member;
+      (void)value;
       return false;
     }
 
@@ -136,6 +115,7 @@ namespace BARNEY_NS {
       : Object(sf->context),
         sf(sf),
         xf((Context*)sf->context,sf->devices),
+        emissionXf((Context*)sf->context,sf->devices),
         devices(sf->devices)
     {
       accel = sf->createAccel(this);

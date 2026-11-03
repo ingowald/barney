@@ -33,7 +33,7 @@ namespace BARNEY_NS {
         uint64_t const multiplier = 6364136223846793005ull;
         unsigned count = (unsigned)(x >> 61);
         state = x * multiplier;
-        x ^= x >> 22;
+        x ^= (x >> 22);
         return (uint32_t)(x >> (22 + count));	        
       }
       inline __rtc_both uint32_t next(uint32_t hash)
@@ -42,7 +42,8 @@ namespace BARNEY_NS {
       }
       inline __rtc_both uint32_t next(uint64_t hash)
       {
-        state ^= (hash<<1);
+        state += hash;
+        //        state ^= (hash<<1);
         // next((uint32_t)hash);
         // next((uint32_t)(hash>>32));
         return next();
@@ -62,7 +63,7 @@ namespace BARNEY_NS {
       { this->state = seed.state; seed.next(); this->next(b ? b : 290374); }
       inline __rtc_both float operator()()
       {
-        return (next() & 0x00FFFFFF) * (1.f / (float) 0x01000000);
+        return (next() & 0x00FFFFFFu) * (1.f / (float) 0x1000000u);
       };
     };
 

@@ -221,6 +221,8 @@ namespace BARNEY_NS {
 
     void FrameBuffer::finalizeFrame()
     {
+      if (isAltFrame) return;
+      
       // make sure all devices are done with rendering
       context->syncCheckAll();
       
@@ -263,7 +265,7 @@ namespace BARNEY_NS {
         }
       }
 
-      if (channels & BN_FB_DEPTH)
+      if (channels & BN_FB_DEPTH) 
         gatherAuxChannel(BN_FB_DEPTH);
       if (channels & BN_FB_PRIMID)
         gatherAuxChannel(BN_FB_PRIMID);
@@ -435,10 +437,12 @@ namespace BARNEY_NS {
 
     void FrameBuffer::resize(BNDataType colorFormat,
                              vec2i size,
-                             uint32_t channels)
+                             uint32_t channels,
+                             bool isAltFrame)
     {
       this->channels = channels;
       this->colorChannelFormat = colorFormat;
+      this->isAltFrame = isAltFrame;
 
       freeResources();
 
@@ -466,7 +470,7 @@ namespace BARNEY_NS {
         ? sizeof(vec4f)
         : sizeof(uint32_t);
 
-      if (isOwner) {
+      if (isOwner && !isAltFrame) {
         auto rtc = getDenoiserDevice()->rtc;
         int dpNP = numPixels.x * numPixels.y;   // display pixels
         int rpNP = renderPixels.x * renderPixels.y; // render pixels

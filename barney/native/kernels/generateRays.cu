@@ -137,6 +137,7 @@ namespace BARNEY_NS {
           ray_dir = normalize(ray_dir);
         }
         ray.dir = ray_dir;
+        ray.org += camera.perspective.nearClip * ray_dir;
       } else if (camera.type == Camera::ORTHOGRAPHIC) {
         auto &orthographic = camera.orthographic;
         ray.dir = normalize(orthographic.dir);
@@ -206,9 +207,7 @@ namespace BARNEY_NS {
       }
       // ray.rngSeed     = rand.next;//state;
       state.numDiffuseBounces = 0;
-#if BARNEY_USE_MULTI_SCATTERING
       state.numVolumeBounces = 0;
-#endif
       if (0 && ray.dbg())
         printf("-------------------------------------------------------\n");
              
@@ -263,7 +262,7 @@ namespace BARNEY_NS {
         return fromEnv && std::stoi(fromEnv);
       };
       static bool enablePerRayDebug = getPerRayDebug();
-      
+
       assert(fb);
       int accumID=fb->accumID;
       // ------------------------------------------------------------------

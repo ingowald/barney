@@ -65,17 +65,8 @@ namespace BARNEY_NS {
       float       ambientRadiance = 1.f;
       int         crosshairs      = 0;
       vec4f       cutPlane        = vec4f(0,0,0,-1e30f);
-      /* iw - @ap: setting this to '0' so we can use it for both
-         multi- scattering and sci-vis mode no scattering. a value of
-         '0' means 'illuminate from light soruce, but do not scatter
-         path, so direct illum but no indirect, same as original
-         sci-vis mode. Made this the default value so if not set we'll
-         do non-multiscatter sci-vis, and only apps that set this
-         explicitly will use multi-scatter (and for those, we can then
-         also assume that they correctly set the other params) */
-      int         maxVolumeBounces = 0;// ap original value: 8;
-      /* iw - @ap: axed this; setting maxbounces to 0 should do the trick? */
-      // int         volumeMultiScatter = 1;
+      int         maxVolumeBounces = 8;
+      int         volumeMultiScatter = 0;
       // maximum number of samples accumulated:
       int         sampleLimit = 1024;
     };

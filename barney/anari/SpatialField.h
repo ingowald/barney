@@ -44,6 +44,7 @@ namespace BARNEY_NS {
       }
 
       virtual box3 bounds() const = 0;
+      virtual bool isEmpty() const { return false; }
 
       BNScalarField m_bnField = 0;
     };
@@ -117,6 +118,8 @@ namespace BARNEY_NS {
         helium::ChangeObserverPtr<helium::Array1D> blockOrigins;
         helium::ChangeObserverPtr<helium::Array1D> blockLevel;
         helium::ChangeObserverPtr<helium::Array1D> data;
+        helium::float3 origin {0.f};
+        helium::float3 spacing {1.f};
       } m_params;
 
       struct BarneyData
@@ -163,6 +166,11 @@ namespace BARNEY_NS {
       box3 bounds() const override;
       bool isValid() const override;
 
+      bool isEmpty() const override { return m_empty; }
+      void invalidate(const char *reason);
+
+      bool m_valid{false};
+      bool m_empty{true};
       std::string m_filter;
       helium::ChangeObserverPtr<helium::Array1D> m_data;
 

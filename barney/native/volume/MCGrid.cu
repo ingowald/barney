@@ -13,13 +13,6 @@ namespace BARNEY_NS {
         devices(mcGrid->devices)
     {
       perLogical.resize(devices->numLogical);
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        auto rtc = device->rtc;
-        SetActiveGPU forDuration(device);
-
-        pld->majorantsBuffer    = rtc->createBuffer(sizeof(float));
-      }
     }
 
     MajorantsGrid::~MajorantsGrid()
@@ -96,19 +89,14 @@ namespace BARNEY_NS {
     __rtc_global
     void mapMCs(const rtc::ComputeInterface &ci,
                 MajorantsGrid::DD grid,
-                TransferFunction::DD xf,
-                PrincipledVolumeParams::DD principled)
+                TransferFunction::DD xf)
     {
 #if RTC_DEVICE_CODE
       int ix = ci.getThreadIdx().x
         +ci.getBlockIdx().x*ci.getBlockDim().x;
       if (ix >= grid.dims.x*grid.dims.y*grid.dims.z) return;
       range1f scalarRange = grid.scalarRanges[ix];
-      const float tfMaj = xf.majorant(scalarRange);
-      const float maj = principled.enabled
-        ? principledMajorant(scalarRange, principled) * tfMaj
-        : tfMaj;
-      grid.majorants[ix] = maj;
+      grid.majorants[ix] = xf.majorant(scalarRange);
 #endif
     }
   
@@ -129,12 +117,11 @@ namespace BARNEY_NS {
     
       for (auto device : *devices) {
         auto d_xf = volume->xf.getDD(device);
-        auto d_principled = volume->principled.getDD(device);
         auto dd = getDD(device);
         __rtc_launch(device->rtc,
                      mapMCs,
                      nb,bs,
-                     dd,d_xf,d_principled);
+                     dd,d_xf);
       }
       for (auto device : *devices) 
         device->sync();
@@ -149,20 +136,21 @@ namespace BARNEY_NS {
       if (dims == this->dims)
         return;
       mcGrid->resize(dims);
-      this->dims = dims;
       size_t numCells = owl::common::reduce_mul(dims);
     
       for (auto device : *devices) {
         SetActiveGPU forDuration(device);
         PLD *pld = getPLD(device);
         auto rtc = device->rtc;
-        rtc->freeBuffer(pld->majorantsBuffer);
-      
-        pld->majorantsBuffer
-          = rtc->createBuffer(sizeof(float)*numCells);
+        auto *replacement = rtc->createBuffer(sizeof(float)*numCells);
+        if (pld->majorantsBuffer)
+          rtc->freeBuffer(pld->majorantsBuffer);
+        pld->majorantsBuffer = replacement;
       }
-      for (auto device : *devices) 
+      for (auto device : *devices)
         device->sync();
+      // A failed partial multi-device resize must remain retryable.
+      this->dims = dims;
     }
 
     /*! allocate memory for the given grid */
@@ -179,9 +167,9 @@ namespace BARNEY_NS {
         SetActiveGPU forDuration(device);
         PLD *pld = getPLD(device);
         auto rtc = device->rtc;
+        auto *replacement = rtc->createBuffer(sizeof(range1f)*numCells);
         rtc->freeBuffer(pld->scalarRangesBuffer);
-        pld->scalarRangesBuffer
-          = rtc->createBuffer(sizeof(range1f)*numCells);
+        pld->scalarRangesBuffer = replacement;
       }
       for (auto device : *devices) 
         device->sync();

@@ -9,7 +9,7 @@
     {
       "type": "ANARI_VOLUME",
       "name": "principledVolume",
-      "description": "participating-medium volume with scattering, absorption, emission and blackbody terms",
+      "description": "participating-medium volume controlled by opacity and emission transfer functions",
       "parameters": [
         { "name": "name", "types": ["ANARI_STRING"], "tags": [], "description": "optional object name" },
         { "name": "visible", "types": ["ANARI_BOOL"], "tags": [], "default": true, "description": "whether the volume is visible" },
@@ -18,17 +18,9 @@
         { "name": "unitDistance", "types": ["ANARI_FLOAT32"], "tags": [], "default": 1.0, "description": "makes the volume uniformly thinner or thicker" },
         { "name": "color", "types": ["ANARI_FLOAT32_VEC4", "ANARI_FLOAT32_VEC3", "ANARI_ARRAY1D"], "elementType": ["ANARI_FLOAT32_VEC3", "ANARI_FLOAT32_VEC4"], "tags": [], "default": [1.0, 1.0, 1.0, 1.0], "description": "sampled color" },
         { "name": "opacity", "types": ["ANARI_FLOAT32", "ANARI_ARRAY1D"], "elementType": ["ANARI_FLOAT32"], "tags": [], "default": 1.0, "description": "sampled opacity" },
-        { "name": "density", "types": ["ANARI_FLOAT32"], "tags": [], "default": 1.0, "description": "overall density multiplier" },
-        { "name": "scatterColor", "types": ["ANARI_FLOAT32_VEC3"], "tags": [], "default": [0.8, 0.8, 0.8], "description": "scattering color; falls back to 'color' when unset" },
-        { "name": "absorptionColor", "types": ["ANARI_FLOAT32_VEC3"], "tags": [], "default": [0.0, 0.0, 0.0], "description": "absorption color" },
-        { "name": "densityThreshold", "types": ["ANARI_FLOAT32"], "tags": [], "default": 0.0, "description": "densities below this threshold are treated as empty" },
         { "name": "anisotropy", "types": ["ANARI_FLOAT32"], "tags": [], "default": 0.6, "minimum": -1.0, "maximum": 1.0, "description": "Henyey-Greenstein phase function anisotropy" },
-        { "name": "scatteringAlbedo", "types": ["ANARI_FLOAT32"], "tags": [], "default": 0.9, "minimum": 0.0, "maximum": 1.0, "description": "single-scattering albedo; derived from 'absorptionColor' when unset" },
         { "name": "emissionStrength", "types": ["ANARI_FLOAT32"], "tags": [], "default": 0.0, "description": "strength of the volumetric emission" },
-        { "name": "emissionColor", "types": ["ANARI_FLOAT32_VEC3"], "tags": [], "default": [1.0, 1.0, 1.0], "description": "color of the volumetric emission" },
-        { "name": "blackbodyIntensity", "types": ["ANARI_FLOAT32"], "tags": [], "default": 0.0, "description": "intensity of blackbody emission driven by 'temperature'" },
-        { "name": "blackbodyTint", "types": ["ANARI_FLOAT32_VEC3"], "tags": [], "default": [1.0, 1.0, 1.0], "description": "tint applied to the blackbody emission" },
-        { "name": "temperature", "types": ["ANARI_FLOAT32"], "tags": [], "default": 0.0, "description": "blackbody temperature in Kelvin" }
+        { "name": "emissionMap", "types": ["ANARI_ARRAY1D"], "elementType": ["ANARI_FLOAT32", "ANARI_FLOAT32_VEC3", "ANARI_FLOAT32_VEC4"], "tags": [], "description": "emission transfer function; RGB specifies color and alpha masks emission" }
       ]
     }
   ]

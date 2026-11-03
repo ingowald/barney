@@ -41,6 +41,7 @@ namespace BARNEY_NS {
       static inline __rtc_device
       void closestHit(rtc::TraceInterface &ti)
       {
+#if 0
         auto &ray = *(Ray*)ti.getPRD();
         auto &self = *(Spheres::DD*)ti.getProgramData();
         const OptixGlobals &globals = OptixGlobals::get(ti);
@@ -67,10 +68,158 @@ namespace BARNEY_NS {
           = self.origins[primID];
         vec3f objectN
           = (objectP == objectCenter)
-          ? vec3f(1.f,0.f,0.f)
+          ? vec3f(0.f,1.f,0.f)
           : (objectP - objectCenter);
         float objectRadius = self.radii?self.radii[primID]:self.defaultRadius;
 
+        /* shift object-space hit a bit away from the sphere */
+        float eps = 1e-5f;
+        eps = safe_eps(eps,objectRadius);
+        eps = safe_eps(eps,objectP);
+        objectP = objectCenter + (objectRadius+eps)*objectN;
+    
+        vec3f worldN
+          = ti.transformNormalFromObjectToWorldSpace(objectN);
+
+        HitAttributes hitData;
+        hitData.worldPosition   = worldP;
+
+        hitData.objectPosition  = objectP;
+        hitData.worldNormal     = normalize(worldN);
+        hitData.objectNormal    = make_vec4f(normalize(objectN));
+        hitData.primID          = primID;
+        hitData.instID          = instID;
+        hitData.t               = t_hit;
+        if (self.colors)
+          (vec3f&)hitData.color = self.colors[primID];
+    
+        auto interpolator = [&](const GeometryAttribute::DD &attrib,
+                                bool faceVarying) -> vec4f
+        { // doesn't make sense, but anari sdk assumes for spheres
+          // per-vtx is same as per-prim
+          vec4f v = attrib.fromArray.valueAt(hitData.primID,dbg);
+          return v;
+        };
+        self.setHitAttributes(hitData,interpolator,world,dbg);
+
+        const DeviceMaterial &material
+          = world.materials[self.materialID];
+
+        const float coverage
+          = material.coverage(hitData,world.samplers,dbg);
+        if (coverage < 1.f) {
+          ray.rngSeed.next(std::bit_cast<uint32_t>(objectP.x));
+          ray.rngSeed.next(std::bit_cast<uint32_t>(objectP.y));
+          ray.rngSeed.next(std::bit_cast<uint32_t>(objectP.z));
+          Random rng(ray.rngSeed,290374u);
+          if (rng() > coverage) {
+            ti.ignoreIntersection();
+            return;
+          }
+        }
+
+        
+        material.setHit(ray,hitData,world.samplers,dbg);
+#endif
+      }
+  
+      static inline __rtc_device
+      void anyHit(rtc::TraceInterface &ti)
+      {
+        /* nothing - already set in isec */
+      }
+  
+      static inline __rtc_device
+      void intersect(rtc::TraceInterface &ti)
+      {
+        const int primID = ti.getPrimitiveIndex();//optixGetPrimitiveIndex();
+        const auto &self = *(const Spheres::DD*)ti.getProgramData();
+        // = owl::getProgramData<Spheres::DD>();
+        auto &ray = *(Ray*)ti.getPRD();//owl::getPRD<Ray>();
+#ifdef NDEBUG
+        bool dbg = false;
+#else
+        bool dbg = ray.dbg();
+#endif
+
+        vec3f center = self.origins[primID];
+        float radius = self.radii?self.radii[primID]:self.defaultRadius;
+      
+        // with "move the origin" trick; see Ray Tracing Gems 2
+        // const vec3f old_org  = optixGetObjectRayOrigin();
+        const vec3f old_org  = ti.getObjectRayOrigin();
+        // const vec3f dir  = optixGetObjectRayDirection();
+        const vec3f dir  = ti.getObjectRayDirection();
+        vec3f org = old_org;
+        float t_move = max(0.f,length(center - old_org)-3.f*radius);
+        org = org + t_move * dir;
+        float t_max = ti.getRayTmax() - t_move;
+        if (t_max < 0.f) return;
+
+        float hit_t = t_max;
+
+        float tmin = max(0.f,ti.getRayTmin()-t_move);
+        const vec3f oc = org - center;
+        const float a = dot(dir,dir);
+        const float b = dot(oc, dir);
+        const float c = dot(oc, oc) - radius * radius;
+        const float discriminant = b * b - a * c;
+    
+        if (discriminant < 0.f) return;
+    
+        {
+          float temp = (-b - sqrtf(discriminant)) / a;
+          if (temp < hit_t && temp > tmin) 
+            hit_t = temp;
+        }
+      
+        {
+          float temp = (-b + sqrtf(discriminant)) / a;
+          if (temp < hit_t && temp > tmin) 
+            hit_t = temp;
+        }
+      
+
+      
+        if (hit_t >= t_max) return;
+        
+        // if (hit_t < t_max) {
+        // "abuse" ray.P to store local sphere coordinate
+        vec3f osPositionOfHit = /*shifted!*/org + /*shifted!*/hit_t*dir;
+        ray.P = osPositionOfHit;
+        
+        hit_t += t_move;
+        
+        // Cut-plane: reject hits on the invisible side
+        if (OptixGlobals::hitOnInvisibleSide(OptixGlobals::get(ti), hit_t, ti))
+          return;
+        
+        
+
+        // auto &ray = *(Ray*)ti.getPRD();
+        // auto &self = *(Spheres::DD*)ti.getProgramData();
+        const OptixGlobals &globals = OptixGlobals::get(ti);
+        const World::DD &world = globals.world;
+        // int primID = ti.getPrimitiveIndex();
+        int instID = ti.getInstanceID();
+
+        float t_hit = hit_t;
+          
+        // vec3f org = ti.getWorldRayOrigin(); 
+        // vec3f dir = ti.getWorldRayDirection();
+        /*! isec code has temporarily stored object-space hit position
+          in ray.P, see below! */
+        vec3f objectP = ray.P;
+        vec3f worldP = ti.transformPointFromObjectToWorldSpace(objectP);
+          
+        vec3f objectCenter
+          = self.origins[primID];
+        vec3f objectN
+          = (objectP == objectCenter)
+          ? vec3f(1.f,0.f,0.f)
+          : normalize(objectP - objectCenter);
+        float objectRadius = self.radii?self.radii[primID]:self.defaultRadius;
+          
         /* shift object-space hit a bit away from the sphere */
         float eps = 1e-6f;
         eps = safe_eps(eps,objectRadius);
@@ -103,99 +252,62 @@ namespace BARNEY_NS {
 
         const DeviceMaterial &material
           = world.materials[self.materialID];
-        material.setHit(ray,hitData,world.samplers,dbg);
-      }
-  
-      static inline __rtc_device
-      void anyHit(rtc::TraceInterface &ti)
-      {
-        /* nothing - already set in isec */
-      }
-  
-      static inline __rtc_device
-      void intersect(rtc::TraceInterface &ti)
-      {
-        const int primID = ti.getPrimitiveIndex();//optixGetPrimitiveIndex();
-        const auto &self = *(const Spheres::DD*)ti.getProgramData();
-        // = owl::getProgramData<Spheres::DD>();
-        auto &ray = *(Ray*)ti.getPRD();//owl::getPRD<Ray>();
-      
-        vec3f center = self.origins[primID];
-        float radius = self.radii?self.radii[primID]:self.defaultRadius;
-      
-        // with "move the origin" trick; see Ray Tracing Gems 2
-        // const vec3f old_org  = optixGetObjectRayOrigin();
-        const vec3f old_org  = ti.getObjectRayOrigin();
-        // const vec3f dir  = optixGetObjectRayDirection();
-        const vec3f dir  = ti.getObjectRayDirection();
-        vec3f org = old_org;
-        float t_move = max(0.f,length(center - old_org)-3.f*radius);
-        org = org + t_move * dir;
-        float t_max = ti.getRayTmax() - t_move;
-        if (t_max < 0.f) return;
-    
-        float hit_t = t_max;
 
-        float tmin = max(0.f,ti.getRayTmin()-t_move);
-        const vec3f oc = org - center;
-        const float a = dot(dir,dir);
-        const float b = dot(oc, dir);
-        const float c = dot(oc, oc) - radius * radius;
-        const float discriminant = b * b - a * c;
-    
-        if (discriminant < 0.f) return;
-    
-        {
-          float temp = (-b - sqrtf(discriminant)) / a;
-          if (temp < hit_t && temp > tmin) 
-            hit_t = temp;
-        }
-      
-        {
-          float temp = (-b + sqrtf(discriminant)) / a;
-          if (temp < hit_t && temp > tmin) 
-            hit_t = temp;
-        }
-      
-
-      
-        if (hit_t < t_max) {
-          // "abuse" ray.P to store local sphere coordinate
-          vec3f osPositionOfHit = /*shifted!*/org + /*shifted!*/hit_t*dir;
-          ray.P = osPositionOfHit;
-      
-          hit_t += t_move;
-
-          // Cut-plane: reject hits on the invisible side
-          if (OptixGlobals::hitOnInvisibleSide(
-                                               OptixGlobals::get(ti), hit_t, ti))
+        const float coverage
+          = material.coverage(hitData,world.samplers,dbg);
+        if (coverage < 1.f) {
+          vec2ui r = pcg(vec2ui(instID,primID));
+          ray.rngSeed.seed(r.x,r.y);
+          // ray.rngSeed.next(r.x);
+          // ray.rngSeed.next(r.y);
+          // ray.rngSeed.next(std::bit_cast<uint32_t>(objectP.x)&0xffffff);
+          // int x = ray.rngSeed.next(std::bit_cast<uint32_t>(objectP.y)&0xffffff);
+          // int y = ray.rngSeed.next(std::bit_cast<uint32_t>(objectP.z)&0xffffff);
+          owl::common::LCG<4> rng(uint32_t(ray.rngSeed.state),
+                                  uint32_t(ray.rngSeed.state>>32));
+          // Random rng(uint32_t(ray.rngSeed.state),uint32_t(ray.rngSeed.state>>32));
+          // Random rng(ray.rngSeed,r.y);
+          // if (dbg) printf("rng.state %x %x\n",rng.state,rng.state & 0x00FFFFFF);
+          // rng();
+          // if (dbg) printf("rng.state %x %x\n",rng.state,rng.state & 0x00FFFFFF);
+          float f = rng();
+          // if (dbg) printf("rng.state %x %x\n",rng.state,rng.state & 0x00FFFFFF);
+          // if (dbg) printf("ray.rngseed %x %lx %f cov %f \n",ray.rngSeed,r.y,f,coverage);
+          if (f > coverage) {
+            // ti.ignoreIntersection();
             return;
-
-          // ------------------------------------------------------------------
-          ti.reportIntersection(hit_t, 0);
-          const OptixGlobals &globals = OptixGlobals::get(ti);
-          if (globals.hitIDs) {
-            /* ID buffer rendering writes IDs no matter what transparency */
-            const World::DD &world = globals.world;
-            float depth = hit_t;
-            int instID    = ti.getInstanceID();
-        
-            const int rayID
-              = ti.getLaunchIndex().x
-              + ti.getLaunchDims().x
-              * ti.getLaunchIndex().y;
-            if (depth < globals.hitIDs[rayID].depth) {
-              globals.hitIDs[rayID].primID = primID;
-              globals.hitIDs[rayID].instID
-                = world.instIDToUserInstID
-                ? world.instIDToUserInstID[instID]
-                : instID;
-              globals.hitIDs[rayID].instID = world.rank;
-              globals.hitIDs[rayID].objID  = self.userID;
-              globals.hitIDs[rayID].depth  = depth;
-            }
           }
-          // ------------------------------------------------------------------
+        }
+
+          
+        material.setHit(ray,hitData,world.samplers,dbg);
+          
+
+          
+        // ------------------------------------------------------------------
+        ti.reportIntersection(hit_t, 0);
+        // const OptixGlobals &globals = OptixGlobals::get(ti);
+        if (globals.hitIDs) {
+          /* ID buffer rendering writes IDs no matter what transparency */
+          const World::DD &world = globals.world;
+          float depth = hit_t;
+          int instID    = ti.getInstanceID();
+        
+          const int rayID
+            = ti.getLaunchIndex().x
+            + ti.getLaunchDims().x
+            * ti.getLaunchIndex().y;
+          if (depth < globals.hitIDs[rayID].depth) {
+            globals.hitIDs[rayID].primID = primID;
+            globals.hitIDs[rayID].instID
+              = world.instIDToUserInstID
+              ? world.instIDToUserInstID[instID]
+              : instID;
+            globals.hitIDs[rayID].instID = world.rank;
+            globals.hitIDs[rayID].objID  = self.userID;
+            globals.hitIDs[rayID].depth  = depth;
+          }
+        // ------------------------------------------------------------------
 
         }
       }
