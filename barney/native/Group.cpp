@@ -81,7 +81,7 @@ namespace BARNEY_NS {
         pld->triangleGeoms.clear();
         pld->volumeGeoms.clear();
       }
-      generatedWholeWavePasses.clear();
+      generatedWholeWaveKernels.clear();
     }
   
     void Group::build()
@@ -95,7 +95,10 @@ namespace BARNEY_NS {
         // first, let them all build/update themselves
         for (auto geom : geoms) {
           if (!geom) continue;
-          geom->build(this);
+          geom->build();
+
+          if (geom->wholeWaveKernel)
+            generatedWholeWaveKernels.push_back(geom->wholeWaveKernel);
         }
       
         // now, do our stuff on a per-device basis
@@ -158,7 +161,7 @@ namespace BARNEY_NS {
         // ------------------------------------------------------------------
         for (auto volume : volumes)
           if (volume)
-            volume->build(this,true);
+            volume->build(true);
 
         // ------------------------------------------------------------------
         // now that all volumes (and their accels) have been built, go

@@ -87,14 +87,35 @@ namespace BARNEY_NS {
         slotIdx++;
       }
 
+
+
+      // ------------------------------------------------------------------
+      // now also emit all whole-wave kernels
+      // ------------------------------------------------------------------
+      for (auto model : globalModel->modelSlots) {
+        for (auto device : *model->devices) {
+          SetActiveGPU forDuration(device);
+          for (auto &wwi: model->wholeWaveInstances) {
+            //auto ctx     = model->ldgContext;
+            auto d_rays = device->rayQueue->traceAndShadeReadQueue.rays;
+            int numRays = device->rayQueue->numActive;
+            wwi.second->run(device,wwi.first,
+                            d_rays,numRays);
+          }
+        }
+      }
+
+      
+
+      
       // ------------------------------------------------------------------
       // ... and sync 'til all are done
       // ------------------------------------------------------------------
       which = -1;
       for (auto device : *devices) {
-        ++which;
+          ++which;
 #if PROFILE
-        t_sync[which] = std::chrono::high_resolution_clock::now();
+          t_sync[which] = std::chrono::high_resolution_clock::now();
 #endif
         SetActiveGPU forDuration(device);
         device->rtc->sync();
@@ -108,6 +129,7 @@ namespace BARNEY_NS {
         std::cout << ss.str();
       }
 
+      
 #if PROFILE
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launch[0]-t0));
       PRINT(std::chrono::duration_cast<std::chrono::nanoseconds>(t_launched[0]-t0));

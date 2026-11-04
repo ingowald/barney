@@ -57,11 +57,10 @@ namespace BARNEY_NS {
         rtc::Group *volumeGeomsGroup  = 0;
       };
       PLD *getPLD(Device *device);
-      std::vector<WholeWavePass::SP> generatedWHoleWavePasses;
+      std::vector<WholeWaveIntersectKernel::SP> generatedWholeWaveKernels;
       
       std::vector<PLD> perLogical;
       DevGroup::SP const devices;
-      // std::vector<MultiPass::Object::SP> multiPassObjects;
     };
 
   }

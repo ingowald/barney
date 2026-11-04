@@ -206,12 +206,29 @@ namespace BARNEY_NS {
         pld->instanceGroup->setTransforms(rtcTransforms);
         pld->instanceGroup->refitAccel();
       }
+      updateWholeWaveInstances();
     }
 
+    void ModelSlot::updateWholeWaveInstances()
+    {
+      wholeWaveInstances.clear();
+      for (int i=0;i<(int)instances.groups.size();i++) {
+        auto group = instances.groups[i].get();
+        if (!group) continue;
+
+        auto &xfm = instances.xfms[i];
+        for (auto wwk: group->generatedWholeWaveKernels)
+          wholeWaveInstances.push_back({xfm,wwk});
+            
+      }
+    }
+    
     void ModelSlot::build()
     {
+      
       // Keep light extraction identical to transform-only updates.
       updateWorldLightsFromInstances();
+      updateWholeWaveInstances();
   
       // ==================================================================
       // generate all (per device) instance lists. note each BGGroup can

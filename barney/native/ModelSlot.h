@@ -40,6 +40,11 @@ namespace BARNEY_NS {
       void setInstanceAttributes(const std::string &which, const PODData::SP &data);
       void setInstanceMotionDeltas(const affine3f *deltas, int numInstances);
       void updateWorldLightsFromInstances();
+      
+      /*! iterate over all instanced groups, and create, for each
+          whole-wave kernel attached to a group, a whole wave kernel
+          instance wtih the proper transform */
+      void updateWholeWaveInstances();
       void flattenInstancesForDevice(Device *device,
                                      std::vector<rtc::Group *> *rtcGroups,
                                      std::vector<affine3f> &rtcTransforms,
@@ -50,6 +55,7 @@ namespace BARNEY_NS {
         std::vector<affine3f>  xfms;
         std::vector<int>       userIDs;
       } instances;
+      std::vector<WholeWaveInstance> wholeWaveInstances;
 
       rtc::AccelHandle getInstanceAccel(Device *device)
       {

@@ -14,6 +14,8 @@
 
 namespace BARNEY_NS {
   namespace native {
+
+    struct Group;
     
     struct CutPlanes {
       struct Plane { vec3f N; float d; };
@@ -57,7 +59,7 @@ namespace BARNEY_NS {
       { return "Geometry{}"; }
 
       /*! ask this geometry to build whatever owl geoms it needs to build */
-      virtual void build(Group *groupToBuildInto) {}
+      virtual void build() {}
 
       void setAttributesOn(Geometry::DD &dd,
                            Device *device);
