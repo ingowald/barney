@@ -47,7 +47,6 @@ namespace BARNEY_NS {
       /*! lights assigned to this group */
       ObjectRefsData::SP lights;
 
-#if 1
       struct /* per logical device */PLD {
         std::vector<rtc::Geom *> triangleGeoms;
         std::vector<rtc::Geom *> userGeoms;
@@ -58,16 +57,9 @@ namespace BARNEY_NS {
         rtc::Group *volumeGeomsGroup  = 0;
       };
       PLD *getPLD(Device *device);
-    
+      std::vector<WholeWavePass::SP> generatedWHoleWavePasses;
+      
       std::vector<PLD> perLogical;
-#else
-      std::vector<OWLGeom> triangleGeoms;
-      std::vector<OWLGeom> userGeoms;
-      std::vector<OWLGeom> volumeGeoms;
-      OWLGroup userGeomGroup     = 0;
-      OWLGroup triangleGeomGroup = 0;
-      OWLGroup volumeGeomsGroup  = 0;
-#endif
       DevGroup::SP const devices;
       // std::vector<MultiPass::Object::SP> multiPassObjects;
     };

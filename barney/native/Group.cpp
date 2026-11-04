@@ -60,11 +60,8 @@ namespace BARNEY_NS {
 
     void Group::freeAllGeoms()
     {
-      // we should NOT call owlGeomRelease on these here: they do belong
-      // to the Geometry's!
-      // userGeoms.clear();
-      // triangleGeoms.clear();
-
+      // we should NOT call owlGeomRelease on these here: they do
+      // belong to the Geometry's!
       for (auto device : *devices) {
         PLD *pld = getPLD(device);
         auto rtc = device->rtc;
@@ -84,6 +81,7 @@ namespace BARNEY_NS {
         pld->triangleGeoms.clear();
         pld->volumeGeoms.clear();
       }
+      generatedWholeWavePasses.clear();
     }
   
     void Group::build()
@@ -97,7 +95,7 @@ namespace BARNEY_NS {
         // first, let them all build/update themselves
         for (auto geom : geoms) {
           if (!geom) continue;
-          geom->build();
+          geom->build(this);
         }
       
         // now, do our stuff on a per-device basis
@@ -109,8 +107,6 @@ namespace BARNEY_NS {
               myPLD->triangleGeoms.push_back(g);
             for (auto g : geomPLD->userGeoms)
               myPLD->userGeoms.push_back(g);
-            // for (auto g : geomPLD->userGroups)
-            //   myPLD->volumeGroups.push_back(g);
           }
         
           if (!myPLD->userGeoms.empty()) {
@@ -162,7 +158,7 @@ namespace BARNEY_NS {
         // ------------------------------------------------------------------
         for (auto volume : volumes)
           if (volume)
-            volume->build(true);
+            volume->build(this,true);
 
         // ------------------------------------------------------------------
         // now that all volumes (and their accels) have been built, go

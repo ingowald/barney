@@ -57,7 +57,7 @@ namespace BARNEY_NS {
       { return "Geometry{}"; }
 
       /*! ask this geometry to build whatever owl geoms it needs to build */
-      virtual void build() {}
+      virtual void build(Group *groupToBuildInto) {}
 
       void setAttributesOn(Geometry::DD &dd,
                            Device *device);
