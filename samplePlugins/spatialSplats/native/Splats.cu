@@ -48,6 +48,53 @@ namespace BARNEY_NS {
         }
       }
 
+
+      __rtc_global
+      void run_SplatsWWK(const rtc::ComputeInterface &rt,
+                         affine3f xfm,
+                         Ray *d_rays,
+                         int numRays,
+                         cuBQL::bvh3f bvh)
+      {
+#if RTC_DEVICE_CODE
+        int tid = rt.getThreadIdx().x + rt.getBlockIdx().x*rt.getBlockDim().x;
+        if (tid >= numRays) return;
+        
+        auto &ray = d_rays[tid];
+        float t0=0.f, t1=ray.tMax;
+        if (!boxTest(t0,t1,(const box3f&)bvh.nodes[0].bounds,ray.org,ray.dir))
+          return;
+        float t = .5f*(t0+t1);
+        vec3f P = ray.org + t * ray.dir;
+        vec3f albedo = vec3f(.3f,.8f,.5f);
+        ray.setVolumeHit(P, t, albedo, 0.f, .6f);
+#endif
+      }
+      
+      struct SplatsWWK : public WholeWaveIntersectKernel {
+        SplatsWWK(Splats *splats) : splats(splats) {}
+        void run(Device *device,
+                 const affine3f &instantiationXfm,
+                 Ray *d_rays,
+                 int numRays) override
+        {
+          Splats::PLD *pld = splats->getPLD(device);
+          int bs = 512;
+          int nb = divRoundUp(numRays,bs);
+          __rtc_launch(//device
+                       device->rtc,
+                       //kernel
+                       run_SplatsWWK,
+                       //config
+                       nb,bs,
+                       //args
+                       instantiationXfm,
+                       d_rays,numRays,
+                       pld->bvh);
+        }
+        Splats *splats;
+      };
+
       __rtc_global 
       void computeElementBBs(rtc::ComputeInterface ci,
                              box3f *primBounds,
@@ -116,6 +163,8 @@ namespace BARNEY_NS {
           device->rtc->freeMem(primBounds);
           device->rtc->freeMem(valueRanges);
         }
+
+        this->wholeWaveKernel = std::make_shared<SplatsWWK>(this);
       }
 
       
