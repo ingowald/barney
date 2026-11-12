@@ -69,9 +69,18 @@ namespace BARNEY_NS {
       Context *const context;
     };
     
+    struct Slot {
+      Slot(Context *const context, int slot);
+
+      DevGroup::SP getDevices() const;
+      
+      Context *const context;
+      int      const slot;
+    };
+    
     /*! a object owned (only) in a particular data group */
     struct SlottedObject : public Object {
-      SlottedObject(Context *context, const DevGroup::SP &devices);
+      SlottedObject(const Slot &slot);
       virtual ~SlottedObject() = default;
 
       /*! pretty-printer for printf-debugging */

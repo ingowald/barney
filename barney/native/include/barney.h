@@ -539,14 +539,6 @@ bnTexture3DCreate(BNContext context,
 // object-"create" interface
 // ------------------------------------------------------------------
 
-/*! create a new geometry of given type. Currently supported types:
-    "triangles", "spheres", "cylinders", "capsules" */
-BARNEY_API
-BNGeom bnGeometryCreate(BNContext context,
-                        int whichSlot,
-                        const char *type);
-
-
 /*! create a new scalar field of given type. currently supported
     types: "structured" */
 BARNEY_API

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "Geometry.h"
-#include "Material.h"
+#include "anari/Geometry.h"
+#include "anari/Material.h"
 
 namespace BARNEY_NS {
   namespace anari {
@@ -28,6 +28,11 @@ namespace BARNEY_NS {
       bool isValid() const override;
       bool isVisible() const;
 
+      /*! helper function until all BNGeom related api functions are
+          fully removed. this simply returns the 'Geometry::SP native'
+          as a typecast BNGeom */
+      inline BNGeom getBNGeom() const { return (BNGeom)native.get(); }
+      
     private:
       void setBarneyParameters();
       void cleanup();
@@ -39,7 +44,8 @@ namespace BARNEY_NS {
 
       const Geometry *m_boundMesh{nullptr};
       helium::TimeStamp m_meshFinalized{0};
-      BNGeom m_bnGeom{nullptr};
+      std::shared_ptr<native::Geometry> native;
+      // BNGeom m_bnGeom{nullptr};
       BNMaterial m_bnMat{nullptr};
     };
 

@@ -40,13 +40,12 @@ namespace BARNEY_NS {
         int materialID;
       };
     
-      Geometry(Context *context,
-               DevGroup::SP devices);
+      Geometry(const Slot &slot);
       virtual ~Geometry();
 
-      static Geometry::SP create(Context *context,
-                                 DevGroup::SP devices,
-                                 const std::string &type);
+      // static Geometry::SP create(Context *context,
+      //                            DevGroup::SP devices,
+      //                            const std::string &type);
     
       /*! pretty-printer for printf-debugging */
       std::string toString() const override

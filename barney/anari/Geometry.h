@@ -9,8 +9,11 @@
 #include "SpatialField.h"
 
 namespace BARNEY_NS {
+  namespace native {
+    struct Geometry;
+  }
   namespace anari {
-    
+
     struct Geometry : public Object
     {
       Geometry(BarneyGlobalState *s);
@@ -19,10 +22,12 @@ namespace BARNEY_NS {
       static Geometry *createInstance(std::string_view subtype,
                                       BarneyGlobalState *s);
 
+      /* create native representation of this anari geometry */
+      virtual std::shared_ptr<native::Geometry> createNative() = 0;
+      
       void commitParameters() override;
       void markFinalized() override;
 
-      virtual const char *bnSubtype() const = 0;
       virtual void setBarneyParameters(BNGeom geom) = 0;
       virtual box3 bounds() const = 0;
       enum class AttributeUpdate { All, MaterialAttributes };
@@ -45,9 +50,11 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
       box3 bounds() const override;
 
+      /* create native representation of this anari geometry */
+      std::shared_ptr<native::Geometry> createNative() override;
+      
     private:
       helium::ChangeObserverPtr<Array1D> m_index;
       helium::ChangeObserverPtr<Array1D> m_vertexPosition;
@@ -63,8 +70,10 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
       box3 bounds() const override;
+
+      /* create native representation of this anari geometry */
+      std::shared_ptr<native::Geometry> createNative() override;
 
     private:
       helium::ChangeObserverPtr<Array1D> m_isoValues;
@@ -80,8 +89,10 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
       box3 bounds() const override;
+
+      /* create native representation of this anari geometry */
+      std::shared_ptr<native::Geometry> createNative() override;
 
     private:
       helium::ChangeObserverPtr<Array1D> m_index;
@@ -100,7 +111,6 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
       box3 bounds() const override;
 
     private:
@@ -118,8 +128,10 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
       box3 bounds() const override;
+
+      /* create native representation of this anari geometry */
+      std::shared_ptr<native::Geometry> createNative() override;
 
     private:
       helium::ChangeObserverPtr<Array1D> m_index;
@@ -136,8 +148,10 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
       box3 bounds() const override;
+
+      /* create native representation of this anari geometry */
+      std::shared_ptr<native::Geometry> createNative() override;
 
       void setAttributes(BNGeom geom, AttributeUpdate update) override;
 
@@ -163,8 +177,10 @@ namespace BARNEY_NS {
       bool isValid() const override;
 
       void setBarneyParameters(BNGeom geom) override;
-      const char *bnSubtype() const override;
       box3 bounds() const override;
+
+      /* create native representation of this anari geometry */
+      std::shared_ptr<native::Geometry> createNative() override;
 
       void setAttributes(BNGeom geom, AttributeUpdate update) override;
     

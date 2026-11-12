@@ -17,6 +17,8 @@
 #include <helium/array/ObjectArray.h>
 #include "helium/BaseGlobalDeviceState.h"
 
+#include "barney/native/Object.h"
+
 #ifndef BARNEY_NS
 # error BARNEY_NS not defined
 #endif
@@ -146,8 +148,10 @@ namespace BARNEY_NS {
         helium::TimeStamp lastStructuralChange{0};
       } objectUpdates;
 
-      int slot = -1;
+      native::Slot getNativeSlot() const
+      { return native::Slot(tether->context,tetherIndex); }
 
+      int tetherIndex = -1;
       std::shared_ptr<Tether> tether;
 
       /*! created models get consecutive IDs, which allows us for

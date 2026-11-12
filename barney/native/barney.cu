@@ -402,16 +402,16 @@ namespace BARNEY_NS {
   }
   
   
-  BARNEY_API
-  BNGeom bnGeometryCreate(BNContext _context,
-                          int slot,
-                          const char *type)
-  {
-    Context *context = checkGet(_context);
-    std::shared_ptr<Geometry> geom
-      = context->createGeometry(slot,type);
-    return (BNGeom)context->initReference(geom);
-  }
+  // BARNEY_API
+  // BNGeom bnGeometryCreate(BNContext _context,
+  //                         int slot,
+  //                         const char *type)
+  // {
+  //   Context *context = checkGet(_context);
+  //   std::shared_ptr<Geometry> geom
+  //     = context->createGeometry(slot,type);
+  //   return (BNGeom)context->initReference(geom);
+  // }
 
   BARNEY_API
   BNMaterial bnMaterialCreate(BNContext _context,
