@@ -108,43 +108,6 @@ namespace BARNEY_NS {
       void rebuildEmissionMap();
     };
 
-// #else
-
-//     struct TransferFunction1D : public Volume
-//     {
-//       TransferFunction1D(BarneyGlobalState *s);
-
-//       void commitParameters() override;
-//       void finalize() override;
-//       bool isValid() const override;
-
-//       BNVolume createBarneyVolume() override;
-
-//       box3 bounds() const override;
-
-//     private:
-//       void setBarneyParameters() override;
-//       void invalidateBarneyVolumeIfFieldChanged();
-
-//       helium::ChangeObserverPtr<SpatialField> m_field;
-//       const SpatialField *m_boundField{nullptr};
-
-//       box3 m_bounds;
-
-//       box1 m_valueRange{0.f, 1.f};
-//       float m_unitDistance{1.f};
-//       float m_densityScale{1.f};
-//       math::float4 m_uniformColor{1.f, 1.f, 1.f, 1.f};
-//       float m_uniformOpacity{1.f};
-
-//       helium::ChangeObserverPtr<helium::Array1D> m_colorData;
-//       helium::ChangeObserverPtr<helium::Array1D> m_opacityData;
-//       bool needsOpacityData;
-
-//       std::vector<math::float4> m_rgbaMap;
-//     };
-
-
   }
 }
 

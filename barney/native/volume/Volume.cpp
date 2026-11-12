@@ -105,12 +105,6 @@ namespace BARNEY_NS {
       return false;
     }
 
-    inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
-    { assert(s); return s; }
-  
-    inline ScalarField *assertNotNull(ScalarField *s)
-    { assert(s); return s; }
-  
     Volume::Volume(ScalarField::SP sf)
       : Object(sf->context),
         sf(sf),
