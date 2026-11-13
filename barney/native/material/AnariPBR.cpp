@@ -8,39 +8,39 @@
 namespace BARNEY_NS {
   namespace native {
 
-    AnariPBR::AnariPBR(LDGContext *context)
-      : HostMaterial(context)
+    AnariPBR::AnariPBR(Device *device)
+      : HostMaterial(device)
     {}
     
-    DeviceMaterial AnariPBR::getDD(Device *device) 
+    DeviceMaterial AnariPBR::getDD() 
     {
       DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariPBR;
       packCoverage(dd, opacity.isConstantScalar(1.f)
                     && baseColor.isConstantAlpha(1.f));
 
-      dd.anariPBR.baseColor    = baseColor.getDD(device);
-      dd.anariPBR.emission     = emission.getDD(device);
-      dd.anariPBR.metallic     = metallic.getDD(device);
-      dd.anariPBR.opacity      = opacity.getDD(device);
-      dd.anariPBR.roughness    = roughness.getDD(device);
-      dd.anariPBR.ior          = ior.getDD(device);
-      dd.anariPBR.transmission = transmission.getDD(device);
-      dd.anariPBR.normal       = normal.getDD(device);
-      dd.anariPBR.occlusion    = occlusion.getDD(device);
-      dd.anariPBR.specular     = specular.getDD(device);
-      dd.anariPBR.specularColor = specularColor.getDD(device);
-      dd.anariPBR.clearcoat    = clearcoat.getDD(device);
-      dd.anariPBR.clearcoatRoughness = clearcoatRoughness.getDD(device);
-      dd.anariPBR.clearcoatNormal = clearcoatNormal.getDD(device);
-      dd.anariPBR.thickness    = thickness.getDD(device);
-      dd.anariPBR.attenuationDistance = attenuationDistance.getDD(device);
-      dd.anariPBR.attenuationColor = attenuationColor.getDD(device);
-      dd.anariPBR.sheenColor   = sheenColor.getDD(device);
-      dd.anariPBR.sheenRoughness = sheenRoughness.getDD(device);
-      dd.anariPBR.iridescence  = iridescence.getDD(device);
-      dd.anariPBR.iridescenceIor = iridescenceIor.getDD(device);
-      dd.anariPBR.iridescenceThickness = iridescenceThickness.getDD(device);
+      dd.anariPBR.baseColor    = baseColor.getDD();
+      dd.anariPBR.emission     = emission.getDD();
+      dd.anariPBR.metallic     = metallic.getDD();
+      dd.anariPBR.opacity      = opacity.getDD();
+      dd.anariPBR.roughness    = roughness.getDD();
+      dd.anariPBR.ior          = ior.getDD();
+      dd.anariPBR.transmission = transmission.getDD();
+      dd.anariPBR.normal       = normal.getDD();
+      dd.anariPBR.occlusion    = occlusion.getDD();
+      dd.anariPBR.specular     = specular.getDD();
+      dd.anariPBR.specularColor = specularColor.getDD();
+      dd.anariPBR.clearcoat    = clearcoat.getDD();
+      dd.anariPBR.clearcoatRoughness = clearcoatRoughness.getDD();
+      dd.anariPBR.clearcoatNormal = clearcoatNormal.getDD();
+      dd.anariPBR.thickness    = thickness.getDD();
+      dd.anariPBR.attenuationDistance = attenuationDistance.getDD();
+      dd.anariPBR.attenuationColor = attenuationColor.getDD();
+      dd.anariPBR.sheenColor   = sheenColor.getDD();
+      dd.anariPBR.sheenRoughness = sheenRoughness.getDD();
+      dd.anariPBR.iridescence  = iridescence.getDD();
+      dd.anariPBR.iridescenceIor = iridescenceIor.getDD();
+      dd.anariPBR.iridescenceThickness = iridescenceThickness.getDD();
 
       return dd;
     }

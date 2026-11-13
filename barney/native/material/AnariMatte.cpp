@@ -8,17 +8,17 @@
 namespace BARNEY_NS {
   namespace native {
 
-    AnariMatte::AnariMatte(LDGContext *context)
-      : HostMaterial(context)
+    AnariMatte::AnariMatte(Device *device)
+      : HostMaterial(device)
     {}
     
-    DeviceMaterial AnariMatte::getDD(Device *device) 
+    DeviceMaterial AnariMatte::getDD() 
     {
       DeviceMaterial dd;
       dd.type = DeviceMaterial::TYPE_AnariMatte;
       packCoverage(dd, opacity.isConstantScalar(1.f) && color.isConstantAlpha(1.f));
-      dd.anariMatte.color = color.getDD(device);
-      dd.anariMatte.opacity = opacity.getDD(device);
+      dd.anariMatte.color = color.getDD();
+      dd.anariMatte.opacity = opacity.getDD();
       return dd;
     }
 

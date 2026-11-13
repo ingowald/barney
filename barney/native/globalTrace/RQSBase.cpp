@@ -10,12 +10,12 @@ namespace BARNEY_NS {
   namespace native {
 
     RQSBase::PLD *RQSBase::getPLD(Device *device)
-    { return &perLogical[device->localRank()]; }
+    { return &perLogical[device->deviceIdx]; }
 
   
     RQSBase::RQSBase(Context *context)
       : GlobalTraceImpl(context),
-        perLogical(context->devices->numLogical)
+        perLogical(context->devices.size())
     {
       auto topo = context->topo;
       int islandSize = topo->islandSize();
@@ -68,8 +68,8 @@ namespace BARNEY_NS {
   
       if (FromEnv::logTopo) {
         std::stringstream ss;
-        for (int localIdx=0;localIdx<context->devices->size();localIdx++) {
-          auto device = context->devices->get(localIdx);
+        for (int localIdx=0;localIdx<context->devices.size();localIdx++) {
+          auto device = context->devices[localIdx];
           auto pld = getPLD(device);
           int gid = pld->myDev->gid;
           ss << "#bn.rqs(" << context->myRank() << "." << localIdx << "):"
@@ -85,7 +85,7 @@ namespace BARNEY_NS {
     }
 
 
-    void RQSBase::traceRays(GlobalModel *model,
+    void RQSBase::traceRays(const std::vector<World *> &worlds,
                             uint32_t rngSeed,
                             bool needHitIDs)
     {
@@ -94,7 +94,7 @@ namespace BARNEY_NS {
           std::cout << "----- glob-trace -> locally) "
                     << " -----------" << std::endl;
 
-        context->traceRaysLocally(model, rngSeed, needHitIDs);
+        context->traceRaysLocally(worlds, rngSeed, needHitIDs);
         const bool needMoreTracing = forwardRays(needHitIDs);
         if (needMoreTracing)
           continue;
