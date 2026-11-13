@@ -8,28 +8,23 @@
 namespace BARNEY_NS {
   namespace native {
 
-    SamplerRegistry::SamplerRegistry(const DevGroup::SP &devices)
-      : devices(devices)
+    SamplerRegistry::SamplerRegistry(Device *device)
+      : device(device)
     {
       numReserved = 1;
-      perLogical.resize(devices->numLogical);
-      
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        getPLD(device)->memory
-          = (Sampler::DD*)device->rtc->allocMem(numReserved*sizeof(Sampler::DD));
 
-        if (size_t(getPLD(device)->memory) % 16)
-          throw std::runtime_error("sampler mem not aligned...");
-      }
+      SetActiveGPU forDuration(device);
+      rtc.memory
+        = (Sampler::DD*)device->rtc->allocMem(numReserved*sizeof(Sampler::DD));
+      
+      if (size_t(rtc.memory) % 16)
+        throw std::runtime_error("sampler mem not aligned...");
     }
 
     SamplerRegistry::~SamplerRegistry()
     {
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        device->rtc->freeMem(getPLD(device)->memory);
-      }
+      SetActiveGPU forDuration(device);
+      device->rtc->freeMem(rtc.memory);
     }
      
     SamplerRegistry::PLD *SamplerRegistry::getPLD(Device *device)
@@ -43,19 +38,17 @@ namespace BARNEY_NS {
       numReserved *= 2;
       size_t newNumBytes = numReserved * sizeof(Sampler::DD)+128;
       
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        // ------------------------------------------------------------------
-        // save old samplers
-        // ------------------------------------------------------------------
-        PLD *pld = getPLD(device);
-        auto rtc = device->rtc;
-        
-        Sampler::DD *oldMem = pld->memory;
-        pld->memory = (Sampler::DD*)rtc->allocMem(newNumBytes);
-        rtc->copy(pld->memory,oldMem,oldNumBytes);
-        rtc->freeMem(oldMem);
-      }
+      SetActiveGPU forDuration(device);
+      // ------------------------------------------------------------------
+      // save old samplers
+      // ------------------------------------------------------------------
+      auto pld = &this->rtc;
+      auto rtc = device->rtc;
+      
+      Sampler::DD *oldMem = pld->memory;
+      pld->memory = (Sampler::DD*)rtc->allocMem(newNumBytes);
+      rtc->copy(pld->memory,oldMem,oldNumBytes);
+      rtc->freeMem(oldMem);
     }
 
     int SamplerRegistry::allocate()
@@ -76,8 +69,7 @@ namespace BARNEY_NS {
     }
   
     void SamplerRegistry::setDD(int samplerID,
-                                const Sampler::DD &dd,
-                                Device *device)
+                                const Sampler::DD &dd)
     {
       SetActiveGPU forDuration(device);
       size_t offset = samplerID*sizeof(dd);

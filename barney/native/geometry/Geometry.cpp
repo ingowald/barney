@@ -16,42 +16,39 @@
 namespace BARNEY_NS {
   namespace native {
 
-    Geometry::PLD *Geometry::getPLD(Device *device)
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    std::string Geometry::toString() const 
+    { return "Geometry{}"; }
+    
+    // Geometry::PLD *Geometry::getPLD(Device *device)
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
 
-    Geometry::SP Geometry::create(Context *context,
-                                  DevGroup::SP devices,
+    Geometry::SP Geometry::create(Device *device,
                                   const std::string &type)
     {
       if (type == "spheres")
-        return std::make_shared<Spheres>(context,devices);
+        return std::make_shared<Spheres>(device);
       if (type == "iso_surface")
-        return std::make_shared<IsoSurface>(context,devices);
+        return std::make_shared<IsoSurface>(device);
       if (type == "cones")
-        return std::make_shared<Cones>(context,devices);
+        return std::make_shared<Cones>(device);
       if (type == "cylinders")
-        return std::make_shared<Cylinders>(context,devices);
+        return std::make_shared<Cylinders>(device);
       if (type == "capsules")
-        return std::make_shared<Capsules>(context,devices);
+        return std::make_shared<Capsules>(device);
       if (type == "triangles")
-        return std::make_shared<Triangles>(context,devices);
+        return std::make_shared<Triangles>(device);
     
-      context->warn_unsupported_object("Geometry",type);
       return {};
     }
 
-    Geometry::Geometry(Context *context,
-                       DevGroup::SP devices)
-      : Object(context),
-        devices(devices)
-    {
-      perLogical.resize(devices->numLogical);
-    }
+    Geometry::Geometry(Device *device)
+      : Object(device)
+    {}
 
     bool Geometry::set1i(const std::string &member,
                          const int   &value) 
@@ -69,19 +66,19 @@ namespace BARNEY_NS {
       BN_TRACK_LEAKS(std::cout << "#barney: ~Geometry deconstructing"
                      << std::endl);
       material = {};
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        for (auto &geom : pld->triangleGeoms)
-          if (geom) {
-            device->rtc->freeGeom(geom);
-            geom = 0;
-          }
-        for (auto &geom : pld->userGeoms)
-          if (geom) {
-            device->rtc->freeGeom(geom);
-            geom = 0;
-          }
-      }
+      // for (auto device : *devices) {
+      //   PLD *pld = getPLD(device);
+      auto pld = &this->rtc;
+      for (auto &geom : pld->triangleGeoms)
+        if (geom) {
+          device->rtc->freeGeom(geom);
+          geom = 0;
+        }
+      for (auto &geom : pld->userGeoms)
+        if (geom) {
+          device->rtc->freeGeom(geom);
+          geom = 0;
+        }
     }
 
     HostMaterial::SP Geometry::getMaterial() const
@@ -98,19 +95,17 @@ namespace BARNEY_NS {
       this->material = mat;
     }
     
-    void Geometry::writeDD(Geometry::DD &dd,
-                           Device *device)
+    void Geometry::writeDD(Geometry::DD &dd)
     {
-      setAttributesOn(dd,device);
+      setAttributesOn(dd);
       dd.userID     = userID;
-      dd.attributes = attributes.getDD(device);
+      dd.attributes = attributes.getDD();
       dd.materialID = getMaterial()->materialID;
     }  
   
-    void Geometry::setAttributesOn(Geometry::DD &dd,
-                                   Device *device)
+    void Geometry::setAttributesOn(Geometry::DD &dd)
     {
-      dd.attributes = attributes.getDD(device);
+      dd.attributes = attributes.getDD();
       dd.materialID = material->materialID;  
     }
   

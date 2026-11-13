@@ -12,7 +12,7 @@ namespace BARNEY_NS {
   namespace native {
     
     /*! a umesh scalar field, with a CuBQL bvh sampler */
-    struct UMeshCuBQLSampler : public ScalarFieldSampler {
+    struct UMeshCuBQLSampler : public SpatialFieldSampler {
       using bvh_t  = cuBQL::BinaryBVH<float,3>;
       using node_t = typename bvh_t::Node;
     
@@ -21,15 +21,15 @@ namespace BARNEY_NS {
       
         bvh_t bvh;
       };
-      DD getDD(Device *device);
+      DD getDD();
     
       /*! per-device data - parent store the umesh, we just store the
         bvh nodes */
-      struct PLD {
-        bvh_t bvh = { 0,0,0,0 };
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      // struct PLD {
+      bvh_t bvh = { 0,0,0,0 };
+      // };
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
     
       UMeshCuBQLSampler(UMeshField *mesh);
     
@@ -40,7 +40,8 @@ namespace BARNEY_NS {
       void build() override;
 
       UMeshField *const mesh;
-      const DevGroup::SP devices;
+      Device     *const device;
+      // const DevGroup::SP devices;
     };
   
     inline __rtc_device

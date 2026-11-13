@@ -15,7 +15,6 @@ namespace BARNEY_NS {
   namespace native {
     
     struct TextureData;
-    struct LDGContext;
     struct SamplerRegistry;
     
     struct AttributeTransform {
@@ -76,18 +75,19 @@ namespace BARNEY_NS {
         AttributeTransform outTransform;
       };
 
-      virtual DD getDD(Device *device) = 0;
+      virtual DD getDD(// Device *device
+                      ) = 0;
 
       /*! pretty-printer for printf-debugging */
       std::string toString() const override
       { return "Sampler<>"; }
 
       
-      static Sampler::SP create(LDGContext *context,
+      static Sampler::SP create(Device *device,
                                 const std::string &type);
 
-      Sampler(LDGContext *slotContext);
-      virtual ~Sampler();
+      Sampler(Device *device);
+      ~Sampler() override;
       
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -111,20 +111,18 @@ namespace BARNEY_NS {
       mat4f outTransform { mat4f::identity() };
       vec4f outOffset    { 0.f, 0.f, 0.f, 0.f };
       vec4f borderColor  { 0.f, 0.f, 0.f, 0.f };
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
     };
 
     struct TransformSampler : public Sampler {
-      TransformSampler(LDGContext *slotContext)
-        : Sampler(slotContext)
-      {}
-      std::string toString() const override
-      { return "TransformSampler"; }
-      DD getDD(Device *device) override;
+      TransformSampler(Device *device);
+      std::string toString() const override;
+      DD getDD(// Device *device
+              ) override;
     };
 
     struct PrimitiveSampler : public Sampler {
-      PrimitiveSampler(LDGContext *slotContext);
+      PrimitiveSampler(Device *device);
       ~PrimitiveSampler() override;
       
       // ------------------------------------------------------------------
@@ -139,7 +137,7 @@ namespace BARNEY_NS {
       { return "PrimitiveSampler"; }
 
 
-      DD getDD(Device *device) override;
+      DD getDD() override;
       PODData::SP arrayData;
       // format of the entries in the array
       BNDataType arrayType;
@@ -150,7 +148,7 @@ namespace BARNEY_NS {
         operate on 1D (for ANARI IMAGE1D sampler), 2D (ANARI IMAGE2D)
         and 3D (ANARI IMAGE3D) textures */
     struct TextureSampler : public Sampler {
-      TextureSampler(LDGContext *slotContext,
+      TextureSampler(Device *device,
                      int numDims);
       ~TextureSampler() override;
 
@@ -169,13 +167,13 @@ namespace BARNEY_NS {
       std::string toString() const override
       { return "TextureSampler"+std::to_string(numDims)+"D"; }
 
-      DD getDD(Device *device) override;
+      DD getDD() override;
       
-      struct PLD {
-        rtc::Texture *rtcTexture = 0;
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      // struct PLD {
+      rtc::Texture *rtcTexture = 0;
+    // };
+    //   PLD *getPLD(Device *device);
+    //   std::vector<PLD> perLogical;
       
       mat4f inTransform               { mat4f::identity()   };
       vec4f inOffset                  { 0.f, 0.f, 0.f, 0.f  };

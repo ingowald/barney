@@ -19,7 +19,7 @@ namespace BARNEY_NS {
         float        defaultRadius;
       };
 
-      Spheres(Context *context, DevGroup::SP devices);
+      Spheres(Device *device);
     
       /*! pretty-printer for printf-debugging */
       std::string toString() const override

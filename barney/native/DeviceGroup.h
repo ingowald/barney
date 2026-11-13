@@ -13,7 +13,12 @@ namespace BARNEY_NS {
     
     struct TiledFB;
     struct RayQueue;
-  
+    struct Context;
+    struct HostMaterial;
+    struct SamplerRegistry;
+    struct MaterialRegistry;
+    struct DeviceMaterial;    
+    
     typedef rtc::GeomType *(*GeomTypeCreationFct)(rtc::Device *device);
   
     struct GeomTypeRegistry {
@@ -33,8 +38,10 @@ namespace BARNEY_NS {
     };
   
     struct Device {
+      typedef std::shared_ptr<Device> SP;
       Device(rtc::Device *rtc,
              const WorkerTopo *topo,
+             Context *context,
              int localRank);
       ~Device();
     
@@ -64,10 +71,19 @@ namespace BARNEY_NS {
       rtc::TraceKernel2D *traceRays = 0;
       RayQueue     *rayQueue = 0;
 
+      int deviceIdx;
+      int dataRankInThisDevice;
+      // DevGroup::SP         devices;
+      std::shared_ptr<HostMaterial>     defaultMaterial = 0;
+      std::shared_ptr<SamplerRegistry>  samplerRegistry = 0;
+      std::shared_ptr<MaterialRegistry> materialRegistry = 0;
+
+      
       /*! the _global_ device ID within the worker topo */
       int const _localRank;
       int const _globalRank;
       const WorkerTopo *const topo;
+      Context *const context;
     };
   
     /*! stolen from owl/Device: helper class that will set the
@@ -86,31 +102,31 @@ namespace BARNEY_NS {
       const Device *const savedDevice;
     };
 
-    /*! a group of devices that need to share in "something".
-      in practive, this is either one of:
+    // /*! a group of devices that need to share in "something".
+    //   in practive, this is either one of:
 
-      a) the list of devices in a given local model slot
+    //   a) the list of devices in a given local model slot
 
-      b) a list of all devices in the local context; or
+    //   b) a list of all devices in the local context; or
 
-      c) a single device (eg, the one that does final frame buffer
-      assembly and/or denoisign
+    //   c) a single device (eg, the one that does final frame buffer
+    //   assembly and/or denoisign
 
-      In the first case the lmsIdx is the local index of that model slot,
-      in the other cases it is '-1'
-    */
-    struct DevGroup : public std::vector<Device*> {
-      typedef std::shared_ptr<DevGroup> SP;
+    //   In the first case the lmsIdx is the local index of that model slot,
+    //   in the other cases it is '-1'
+    // */
+    // struct DevGroup : public std::vector<Device*> {
+    //   typedef std::shared_ptr<DevGroup> SP;
     
-      DevGroup(const std::vector<Device*> &devices,
-               int numLogical);
+    //   DevGroup(const std::vector<Device*> &devices,
+    //            int numLogical);
 
-      Device *get(int idx) { return (*this)[idx]; }
+    //   Device *get(int idx) { return (*this)[idx]; }
 
-      /*! *TOTAL* number of logical devices in the context;
-       *NOT* how many devices there are in this group. */
-      int const numLogical;
-    };
+    //   /*! *TOTAL* number of logical devices in the context;
+    //    *NOT* how many devices there are in this group. */
+    //   int const numLogical;
+    // };
 
   }
 }

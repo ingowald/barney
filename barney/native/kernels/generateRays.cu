@@ -44,28 +44,28 @@ namespace BARNEY_NS {
     void _generateRays(const rtc::ComputeInterface &rt,
                        Camera::DD camera,
                        Renderer::DD renderer,
-                       /*! a unique random number seed value for pixel
-                         and lens jitter; probably just accumID */
+/*! a unique random number seed value for pixel
+  and lens jitter; probably just accumID */
                        int accumID,
-                       /*! full frame buffer size, to check if a given
-                         tile's pixel ID is still valid */
+/*! full frame buffer size, to check if a given
+  tile's pixel ID is still valid */
                        vec2i fbSize,
-                       /*! pointer to a device-side int that tracks the
-                         next write position in the 'write' ray
-                         queue; can be atomically incremented on the
-                         device */
+/*! pointer to a device-side int that tracks the
+  next write position in the 'write' ray
+  queue; can be atomically incremented on the
+  device */
                        int *d_count,
-                       /*! pointer to device-side ray queue to write
-                         newly generated raysinto */
+/*! pointer to device-side ray queue to write
+  newly generated raysinto */
                        SingleQueue rayQueue,
-                       /*! tile descriptors for the tiles that the
-                         frame buffer owns on this device; rays
-                         should only get generated for these tiles */
+/*! tile descriptors for the tiles that the
+  frame buffer owns on this device; rays
+  should only get generated for these tiles */
                        TileDesc *tileDescs,
                        bool enablePerRayDebug
-                       )
+                      )
 #if !RTC_DEVICE_CODE
-    ;
+      ;
 #else
     {
       // ------------------------------------------------------------------
@@ -153,7 +153,7 @@ namespace BARNEY_NS {
           = omni.toWorld.p;
         ray.dir =
           uvToWorld(omni.toWorld,image_u,image_v);
-       }
+      }
       
       ray._dbg        = 0;
       ray.crosshair   = 0;
@@ -238,11 +238,11 @@ namespace BARNEY_NS {
       }
       (vec4f&)ray.missColor = bgColor;
       if (1 && ray.dbg()) printf("== spawn ray has bg tex %p bg color %f %f %f %f\n",
-                               (void*)renderer.bgTexture,
-                               bgColor.x,
-                               bgColor.y,
-                               bgColor.z,
-                               bgColor.w);
+                                 (void*)renderer.bgTexture,
+                                 bgColor.x,
+                                 bgColor.y,
+                                 bgColor.z,
+                                 bgColor.w);
       state.throughput = 1.f;
       int pos = rt.atomicAdd(d_count,1);
 
@@ -253,7 +253,7 @@ namespace BARNEY_NS {
 #endif
   
     void Context::generateRays(Camera *camera,
-                               Renderer *renderer,
+                               const std::vector<Renderer *> &renderers,
                                FrameBuffer *fb)
     {
       auto getPerRayDebug = [&]()
@@ -269,7 +269,7 @@ namespace BARNEY_NS {
       // launch all GPUs to do their stuff
       // ------------------------------------------------------------------
       Camera::DD cameraDD = camera->getDD();
-      for (auto device : *devices) {
+      for (auto device : devices) {
         SetActiveGPU forDuration(device);
         TiledFB *devFB = fb->getFor(device);
         device->rayQueue->resetWriteQueue();
@@ -291,25 +291,25 @@ namespace BARNEY_NS {
                      devFB->numActiveTilesThisGPU,pixelsPerTile,
                      // args
                      cameraDD,
-                     renderer->getDD(device),
+                     renderers[device->deviceIdx]->getDD(),
                      accumID,
                      fb->renderPixels,
                      device->rayQueue->_d_nextWritePos,
                      device->rayQueue->receiveAndShadeWriteQueue,
                      devFB->tileDescs,
                      enablePerRayDebug
-                     );
+                    );
       }
       // ------------------------------------------------------------------
       // wait for all GPUs' completion
       // ------------------------------------------------------------------
-      for (auto device : *devices) {
+      for (auto device : devices) {
         SetActiveGPU forDuration(device);
         device->rtc->sync();
         device->rayQueue->swapAfterGeneration();
         device->rayQueue->numActive = device->rayQueue->readNumActive();
-  }
-}
+      }
+    }
 
 
   }

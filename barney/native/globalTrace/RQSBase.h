@@ -26,7 +26,7 @@ namespace BARNEY_NS {
     
       RQSBase(Context *context);
 
-      void traceRays(GlobalModel *model,
+      void traceRays(const std::vector<World *> &worlds,
                      uint32_t rngSeed,
                      bool needHitIDs) override;
 

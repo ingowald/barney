@@ -14,18 +14,18 @@ namespace BARNEY_NS {
     struct Block;
     struct BlockStructuredCuBQLSampler;
     
-    struct BlockStructuredField : public ScalarField
+    struct BlockStructuredField : public SpatialField
     {
       typedef std::shared_ptr<BlockStructuredField> SP;
 
-      struct PLD {
+      // struct PLD {
         // rtc::ComputeKernel1D *mcRasterBlocks = 0;
         // rtc::ComputeKernel1D *computeElementBBs = 0;
-        Block *blocks;
-        float *scalars;
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+        Block *d_blocks;
+        float *d_scalars;
+      // };
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
 
       /*! pretty-printer for printf-debugging */
       std::string toString() const override;
@@ -39,7 +39,7 @@ namespace BARNEY_NS {
       IsoSurfaceAccel::SP createIsoAccel(IsoSurface *isoSurface) override;
     
       
-      struct DD : public ScalarField::DD {
+      struct DD : public SpatialField::DD {
 
 #if RTC_DEVICE_CODE
         /* compute basis function contribution of given block at point P, and add
@@ -63,11 +63,12 @@ namespace BARNEY_NS {
         int numBlocks;
       };
 
-      BlockStructuredField(Context *context,
-                           const DevGroup::SP &devices);
-      virtual ~BlockStructuredField() override;
+      BlockStructuredField(Device *device);
+      // Context *context,
+      //                      const DevGroup::SP &devices);
+      ~BlockStructuredField() override;
     
-      DD getDD(Device *device);
+      DD getDD();
     
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */

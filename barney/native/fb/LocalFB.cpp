@@ -7,18 +7,20 @@
 namespace BARNEY_NS {
   namespace native {
   
-    LocalFB::LocalFB(Context *context,
-                     const DevGroup::SP &devices)
-      : FrameBuffer(context, devices, true)
+    LocalFB::LocalFB(Context *context)
+      : FrameBuffer(context, true)
     {}
 
     void LocalFB::writeMotionChannel(void *stagingArea)
     {
-      for (auto device : *devices)
+      for (auto device : context->devices)
         getFor(device)->linearizeAuxChannel(stagingArea, BN_FB_MOTION);
-      for (auto device : *devices)
+      for (auto device : context->devices)
         device->sync();
     }
+    
+    std::string LocalFB::toString() const 
+    { return "LocalFB{}"; }
     
     void LocalFB::resize(BNDataType colorFormat,
                          vec2i size,
@@ -26,7 +28,7 @@ namespace BARNEY_NS {
                          bool isAltFrame)
     {
       Device *frontDev = getDenoiserDevice();
-      for (auto device : *devices) {
+      for (auto device : context->devices) {
         auto devFB = getFor(device);
       }
     
@@ -37,13 +39,13 @@ namespace BARNEY_NS {
         rtc->freeMem(onOwner.tileDescs);
 
       onOwner.sumTiles = 0;
-      for (auto device : *devices)
+      for (auto device : context->devices)
         onOwner.sumTiles += getFor(device)->numActiveTilesThisGPU;
 
       onOwner.tileDescs
         = (TileDesc *)rtc->allocMem(onOwner.sumTiles*sizeof(TileDesc));
       TileDesc *dst = onOwner.tileDescs;
-      for (auto device : *devices) {
+      for (auto device : context->devices) {
         SetActiveGPU forDuration(device);
         auto devFB = getFor(device);
         device->rtc->copyAsync(dst,
@@ -52,7 +54,7 @@ namespace BARNEY_NS {
         dst += devFB->numActiveTilesThisGPU;
       }
     
-      for (auto device : *devices)
+      for (auto device : context->devices)
         device->sync();
     }
   
@@ -72,7 +74,7 @@ namespace BARNEY_NS {
                                      vec3f *linearNormal)
     {
       float accumScale = 1.f/accumID;
-      for (auto device : *devices) {
+      for (auto device : context->devices) {
         auto tfb = getFor(device);
         tfb->linearizeColorAndNormal
           (linearColor,gatherType,linearNormal,accumScale);
@@ -92,9 +94,9 @@ namespace BARNEY_NS {
     void LocalFB::writeAuxChannel(void *stagingArea,
                                   BNFrameBufferChannel whichChannel) 
     {
-      for (auto device : *devices)
+      for (auto device : context->devices)
         getFor(device)->linearizeAuxChannel(stagingArea,whichChannel);
-      for (auto device : *devices)
+      for (auto device : context->devices)
         device->sync();
     }
 

@@ -15,17 +15,15 @@ namespace BARNEY_NS {
     struct MaterialRegistry {
       typedef std::shared_ptr<MaterialRegistry> SP;
     
-      MaterialRegistry(const DevGroup::SP &devices);
-      virtual ~MaterialRegistry();
+      MaterialRegistry(Device *device);
+      ~MaterialRegistry();
       
       int allocate();
       void release(int nowReusableID);
       void grow();
 
       void setMaterial(int materialID,
-                       const DeviceMaterial &dd,
-                       Device *device);
-      // const DeviceMaterial *getPointer(int owlDeviceID) const;
+                       const DeviceMaterial &dd);
     
       int numReserved = 0;
       int nextFree = 0;
@@ -33,17 +31,22 @@ namespace BARNEY_NS {
       std::stack<int> reusableIDs;
       // OWLBuffer       buffer = 0;
 
-      DeviceMaterial *getDD(Device *device) 
-      { return (DeviceMaterial *)getPLD(device)->buffer->getDD(); }
+      DeviceMaterial *getDD() 
+      { return (DeviceMaterial *)rtc.buffer->getDD(); }
+      // { return (DeviceMaterial *)getPLD(device)->buffer->getDD(); }
 
-      struct PLD {
+      // struct PLD {
+      //   rtc::Buffer *buffer = 0;
+      //   // Device      *device;
+      // };
+      struct {
         rtc::Buffer *buffer = 0;
-        // Device      *device;
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      } rtc;
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
 
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
+      Device *const device;
     };
 
   }

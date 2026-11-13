@@ -18,13 +18,13 @@ namespace BARNEY_NS {
                          /*geomtype device data */
                          MCIsoSurfaceAccel<UMeshCuBQLSampler>::DD,false,false);
   
-    UMeshField::PLD *UMeshField::getPLD(Device *device) 
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    // UMeshField::PLD *UMeshField::getPLD(Device *device) 
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
 
 #if RTC_DEVICE_CODE
     inline __rtc_device float length3(vec4f v)
@@ -158,7 +158,7 @@ namespace BARNEY_NS {
   
     MCGrid::SP UMeshField::buildMCs()
     {
-      MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
+      MCGrid::SP mcGrid = std::make_shared<MCGrid>(device);
       buildInitialMacroCells(*mcGrid);
       return mcGrid;
     }
@@ -187,19 +187,19 @@ namespace BARNEY_NS {
     
       grid.clearCells();
     
-      for (auto device : *devices) 
-        __rtc_launch(device->rtc,
-                     umeshRasterCells,
-                     divRoundUp(numCells,128),128,
-                     getDD(device),grid.getDD(device));
-      for (auto device : *devices)
-        device->sync();
+      // for (auto device : *devices) 
+      __rtc_launch(device->rtc,
+                   umeshRasterCells,
+                   divRoundUp(numCells,128),128,
+                   getDD(),grid.getDD());
+      // for (auto device : *devices)
+      device->sync();
     }
     
     bool UMeshField::setData(const std::string &member,
                              const std::shared_ptr<Data> &value)
     {
-      if (ScalarField::setData(member,value))
+      if (SpatialField::setData(member,value))
         return true;
 
       if (member == "cell.index") {
@@ -305,16 +305,14 @@ namespace BARNEY_NS {
     {
       __rtc_launch(device->rtc,umeshComputeElementBBs,
                    divRoundUp(numCells,128),128,
-                   getDD(device),d_primBounds,d_primRanges);
+                   getDD(),d_primBounds,d_primRanges);
       device->rtc->sync();
     }
 
   
-    UMeshField::UMeshField(Context *context, 
-                           const DevGroup::SP   &devices)
-      : ScalarField(context,devices)
+    UMeshField::UMeshField(Device *device)
+      : SpatialField(device)
     {
-      perLogical.resize(devices->numLogical);
     }
 
     __rtc_global
@@ -345,52 +343,45 @@ namespace BARNEY_NS {
       assert(scalars);
     
       this->numCells = (int)cellOffsets->count;
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device); 
-        auto rtc = device->rtc;
-        SetActiveGPU forDuration(device);
 
-        int numCells = (int)cellOffsets->count;
-        assert(numCells > 0);
-        int numIndices  = (int)indices->count;
-        if (!pld->pWorldBounds) {
-          pld->pWorldBounds
-            = (box3f*)rtc->allocMem(sizeof(box3f));
-        }
-        box3f emptyBox;
-        rtc->copy(pld->pWorldBounds,&emptyBox,sizeof(emptyBox));
-        __rtc_launch(rtc,computeWorldBounds,
-                     divRoundUp(numCells,128),128,
-                     getDD(device),pld->pWorldBounds);
-      }
+      auto rtc = device->rtc;
+      SetActiveGPU forDuration(device);
+
+      int numCells = (int)cellOffsets->count;
+      assert(numCells > 0);
+      int numIndices  = (int)indices->count;
+      if (!d_pWorldBounds) 
+        d_pWorldBounds
+          = (box3f*)rtc->allocMem(sizeof(box3f));
+      box3f emptyBox;
+      rtc->copy(d_pWorldBounds,&emptyBox,sizeof(emptyBox));
+      __rtc_launch(rtc,computeWorldBounds,
+                   divRoundUp(numCells,128),128,
+                   getDD(),d_pWorldBounds);
     
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        device->sync();
-        // in case of having multiple devices this will repeately
-        // download the same value; that's ok.
-        PLD *pld = getPLD(device); 
-        device->rtc->copy(&worldBounds,
-                          pld->pWorldBounds,
-                          sizeof(worldBounds));
-        device->sync();
-        assert(!worldBounds.empty());
-      }
+      device->sync();
+      // in case of having multiple devices this will repeately
+      // download the same value; that's ok.
+      device->rtc->copy(&worldBounds,
+                        d_pWorldBounds,
+                        sizeof(worldBounds));
+      device->sync();
+      assert(!worldBounds.empty());
     }
   
 
-    UMeshField::DD UMeshField::getDD(Device *device)
+    UMeshField::DD UMeshField::getDD()
     {
       assert(device);
       UMeshField::DD dd;
       assert(vertices);
       assert(indices);
-      (ScalarField::DD &)dd = ScalarField::getDD(device);
-      dd.vertices    = (const vec3f *)vertices->getDD(device);
-      dd.scalars     = (const float *)scalars->getDD(device);
-      dd.indices     = (const int   *)indices->getDD(device);
-      dd.cellOffsets = (const int   *)cellOffsets->getDD(device);
-      dd.cellTypes   = (const uint8_t *)cellTypes->getDD(device);
+      (SpatialField::DD &)dd = SpatialField::getDD();
+      dd.vertices    = (const vec3f *)vertices->getDD();
+      dd.scalars     = (const float *)scalars->getDD();
+      dd.indices     = (const int   *)indices->getDD();
+      dd.cellOffsets = (const int   *)cellOffsets->getDD();
+      dd.cellTypes   = (const uint8_t *)cellTypes->getDD();
       dd.scalarsArePerVertex = scalarsArePerVertex;
       dd.numCells    = (int)cellOffsets->count;
       dd.numVertices = (int)vertices->count;

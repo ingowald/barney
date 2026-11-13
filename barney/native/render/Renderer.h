@@ -27,15 +27,12 @@ namespace BARNEY_NS {
         int                volumeMultiScatter;
       };
     
-      Renderer(Context *context);
-      virtual ~Renderer() {}
+      Renderer(Device *device);
 
       /*! pretty-printer for printf-debugging */
       std::string toString() const override;
 
-      static SP create(Context *context);
-
-      DD getDD(Device *device) const;
+      DD getDD() const;
     
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */

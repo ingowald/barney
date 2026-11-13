@@ -20,13 +20,13 @@ namespace BARNEY_NS {
 
     enum { MC_GRID_SIZE = 512 };
 
-    BlockStructuredField::PLD *BlockStructuredField::getPLD(Device *device) 
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    // BlockStructuredField::PLD *BlockStructuredField::getPLD(Device *device) 
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
 
     __rtc_global
     void BSField_rasterGrids(const rtc::ComputeInterface &ci,
@@ -81,7 +81,7 @@ namespace BARNEY_NS {
     {
       if (mcGrid) return mcGrid;
 
-      mcGrid = std::make_shared<MCGrid>(devices);
+      mcGrid = std::make_shared<MCGrid>(device);
       auto &grid = *mcGrid;
 
       std::cout << OWL_TERMINAL_BLUE
@@ -105,14 +105,11 @@ namespace BARNEY_NS {
     
       grid.clearCells();
 
-      for (auto device : *devices) {
         __rtc_launch(device->rtc,
                      BSField_rasterGrids,
                      dru(numBlocks,1024),1024,
-                     this->getDD(device),grid.getDD(device));
-      }
+                     this->getDD(),grid.getDD());
     
-      for (auto device : *devices) 
         device->sync();
     
       return mcGrid;
@@ -124,26 +121,23 @@ namespace BARNEY_NS {
     
 
   
-    BlockStructuredField::BlockStructuredField(Context *context,
-                                               const DevGroup::SP &devices)
-      : ScalarField(context,devices)
-    {
-      perLogical.resize(devices->numLogical);
-    }
+    BlockStructuredField::BlockStructuredField(Device *device)
+      : SpatialField(device)
+    {}
 
-    BlockStructuredField::DD BlockStructuredField::getDD(Device *device)
+    BlockStructuredField::DD BlockStructuredField::getDD()
     {
       BlockStructuredField::DD dd;
 
       // inherited:
-      (ScalarField::DD &)dd = ScalarField::getDD(device);
+      (SpatialField::DD &)dd = SpatialField::getDD();
     
-      dd.perBlock.origins = (const vec3i *)perBlock.origins->getDD(device);
-      dd.perBlock.dims    = (const vec3i *)perBlock.dims->getDD(device);
-      dd.perBlock.levels  = (const int   *)perBlock.levels->getDD(device);
-      dd.perBlock.offsets = (const uint64_t *)perBlock.offsets->getDD(device);
+      dd.perBlock.origins = (const vec3i *)perBlock.origins->getDD();
+      dd.perBlock.dims    = (const vec3i *)perBlock.dims->getDD();
+      dd.perBlock.levels  = (const int   *)perBlock.levels->getDD();
+      dd.perBlock.offsets = (const uint64_t *)perBlock.offsets->getDD();
 
-      dd.scalars      = (const float *)scalars->getDD(device);
+      dd.scalars      = (const float *)scalars->getDD();
       dd.gridOrigin   = gridOrigin;
       dd.gridSpacing  = gridSpacing;
     
@@ -220,14 +214,14 @@ namespace BARNEY_NS {
                    nb,bs,
                    d_primBounds,
                    d_primRanges,
-                   getDD(device));
+                   getDD());
       device->sync();
     }
 
     bool BlockStructuredField::setData(const std::string &member,
                                        const std::shared_ptr<Data> &value)
     {
-      if (ScalarField::setData(member,value)) return true;
+      if (SpatialField::setData(member,value)) return true;
 
       if (member == "grid.origins") {
         perBlock.origins = value->as<PODData>();
@@ -256,7 +250,7 @@ namespace BARNEY_NS {
     bool BlockStructuredField::set3f(const std::string &member,
                                      const vec3f &value)
     {
-      if (ScalarField::set3f(member,value)) return true;
+      if (SpatialField::set3f(member,value)) return true;
       if (member == "gridOrigin") {
         gridOrigin = value;
         return true;
@@ -302,21 +296,20 @@ namespace BARNEY_NS {
       // ==================================================================
       // compute world bounds
       // ==================================================================
-      {
-        auto dev = (*devices)[0];
-        SetActiveGPU forDuration(dev);
-        auto rtc = dev->rtc;
-        box3f *d_worldBounds = (box3f *)rtc->allocMem(sizeof(box3f));
-        rtc->copy(d_worldBounds,&worldBounds,sizeof(worldBounds));
-        __rtc_launch(// dev and kernel
-                     rtc,computeWorldBounds,
-                     // launch config
-                     divRoundUp(numBlocks,128),128,
-                     // kernel args
-                     d_worldBounds,getDD(dev));
-        rtc->sync();
-        rtc->copy(&worldBounds,d_worldBounds,sizeof(worldBounds));
-      }
+
+      SetActiveGPU forDuration(device);
+      auto rtc = device->rtc;
+      box3f *d_worldBounds = (box3f *)rtc->allocMem(sizeof(box3f));
+      rtc->copy(d_worldBounds,&worldBounds,sizeof(worldBounds));
+      __rtc_launch(// dev and kernel
+                   rtc,computeWorldBounds,
+                   // launch config
+                   divRoundUp(numBlocks,128),128,
+                   // kernel args
+                   d_worldBounds,getDD());
+      rtc->sync();
+      rtc->copy(&worldBounds,d_worldBounds,sizeof(worldBounds));
+      rtc->sync();
     
     }
   }

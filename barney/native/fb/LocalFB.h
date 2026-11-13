@@ -15,13 +15,11 @@ namespace BARNEY_NS {
     struct LocalFB : public FrameBuffer {
       typedef std::shared_ptr<LocalFB> SP;
 
-      LocalFB(Context *context,
-              const DevGroup::SP &devices);
-      virtual ~LocalFB();
+      LocalFB(Context *context);
+      ~LocalFB() override;
     
       /*! pretty-printer for printf-debugging */
-      std::string toString() const override
-      { return "LocalFB{}"; }
+      std::string toString() const override;
 
       /*! resize frame buffer to given number of pixels and the
         indicated types of channels; color will only ever get queries

@@ -12,69 +12,69 @@
 namespace BARNEY_NS {
   namespace native {
     
-    struct GlobalModel;
-    struct Context;
-    struct Texture;
-    struct Light;
+    // struct GlobalModel;
+    // struct Context;
+    // struct Texture;
+    // struct Light;
 
-    struct LDGContext;
+    // // struct LDGContext;
 
-    /* iw - TODO merge this with LDGContext - 'old' native barney had
-       the concept of having multiple models, but anari doesn't have
-       that (it's closest equivalent is multiple 'frame' objects), so
-       this does't make any sense to keep around any more */
-    struct ModelSlot : public SlottedObject {
-      typedef std::shared_ptr<ModelSlot> SP;
+    // /* iw - TODO merge this with LDGContext - 'old' native barney had
+    //    the concept of having multiple models, but anari doesn't have
+    //    that (it's closest equivalent is multiple 'frame' objects), so
+    //    this does't make any sense to keep around any more */
+    // struct ModelSlot : public SlottedObject {
+    //   typedef std::shared_ptr<ModelSlot> SP;
 
-      ModelSlot(GlobalModel *model,
-                LDGContext *ldgContext);
-      virtual ~ModelSlot();
+    //   ModelSlot(GlobalModel *model,
+    //             LDGContext *ldgContext);
+    //   virtual ~ModelSlot();
 
-      /*! pretty-printer for printf-debugging */
-      std::string toString() const override { return "barney::ModelSlot"; }
+    //   /*! pretty-printer for printf-debugging */
+    //   std::string toString() const override { return "barney::ModelSlot"; }
     
-      void setInstances(Group **groups,
-                        const affine3f *xfms,
-                        int numInstances);
-      void updateInstanceTransforms(const affine3f *xfms, int numInstances);
-      void setInstanceAttributes(const std::string &which, const PODData::SP &data);
-      void setInstanceMotionDeltas(const affine3f *deltas, int numInstances);
-      void updateWorldLightsFromInstances();
-      void flattenInstancesForDevice(Device *device,
-                                     std::vector<rtc::Group *> *rtcGroups,
-                                     std::vector<affine3f> &rtcTransforms,
-                                     std::vector<int> *inputInstIDs);
+    //   void setInstances(Group **groups,
+    //                     const affine3f *xfms,
+    //                     int numInstances);
+    //   void updateInstanceTransforms(const affine3f *xfms, int numInstances);
+    //   void setInstanceAttributes(const std::string &which, const PODData::SP &data);
+    //   void setInstanceMotionDeltas(const affine3f *deltas, int numInstances);
+    //   void updateWorldLightsFromInstances();
+    //   void flattenInstancesForDevice(Device *device,
+    //                                  std::vector<rtc::Group *> *rtcGroups,
+    //                                  std::vector<affine3f> &rtcTransforms,
+    //                                  std::vector<int> *inputInstIDs);
 
-      struct {
-        std::vector<Group::SP> groups;
-        std::vector<affine3f>  xfms;
-        std::vector<int>       userIDs;
-      } instances;
+    //   struct {
+    //     std::vector<Group::SP> groups;
+    //     std::vector<affine3f>  xfms;
+    //     std::vector<int>       userIDs;
+    //   } instances;
 
-      rtc::AccelHandle getInstanceAccel(Device *device)
-      {
-        auto *pld = getPLD(device);
-        if (!pld || !pld->instanceGroup)
-          return 0;
-        return rtc::getAccelHandle(pld->instanceGroup);
-      }
+    //   rtc::AccelHandle getInstanceAccel(Device *device)
+    //   {
+    //     auto *pld = getPLD(device);
+    //     if (!pld || !pld->instanceGroup)
+    //       return 0;
+    //     return rtc::getAccelHandle(pld->instanceGroup);
+    //   }
     
-      struct PLD {
-        rtc::Group *instanceGroup = 0;
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+    //   struct PLD {
+    //     rtc::Group *instanceGroup = 0;
+    //   };
+    //   PLD *getPLD(Device *device);
+    //   std::vector<PLD> perLogical;
 
-      void build();
+    //   void build();
 
-      // ------------------------------------------------------------------
-      // do not change order of these:
-      // ------------------------------------------------------------------
-      GlobalModel   *const model;
-      LDGContext    *const ldgContext;
-      World::SP    world;
+    //   // ------------------------------------------------------------------
+    //   // do not change order of these:
+    //   // ------------------------------------------------------------------
+    //   GlobalModel   *const model;
+    //   LDGContext    *const ldgContext;
+    //   World::SP    world;
 
-    };
+    // };
 
   }
 }

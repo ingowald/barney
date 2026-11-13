@@ -17,10 +17,11 @@ namespace BARNEY_NS {
       };
     
       typedef std::shared_ptr<DirLight> SP;
-      DirLight(Context *context,
-               const DevGroup::SP &devices)
-        : Light(context,devices)
-      {}
+      DirLight(Device *device);
+      // Context *context,
+      //          const DevGroup::SP &devices)
+      //   : Light(context,devices)
+      // {}
     
       DD getDD(const affine3f &instanceXfm) const;
     

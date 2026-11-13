@@ -15,7 +15,7 @@ namespace BARNEY_NS {
     struct BlockStructuredField;
   
     /*! a block structured amr scalar field, with a CuBQL bvh sampler */
-    struct BlockStructuredCuBQLSampler : public ScalarFieldSampler {
+    struct BlockStructuredCuBQLSampler : public SpatialFieldSampler {
       enum { BVH_WIDTH = 4 };
       using bvh_t  = cuBQL::WideBVH<float,3,BVH_WIDTH>;
       using node_t = typename bvh_t::Node;
@@ -26,15 +26,15 @@ namespace BARNEY_NS {
 #endif
         bvh_t bvh;
       };
-      DD getDD(Device *device);
+      DD getDD();
 
       /*! per-device data - parent store the bs-amr field, we just store the
         bvh nodes */
-      struct PLD {
+      // struct PLD {
         bvh_t bvh = { 0,0 };
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      // };
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
 
       BlockStructuredCuBQLSampler(BlockStructuredField *mesh);
     
@@ -45,7 +45,8 @@ namespace BARNEY_NS {
       void build() override;
 
       BlockStructuredField *const field;
-      const DevGroup::SP devices;
+      Device               *const device;
+      // const DevGroup::SP devices;
     };
   
     struct BlockStructuredSamplerPTD {

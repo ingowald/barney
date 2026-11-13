@@ -19,26 +19,28 @@ namespace BARNEY_NS {
     /*! abstracts any sort of scalar field (unstructured, amr,
       structured, rbfs....) _before_ any transfer function(s) get
       applied to it */
-    struct ScalarField : public Object
+    struct SpatialField : public Object
     {
-      typedef std::shared_ptr<ScalarField> SP;
+      typedef std::shared_ptr<SpatialField> SP;
 
-      /*! Device-side data common to all ScalarFields that live on the device */
+      /*! Device-side data common to all SpatialFields that live on the device */
       struct DD {
         /*! world bounds, CLIPPED TO DOMAIN (if non-empty domain is present!) */
         box3f                worldBounds;
       };
-      DD getDD(Device *device) const { return { worldBounds }; }
+      DD getDD() const { return { worldBounds }; }
     
-      ScalarField(Context *context,
-                  const DevGroup::SP &devices,
+      SpatialField(Device *device,
+                  // Context *context,
+                  // const DevGroup::SP &devices,
                   const box3f &domain=box3f());
 
       /*! pretty-printer for printf-debugging */
       std::string toString() const override;
       
-      static ScalarField::SP create(Context *context,
-                                    const DevGroup::SP &devices,
+      static SpatialField::SP create(Device *device,
+                                    // Context *context,
+                                    // const DevGroup::SP &devices,
                                     const std::string &type);
 
       /*! creates an acceleration structure for a 'volume' object using
@@ -66,7 +68,7 @@ namespace BARNEY_NS {
         ghost cells, or if this is a spatial partitioning of a umesh,
         etc */
       const box3f domain;
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
     };
   
     /*! abstraction for a class that can sample a given scalar
@@ -81,7 +83,7 @@ namespace BARNEY_NS {
       the sampler will know the actual type of that sampler (and it's
       DD)
     */
-    struct ScalarFieldSampler {
+    struct SpatialFieldSampler {
       virtual void build() = 0;
       struct DD {
         /* derived classes ned to implement:

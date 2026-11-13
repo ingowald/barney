@@ -19,27 +19,28 @@ namespace BARNEY_NS {
   struct TextureData : public Object {
     typedef std::shared_ptr<TextureData> SP;
 
-    struct PLD {
-      rtc::TextureData *rtc = 0;
-    };
-    PLD *getPLD(Device *device);
-    std::vector<PLD> perLogical;
+    // struct PLD {
+    //   rtc::TextureData *rtc = 0;
+    // };
+    // PLD *getPLD(Device *device);
+    // std::vector<PLD> perLogical;
    
-    TextureData(Context *context,
-                const DevGroup::SP &devices,
+    TextureData(// Context *context,
+                // const DevGroup::SP &devices,
+                const Device *device,
                 BNDataType texelFormat,
                 vec3i size,
                 const void *texels);
     virtual ~TextureData();
 
     /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "TextureData{}"; }
+    std::string toString() const override;
 
     int             numChannels;
     vec3i           dims;
     BNDataType      texelFormat;
-    DevGroup::SP    const devices;
+    rtc::TextureData *rtc = 0;
+    // DevGroup::SP    const devices;
   };
 
 
@@ -53,23 +54,17 @@ namespace BARNEY_NS {
             BNTextureColorSpace  colorSpace);
     virtual ~Texture();
 
-    rtc::TextureObject getTextureObject(Device *device);
-    rtc::TextureObject getDD(Device *device)
-    { return getTextureObject(device); }
+    rtc::TextureObject getTextureObject();
+    rtc::TextureObject getDD()
+    { return getTextureObject(); }
 
-    struct PLD {
-      rtc::Texture *rtcTexture = 0;
-    };
-    PLD *getPLD(Device *device);
-    std::vector<PLD> perLogical;
-    
     /*! pretty-printer for printf-debugging */
-    std::string toString() const override
-    { return "Texture{}"; }
+    std::string toString() const override;
 
     vec2i getDims() const { return {data->dims.x,data->dims.y}; }
     TextureData::SP data;
-    DevGroup::SP    const devices;
+    rtc::Texture *rtcTexture = 0;
+    // DevGroup::SP    const devices;
   };
 
   }

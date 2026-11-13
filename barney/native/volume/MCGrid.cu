@@ -10,46 +10,48 @@ namespace BARNEY_NS {
     
     MajorantsGrid::MajorantsGrid(MCGrid::SP mcGrid)
       : mcGrid(mcGrid),
-        devices(mcGrid->devices)
+        device(mcGrid->device)
     {
-      perLogical.resize(devices->numLogical);
     }
 
     MajorantsGrid::~MajorantsGrid()
     {
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
+        // PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
         if (pld->majorantsBuffer) {
           device->rtc->freeBuffer(pld->majorantsBuffer);
           pld->majorantsBuffer = 0;
         }
-      }
+      // }
     }
   
-    MCGrid::MCGrid(const DevGroup::SP &devices)
-      : devices(devices)
+    MCGrid::MCGrid(Device *device)
+      : device(device)
     {
-      perLogical.resize(devices->numLogical);
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
+      // perLogical.resize(devices->numLogical);
+      // for (auto device : *devices) {
+      //   PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
         auto rtc = device->rtc;
         SetActiveGPU forDuration(device);
 
         pld->scalarRangesBuffer = rtc->createBuffer(sizeof(range1f));
-      }
+      // }
     }
 
     MCGrid::~MCGrid()
     {
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
+        // PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
         if (pld->scalarRangesBuffer) {
           device->rtc->freeBuffer(pld->scalarRangesBuffer);
           pld->scalarRangesBuffer = 0;
         }
-      }
+      // }
     }
 
     /* kernel CODE */
@@ -74,14 +76,14 @@ namespace BARNEY_NS {
       // const int nb = (int)divRoundUp((size_t)numCells,(size_t)bs);
       const int nb = (int)dru(numCells,bs);
     
-      for (auto device : *devices) {
-        auto d_grid = getDD(device);
+      // for (auto device : *devices) {
+        auto d_grid = getDD();
         __rtc_launch(device->rtc,
                      clearMCs,
                      nb,bs,
                      d_grid);
-      }
-      for (auto device : *devices) 
+      // }
+      // for (auto device : *devices) 
         device->sync();
     }
   
@@ -112,18 +114,18 @@ namespace BARNEY_NS {
       size_t numCells = owl::common::reduce_mul(dims);
       const int bs = 1024;
       const int nb = (int)dru(numCells,bs);
-      for (auto device : *devices) 
+      // for (auto device : *devices) 
         device->sync();
     
-      for (auto device : *devices) {
-        auto d_xf = volume->xf.getDD(device);
-        auto dd = getDD(device);
+      // for (auto device : *devices) {
+        auto d_xf = volume->xf.getDD();
+        auto dd = getDD();
         __rtc_launch(device->rtc,
                      mapMCs,
                      nb,bs,
                      dd,d_xf);
-      }
-      for (auto device : *devices) 
+      // }
+      // for (auto device : *devices) 
         device->sync();
     }
   
@@ -138,16 +140,17 @@ namespace BARNEY_NS {
       mcGrid->resize(dims);
       size_t numCells = owl::common::reduce_mul(dims);
     
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
+        // PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
         auto rtc = device->rtc;
         auto *replacement = rtc->createBuffer(sizeof(float)*numCells);
         if (pld->majorantsBuffer)
           rtc->freeBuffer(pld->majorantsBuffer);
         pld->majorantsBuffer = replacement;
-      }
-      for (auto device : *devices)
+      // }
+      // for (auto device : *devices)
         device->sync();
       // A failed partial multi-device resize must remain retryable.
       this->dims = dims;
@@ -163,28 +166,27 @@ namespace BARNEY_NS {
         return;
       this->dims = dims;
       size_t numCells = owl::common::reduce_mul(dims);
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
+        // PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
         auto rtc = device->rtc;
         auto *replacement = rtc->createBuffer(sizeof(range1f)*numCells);
         rtc->freeBuffer(pld->scalarRangesBuffer);
         pld->scalarRangesBuffer = replacement;
-      }
-      for (auto device : *devices) 
+      // }
+      // for (auto device : *devices) 
         device->sync();
     }
   
     /*! get cuda-usable device-data for given device ID (relative to
       devices in the devgroup that this gris is in */
-    MCGrid::DD MCGrid::getDD(Device *device) 
+    MCGrid::DD MCGrid::getDD() 
     {
-      PLD *pld = getPLD(device);
-    
       MCGrid::DD dd;
     
       dd.scalarRanges
-        = (range1f*)pld->scalarRangesBuffer->getDD();
+        = (range1f*)rtc.scalarRangesBuffer->getDD();
 
       dd.dims = dims;
       dd.gridOrigin = gridOrigin;
@@ -194,15 +196,14 @@ namespace BARNEY_NS {
 
     /*! get cuda-usable device-data for given device ID (relative to
       devices in the devgroup that this gris is in */
-    MajorantsGrid::DD MajorantsGrid::getDD(Device *device) 
+    MajorantsGrid::DD MajorantsGrid::getDD() 
     {
       MajorantsGrid::DD dd;
 
-      (MCGrid::DD&)dd = mcGrid->getDD(device);
+      (MCGrid::DD&)dd = mcGrid->getDD();
     
-      PLD *pld = getPLD(device);
       dd.majorants
-        = (float *)pld->majorantsBuffer->getDD();
+        = (float *)rtc.majorantsBuffer->getDD();
       return dd;
     }
 

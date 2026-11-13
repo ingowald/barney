@@ -32,8 +32,8 @@ namespace BARNEY_NS {
         // const vec4f *vertexAttribute[5];
       };
     
-      Triangles(Context *context, DevGroup::SP devices);
-      virtual ~Triangles();
+      Triangles(Device *device);
+      ~Triangles() override;
     
       /*! pretty-printer for printf-debugging */
       std::string toString() const override
@@ -42,7 +42,7 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
       void commit() override;
-      void writeDD(Triangles::DD &dd, Device *device);
+      void writeDD(Triangles::DD &dd);
       bool setData(const std::string &member,
                    const Data::SP &value) override;
       /*! @} */
@@ -54,7 +54,7 @@ namespace BARNEY_NS {
     private:
       std::array<PODData::SP,8> tangentInputs;
       std::array<uint64_t,8> tangentRevisions{};
-      std::vector<rtc::Buffer *> tangentBuffers;
+      rtc::Buffer *tangentBuffer;
     };
 
   }

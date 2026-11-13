@@ -18,11 +18,12 @@ namespace BARNEY_NS {
     struct Group : public Object {
       typedef std::shared_ptr<Group> SP;
 
-      Group(Context *context,
-            const DevGroup::SP &devices,
-            const std::vector<Geometry::SP> &geoms,
-            const std::vector<Volume::SP> &volumes);
-      virtual ~Group();
+      Group(Device *device,
+            // Context *context,
+            // const DevGroup::SP &devices,
+            const std::vector<std::shared_ptr<Geometry>> &geoms,
+            const std::vector<std::shared_ptr<Volume>> &volumes);
+      ~Group() override;
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -47,8 +48,9 @@ namespace BARNEY_NS {
       /*! lights assigned to this group */
       ObjectRefsData::SP lights;
 
-#if 1
-      struct /* per logical device */PLD {
+// #if 1
+//       struct /* per logical device */PLD {
+      struct {
         std::vector<rtc::Geom *> triangleGeoms;
         std::vector<rtc::Geom *> userGeoms;
         std::vector<rtc::Geom *> volumeGeoms;
@@ -56,19 +58,20 @@ namespace BARNEY_NS {
         rtc::Group *userGeomGroup     = 0;
         rtc::Group *triangleGeomGroup = 0;
         rtc::Group *volumeGeomsGroup  = 0;
-      };
-      PLD *getPLD(Device *device);
+      } rtc;
+//       };
+//       PLD *getPLD(Device *device);
     
-      std::vector<PLD> perLogical;
-#else
-      std::vector<OWLGeom> triangleGeoms;
-      std::vector<OWLGeom> userGeoms;
-      std::vector<OWLGeom> volumeGeoms;
-      OWLGroup userGeomGroup     = 0;
-      OWLGroup triangleGeomGroup = 0;
-      OWLGroup volumeGeomsGroup  = 0;
-#endif
-      DevGroup::SP const devices;
+//       std::vector<PLD> perLogical;
+// #else
+//       std::vector<OWLGeom> triangleGeoms;
+//       std::vector<OWLGeom> userGeoms;
+//       std::vector<OWLGeom> volumeGeoms;
+//       OWLGroup userGeomGroup     = 0;
+//       OWLGroup triangleGeomGroup = 0;
+//       OWLGroup volumeGeomsGroup  = 0;
+// #endif
+      // DevGroup::SP const devices;
       // std::vector<MultiPass::Object::SP> multiPassObjects;
     };
 

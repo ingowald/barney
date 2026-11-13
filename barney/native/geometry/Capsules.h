@@ -32,8 +32,9 @@ namespace BARNEY_NS {
         const vec2i *indices;
       };
     
-      Capsules(Context *context, DevGroup::SP devices);
-      virtual ~Capsules() = default;
+      Capsules(Device *device);
+      //Context *context, DevGroup::SP devices);
+      // virtual ~Capsules() = default;
     
       /*! pretty-printer for printf-debugging */
       std::string toString() const override

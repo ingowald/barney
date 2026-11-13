@@ -7,7 +7,7 @@
 #include "native/Object.h"
 #include "native/render/WholeWaveIntersectKernel.h"
 #include "native/volume/TransferFunction.h"
-#include "native/volume/ScalarField.h"
+#include "native/volume/SpatialField.h"
 #include "native/volume/PrincipledVolume.h"
 #include <array>
 
@@ -16,7 +16,7 @@ namespace BARNEY_NS {
     
     using Random = Random2;
     struct Volume;
-    struct ScalarField;
+    struct SpatialField;
     struct MCGrid;
   
     typedef std::array<int,4> TetIndices;
@@ -39,7 +39,8 @@ namespace BARNEY_NS {
       const TransferFunction *getXF() const;
     
       Volume      *const volume = 0;
-      const DevGroup::SP devices;
+      Device      *const device;
+      // const DevGroup::SP devices;
     };
 
 
@@ -72,7 +73,7 @@ namespace BARNEY_NS {
           return sfSampler.sample(point, dbg);
         }
 
-        ScalarField::DD               sfCommon;
+        SpatialField::DD               sfCommon;
         typename SFSampler::DD        sfSampler;
         TransferFunction::DD          xf;
         TransferFunction::DD          emissionXf;
@@ -84,16 +85,16 @@ namespace BARNEY_NS {
       };
     
       template<typename SFSampler>
-      DD<SFSampler> getDD(Device *device, std::shared_ptr<SFSampler> sampler)
+      DD<SFSampler> getDD(std::shared_ptr<SFSampler> sampler)
       {
         DD<SFSampler> dd;
-        dd.sfCommon = sf->getDD(device);
-        dd.sfSampler = sampler->getDD(device);
-        dd.xf = xf.getDD(device);
-        dd.emissionXf = emissionXf.getDD(device);
+        dd.sfCommon = sf->getDD();
+        dd.sfSampler = sampler->getDD();
+        dd.xf = xf.getDD();
+        dd.emissionXf = emissionXf.getDD();
         dd.emissionXfActive = emissionXfActive ? 1 : 0;
         dd.userID = userID;
-        dd.principled = principled.getDD(device);
+        dd.principled = principled.getDD();
         dd.anisotropy = anisotropy;
         dd.scatteringAlbedo = scatteringAlbedo;
         return dd;
@@ -101,13 +102,13 @@ namespace BARNEY_NS {
 
       typedef std::shared_ptr<Volume> SP;
     
-      Volume(ScalarField::SP sf);
+      Volume(SpatialField::SP sf);
 
       /*! pretty-printer for printf-debugging */
       std::string toString() const override
       { return "Volume{}"; }
 
-      static SP create(ScalarField::SP sf)
+      static SP create(SpatialField::SP sf)
       {
         return std::make_shared<Volume>(sf);
       }
@@ -134,7 +135,7 @@ namespace BARNEY_NS {
       bool set3f(const std::string &member,
                  const vec3f &value) override;
                
-      ScalarField::SP  sf;
+      SpatialField::SP  sf;
       VolumeAccel::SP  accel;
       TransferFunction xf;
       TransferFunction emissionXf;
@@ -143,22 +144,22 @@ namespace BARNEY_NS {
       float anisotropy = 0.6f;
       float scatteringAlbedo = 0.9f;
       bool needsMajorantRebuild = false;
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
       int userID = 0;
     
       /*! @{ the different intersectable objects that this geometry
           creates during 'build' */
-      struct PLD {
+      // struct PLD {
         std::vector<rtc::Group *> generatedGroups;
-        std::vector<rtc::Geom *>  generatedGeoms;
-      };
+        // std::vector<rtc::Geom *>  generatedGeoms;
+      // };
       /*! a possible whole-wave kernel for this geom; this is not
           inside our own PLD, but can manage its own PLD by itself */
       WholeWaveIntersectKernel::SP wholeWaveKernel;
       /*! @} */
       
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
     };
 
     inline __rtc_device float fastLog(float f)
@@ -214,7 +215,9 @@ namespace BARNEY_NS {
 
     inline VolumeAccel::VolumeAccel(Volume *volume)
       : volume(volume),
-        devices(volume->devices)
+        device(volume->device)
+      // ,
+      //   devices(volume->devices)
     {
       assert(volume);
       assert(volume->sf);

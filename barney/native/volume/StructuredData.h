@@ -27,21 +27,22 @@ namespace BARNEY_NS {
       - "gridSpacing" (float3) : world-space spacing of the scalar
       grid positions
     */
-    struct StructuredData : public ScalarField
+    struct StructuredData : public SpatialField
     {
       /*! device data for this class. nothis special for a structured
         data object; all sampling related stuff will be in the
         StructuredDataSampler */
-      struct DD : public ScalarField::DD {
+      struct DD : public SpatialField::DD {
         /* nothing */
       };
 
       /*! construct a new structured data scalar field; will not do
         anything - or have any data - untile 'set' and 'commit'ed
       */
-      StructuredData(Context *context,
-                     const DevGroup::SP &devices);
-      virtual ~StructuredData() = default;
+      StructuredData(Device *device);
+      // Context *context,
+      //                const DevGroup::SP &devices);
+      // virtual ~StructuredData() = default;
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -74,7 +75,7 @@ namespace BARNEY_NS {
     };
 
     /*! sampler object for a StructuredData object, using a 3d texture */
-    struct StructuredDataSampler : public ScalarFieldSampler {
+    struct StructuredDataSampler : public SpatialFieldSampler {
       StructuredDataSampler(StructuredData *const sf)
         : sf(sf)
       {}
@@ -92,7 +93,7 @@ namespace BARNEY_NS {
 
       void build() override {}
     
-      DD getDD(Device *device);
+      DD getDD();
       StructuredData *const sf;
     };
   

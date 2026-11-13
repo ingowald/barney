@@ -25,12 +25,11 @@ namespace BARNEY_NS {
         // int colorPerVertex;
       };
     
-      Cylinders(Context *context, DevGroup::SP devices);
-      virtual ~Cylinders() = default;
+      Cylinders(Device *device);
+      // virtual ~Cylinders() = default;
     
       /*! pretty-printer for printf-debugging */
-      std::string toString() const override
-      { return "Cylinders{}"; }
+      std::string toString() const override;
     
       void commit() override;
     

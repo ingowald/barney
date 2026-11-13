@@ -31,28 +31,32 @@ namespace BARNEY_NS {
     }
   
     WorkerTopo::SP
-    LocalContext::makeTopo(const std::vector<DataGroupDescriptor> &localDataGroups)
+    LocalContext::makeTopo(const std::vector<int> &gpuIDs,
+                           const std::vector<int> &dgIDs)
     {
       std::vector<WorkerTopo::Device> devices;
-      for (auto &ldg : localDataGroups) {
-        for (auto gpuID : ldg.gpuIDs) {
+      for (int lID=0;lID<gpuIDs.size();lID++) {
+      // for (auto &ldg : localDataGroups) {
+      //   for (auto gpuID : ldg.gpuIDs) {
+        int ldg = dgIDs[lID];
+        int gpuID = gpuIDs[lID];
           WorkerTopo::Device dev;
           dev.local = (int)devices.size();
           dev.worker = 0;
           dev.worldRank = 0;
-          dev.dataRank = ldg.dataRank;
+          dev.dataRank = ldg;//ldg.dataRank;
           dev.hostNameHash = getHostNameHash();
           dev.physicalDeviceHash = rtc::getPhysicalDeviceHash(gpuID);
           devices.push_back(dev);
-        }
+        // }
       }
       return std::make_shared<WorkerTopo>(devices,0,(int)devices.size());
     }
 
-    LocalContext::LocalContext
-    (const std::vector<DataGroupDescriptor> &dataGroupsOnThisContext)
-      : Context(dataGroupsOnThisContext,
-                makeTopo(dataGroupsOnThisContext))
+    LocalContext::LocalContext(const std::vector<int> &gpuIDs,
+                               const std::vector<int> &dgIDs)
+      : Context(gpuIDs,dgIDs,
+                makeTopo(gpuIDs,dgIDs))
     {
       globalTraceImpl = new RQSLocal(this);
     }
@@ -65,7 +69,7 @@ namespace BARNEY_NS {
 
     std::shared_ptr<FrameBuffer> LocalContext::createFrameBuffer()
     {
-      return std::make_shared<LocalFB>(this,devices);
+      return std::make_shared<LocalFB>(this);
     }
 
     /*! returns how many rays are active in all ray queues, across all
@@ -75,18 +79,17 @@ namespace BARNEY_NS {
       return numRaysActiveLocally();
     }
 
-    void LocalContext::render(Renderer    *renderer,
-                              GlobalModel *model,
+    void LocalContext::render(const std::vector<Renderer *> &renderers,
+                              const std::vector<World *> &worlds,
                               Camera      *camera,
                               FrameBuffer *fb)
     {
-      assert(model);
       assert(fb);
 
-      if (fb->accumID >= renderer->sampleLimit)
+      if (fb->accumID >= renderers[0]->sampleLimit)
         return;
 
-      renderTiles(renderer,model,camera,fb);
+      renderTiles(renderers,worlds,camera,fb);
       finalizeTiles(fb);
       fb->finalizeFrame();
     }
@@ -116,29 +119,35 @@ namespace BARNEY_NS {
     {
       assert(dataRanksInDataGroup);
       assert(gpuIDs);
-      assert(numGPUs >= numDataGroupsOnThisContext);
-      assert((numGPUs % numDataGroupsOnThisContext) == 0);
+      assert(numGPUs == numDataGroupsOnThisContext);
+      // assert((numGPUs % numDataGroupsOnThisContext) == 0);
       for (int i=0;i<numGPUs;i++) assert(gpuIDs[i] >= 0);
 
+      std::vector<int> _gpuIDs;
+      std::vector<int> _dgIDs;
+      for (int i=0;i<numGPUs;i++)
+        _gpuIDs.push_back(gpuIDs[i]);
+      for (int i=0;i<numGPUs;i++)
+        _dgIDs.push_back(dataRanksInDataGroup[i]);
       // build local data group descriptors:
 
       // 1) create descriptors and fill in data ranks
-      assert(numDataGroupsOnThisContext > 0);
-      std::vector<DataGroupDescriptor>
-        dataGroupsOnThisContext(numDataGroupsOnThisContext);
-      for (int ldgIdx=0;ldgIdx<numDataGroupsOnThisContext;ldgIdx++) {
-        auto &ldg = dataGroupsOnThisContext[ldgIdx];
-        ldg.dataRank = dataRanksInDataGroup[ldgIdx];
-      }
+      // assert(numDataGroupsOnThisContext > 0);
+      // std::vector<DataGroupDescriptor>
+      //   dataGroupsOnThisContext(numDataGroupsOnThisContext);
+      // for (int ldgIdx=0;ldgIdx<numDataGroupsOnThisContext;ldgIdx++) {
+      //   auto &ldg = dataGroupsOnThisContext[ldgIdx];
+      //   ldg.dataRank = dataRanksInDataGroup[ldgIdx];
+      // }
 
-      for (int i=0;i<numGPUs;i++) {
-        auto &ldg = dataGroupsOnThisContext[i%numDataGroupsOnThisContext];
-        int gpuID = gpuIDs[i];
-        assert(gpuID >= 0);
-        ldg.gpuIDs.push_back(gpuID);
-      }
+      // for (int i=0;i<numGPUs;i++) {
+      //   auto &ldg = dataGroupsOnThisContext[i%numDataGroupsOnThisContext];
+      //   int gpuID = gpuIDs[i];
+      //   assert(gpuID >= 0);
+      //   ldg.gpuIDs.push_back(gpuID);
+      // }
 
-      Context *ctx = new LocalContext(dataGroupsOnThisContext);
+      Context *ctx = new LocalContext(_gpuIDs,_dgIDs);
       assert(ctx);
       return ctx;
     }

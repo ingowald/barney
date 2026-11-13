@@ -10,21 +10,27 @@
 namespace BARNEY_NS {
   namespace native {
     
-    TextureData::PLD *TextureData::getPLD(Device *device) 
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    std::string TextureData::toString() const 
+    { return "TextureData{}"; }
+    
+    std::string Texture::toString() const 
+    { return "Texture{}"; }
+    
+    // TextureData::PLD *TextureData::getPLD(Device *device) 
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
   
-    Texture::PLD *Texture::getPLD(Device *device) 
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    // Texture::PLD *Texture::getPLD(Device *device) 
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
 
     rtc::ColorSpace toRTC(BNTextureColorSpace mode)
     { return 

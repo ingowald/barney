@@ -32,11 +32,10 @@ namespace BARNEY_NS {
                                +attributeName+"'");
     }
 
-    Sampler::Sampler(LDGContext *slotContext)
-      : Object(slotContext->context),
-        devices(slotContext->devices),
-        samplerRegistry(slotContext->samplerRegistry),
-        samplerID(slotContext->samplerRegistry->allocate())
+    Sampler::Sampler(Device *device)
+      : Object(device),
+        samplerRegistry(device->samplerRegistry),
+        samplerID(device->samplerRegistry->allocate())
     {}
     
     Sampler::~Sampler()
@@ -46,25 +45,25 @@ namespace BARNEY_NS {
       samplerRegistry->release(samplerID);
     }
 
-    Sampler::SP Sampler::create(LDGContext *context,
+    Sampler::SP Sampler::create(Device *device,
                                 const std::string &type)
     {
       if (type == "texture1D" || type == "image1D")
-        return std::make_shared<TextureSampler>(context,1);
+        return std::make_shared<TextureSampler>(device,1);
       if (type == "texture2D" || type == "image2D")
-        return std::make_shared<TextureSampler>(context,2);
+        return std::make_shared<TextureSampler>(device,2);
       if (type == "texture3D" || type == "image3D")
-        return std::make_shared<TextureSampler>(context,3);
+        return std::make_shared<TextureSampler>(device,3);
       if (type == "transform")
-        return std::make_shared<TransformSampler>(context);
+        return std::make_shared<TransformSampler>(device);
       if (type == "primitive")
-        return std::make_shared<PrimitiveSampler>(context);
+        return std::make_shared<PrimitiveSampler>(device);
       throw std::runtime_error("do not know what a '"+type+" sampler is !?");
     }
 
 
     bool Sampler::setObject(const std::string &member,
-                                 const std::shared_ptr<Object> &value)
+                            const std::shared_ptr<Object> &value)
     {
       return false;
     }
@@ -98,34 +97,33 @@ namespace BARNEY_NS {
 
     void Sampler::commit() 
     {
-      for (auto device : *devices) {
-        DD dd = getDD(device);
-        samplerRegistry->setDD(samplerID,dd,device);
-      }
+      // for (auto device : *devices) {
+      DD dd = getDD();
+      samplerRegistry->setDD(samplerID,dd);
+      // }
     }
 
-    TextureSampler::TextureSampler(LDGContext *slotContext,
+    TextureSampler::TextureSampler(Device *device,
                                    int numDims)
-      : Sampler(slotContext),
+      : Sampler(device),
         numDims(numDims)
     {
-      perLogical.resize(devices->numLogical);
+      // perLogical.resize(devices->numLogical);
     }
     
     TextureSampler::~TextureSampler()
     {
       BN_TRACK_LEAKS(std::cout << "#barney: ~TextureSampler deconstructing"
                      << std::endl);
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        if (pld->rtcTexture)
-          device->rtc->freeTexture(pld->rtcTexture);
-        pld->rtcTexture = 0;
-      }
+      // for (auto device : *devices) {
+      //   PLD *pld = getPLD(device);
+      if (rtcTexture)
+        device->rtc->freeTexture(rtcTexture);
+      rtcTexture = 0;
     }
     
     bool TextureSampler::setObject(const std::string &member,
-                                 const std::shared_ptr<Object> &value)
+                                   const std::shared_ptr<Object> &value)
     {
       if (Sampler::setObject(member,value)) return true;
 
@@ -175,21 +173,21 @@ namespace BARNEY_NS {
       return false;
     }
 
-    TextureSampler::PLD *TextureSampler::getPLD(Device *device) 
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    // TextureSampler::PLD *TextureSampler::getPLD(Device *device) 
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
     
     void TextureSampler::commit() 
     {
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        if (pld->rtcTexture)
-          device->rtc->freeTexture(pld->rtcTexture);
-        pld->rtcTexture = 0;
+      // for (auto device : *devices) {
+      //   PLD *pld = getPLD(device);
+      if (rtcTexture) {
+        device->rtc->freeTexture(rtcTexture);
+        rtcTexture = 0;
       }
 
       if (!textureData) {
@@ -203,19 +201,19 @@ namespace BARNEY_NS {
         desc.addressMode[2] = toRTC(wrapModes[2]);
         desc.colorSpace     = toRTC(colorSpace);
         desc.borderColor    = borderColor;
-        for (auto device : *devices) {
-          PLD *pld = getPLD(device);
-          if (pld->rtcTexture)
-            device->rtc->freeTexture(pld->rtcTexture);
-          pld->rtcTexture
-            = textureData->getPLD(device)->rtc->createTexture(desc);
-        };
+        // for (auto device : *devices) {
+        //   PLD *pld = getPLD(device);
+        //   if (pld->rtcTexture)
+        //     device->rtc->freeTexture(pld->rtcTexture);
+        rtcTexture
+          = textureData->rtc->createTexture(desc);//getPLD(device)->rtc->createTexture(desc);
+        // };
       }
 
       Sampler::commit();
     }
 
-    Sampler::DD TextureSampler::getDD(Device *device) 
+    Sampler::DD TextureSampler::getDD() 
     {
       Sampler::DD dd;
       switch(numDims) {
@@ -234,18 +232,18 @@ namespace BARNEY_NS {
       (vec4f&)dd.inTransform.offset = inOffset;
       memcpy(&dd.inTransform.mat_x,&inTransform,sizeof(inTransform));
 
-      PLD *pld = getPLD(device);
-      if (!pld->rtcTexture) {
+      // PLD *pld = getPLD(device);
+      if (!rtcTexture) {
         std::cout << "WARN: NO TEXTURE DATA ON IMAGE SAMPLER!" << std::endl;
         dd.texture = 0;
       } else {
-        dd.texture = pld->rtcTexture->getDD();
+        dd.texture = rtcTexture->getDD();
         dd.numChannels = textureData->numChannels;
       }
       return dd;
     }
     
-    Sampler::DD TransformSampler::getDD(Device *device) 
+    Sampler::DD TransformSampler::getDD() 
     {
       Sampler::DD dd;
       dd.type = Sampler::TRANSFORM;
@@ -258,8 +256,8 @@ namespace BARNEY_NS {
 
 
 
-    PrimitiveSampler::PrimitiveSampler(LDGContext *slotContext)
-      : Sampler(slotContext)
+    PrimitiveSampler::PrimitiveSampler(Device *device)
+      : Sampler(device)
     {
     }
     
@@ -291,7 +289,7 @@ namespace BARNEY_NS {
       return false;
     }
     
-    Sampler::DD PrimitiveSampler::getDD(Device *device) 
+    Sampler::DD PrimitiveSampler::getDD() 
     {
       Sampler::DD dd;
       dd.type = Sampler::PRIMITIVE;
@@ -302,7 +300,7 @@ namespace BARNEY_NS {
 
       dd.arrayData
         = arrayData
-        ? arrayData->getPLD(device)->rtcBuffer->getDD()
+        ? arrayData->rtcBuffer->getDD()
         : 0;
       dd.arrayOffset = arrayOffset;
       dd.arraySize = arrayData ? (int)arrayData->count : 0;
@@ -310,6 +308,14 @@ namespace BARNEY_NS {
       
       return dd;
     }
+
+
+    TransformSampler::TransformSampler(Device *device)
+      : Sampler(device)
+    {}
+    
+    std::string TransformSampler::toString() const 
+    { return "TransformSampler"; }
     
   }
 }

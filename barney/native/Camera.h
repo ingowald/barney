@@ -77,7 +77,7 @@ namespace BARNEY_NS {
       };
       DD dd;
 
-      Camera(Context *owner);
+      Camera(Device *device);
       virtual ~Camera() = default;
 
       /*! subtypes call from their commit() so base camera state propagates
@@ -88,7 +88,7 @@ namespace BARNEY_NS {
       bool set4f(const std::string &member, const vec4f &value) override;
       bool set4x4f(const std::string &member, const vec4f *value) override;
       
-      static Camera::SP create(Context *owner, const std::string &type);
+      static Camera::SP create(Device *device, const std::string &type);
 
       DD getDD() { return dd; }
     protected:

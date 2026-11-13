@@ -13,29 +13,33 @@ namespace BARNEY_NS {
     struct SamplerRegistry {
       typedef std::shared_ptr<SamplerRegistry> SP;
     
-      SamplerRegistry(const DevGroup::SP &devices);
-      virtual ~SamplerRegistry();
+      SamplerRegistry(Device *device);
+      ~SamplerRegistry();
       
       int allocate();
       void release(int nowReusableID);
       void grow();
     
-      void setDD(int samplerID, const Sampler::DD &, Device *device);
+      void setDD(int samplerID, const Sampler::DD &);
 
-      Sampler::DD *getDD(Device *device) 
-      { return (Sampler::DD *)getPLD(device)->memory; }
+      Sampler::DD *getDD() 
+      { return (Sampler::DD *)rtc.memory; }
 
       int numReserved = 0;
       int nextFree = 0;
       std::stack<int> reusableIDs;
       
-      struct PLD {
+      // struct PLD {
+      //   Sampler::DD *memory = 0;
+      // };
+      // PLD *getPLD(Device *);
+      // std::vector<PLD> perLogical;
+
+      struct {
         Sampler::DD *memory = 0;
-      };
-      PLD *getPLD(Device *);
-      std::vector<PLD> perLogical;
-      
-      DevGroup::SP const devices;
+      } rtc;
+      Device *const device;
+      // DevGroup::SP const devices;
     };
 
   }

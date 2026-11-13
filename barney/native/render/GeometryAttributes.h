@@ -60,7 +60,7 @@ namespace BARNEY_NS {
         GeometryAttribute::DD normalAttribute;
         GeometryAttribute::DD tangentAttribute;
       };
-      DD getDD(Device *device);
+      DD getDD();
       GeometryAttribute attribute[numAttributes];
       GeometryAttribute colorAttribute;
       GeometryAttribute normalAttribute;

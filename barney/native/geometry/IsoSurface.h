@@ -20,8 +20,8 @@ namespace BARNEY_NS {
 
       virtual void build() = 0;
     
-      IsoSurface      *const isoSurface = 0;
-      const DevGroup::SP devices;
+      IsoSurface *const isoSurface = 0;
+      Device     *const device;
     };
   
     struct IsoSurface : public Geometry {
@@ -38,21 +38,21 @@ namespace BARNEY_NS {
         float                  isoValue;
         float                 *isoValues;
         int                    numIsoValues;
-        ScalarField::DD        sfCommon;
+        SpatialField::DD        sfCommon;
         typename SFSampler::DD sfSampler;
       };
 
-      IsoSurface(Context *context, DevGroup::SP devices);
+      IsoSurface(Device *device);//Context *context, DevGroup::SP devices);
 
       template<typename SFSampler>
-      DD<SFSampler> getDD(Device *device, std::shared_ptr<SFSampler> sampler)
+      DD<SFSampler> getDD(std::shared_ptr<SFSampler> sampler)
       {
         DD<SFSampler> dd;
-        Geometry::writeDD(dd,device);
-        dd.sfCommon = sf->getDD(device);
-        dd.sfSampler = sampler->getDD(device);
+        Geometry::writeDD(dd);
+        dd.sfCommon = sf->getDD();
+        dd.sfSampler = sampler->getDD();
         dd.isoValue = isoValue;
-        dd.isoValues = (float *)(isoValues ? isoValues->getDD(device) : nullptr);
+        dd.isoValues = (float *)(isoValues ? isoValues->getDD() : nullptr);
         dd.numIsoValues = int(isoValues ? isoValues->count : 0);
 
         return dd;
@@ -60,8 +60,7 @@ namespace BARNEY_NS {
 
     
       /*! pretty-printer for printf-debugging */
-      std::string toString() const override
-      { return "IsoSurface{}"; }
+      std::string toString() const override;
 
       void commit() override;
       void build() override;
@@ -79,7 +78,7 @@ namespace BARNEY_NS {
     
       float            isoValue  = NAN;
       PODData::SP      isoValues = 0;
-      ScalarField::SP  sf;
+      SpatialField::SP  sf;
       IsoSurfaceAccel::SP  accel;
     };
 

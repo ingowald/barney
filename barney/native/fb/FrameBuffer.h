@@ -13,13 +13,14 @@ namespace BARNEY_NS {
     struct FrameBuffer : public Object {
 
       FrameBuffer(Context *context,
-                  const DevGroup::SP &devices,
+                  // Device *device,
+                  // Context *context,
+                  // const DevGroup::SP &devices,
                   const bool isOwner);
-      virtual ~FrameBuffer();
+      ~FrameBuffer() override;
 
       /*! pretty-printer for printf-debugging */
-      std::string toString() const override
-      { return "<FrameBuffer(base)>"; }
+      std::string toString() const override;
 
       vec2i getNumPixels() const { return numPixels; }
       
@@ -83,13 +84,16 @@ namespace BARNEY_NS {
                         void *appDataPtr,
                         BNDataType requestedFormat);
 
+      // one tiled frame buffer for each device
+      std::vector<TiledFB::SP> tiledFBs;
+      
       TiledFB *getFor(Device *device);
-      struct PLD {
-        TiledFB::SP tiledFB;
-      };
-      PLD *getPLD(Device *device);
+      // struct PLD {
+      //   TiledFB::SP tiledFB;
+      // };
+      // PLD *getPLD(Device *device);
 
-      std::vector<PLD> perLogical;
+      // std::vector<PLD> perLogical;
 
       /*! staging area for gathering/writing pixels into, will be Nx*Ny
         pixels of type as provided specified during resize. This may
@@ -176,7 +180,7 @@ namespace BARNEY_NS {
 
       const bool  isOwner;
       bool  showCrosshairs = false;
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
     };
 
   }

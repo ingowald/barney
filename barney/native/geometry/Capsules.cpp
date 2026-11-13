@@ -11,14 +11,15 @@ namespace BARNEY_NS {
 
     RTC_IMPORT_USER_GEOM(Capsules,Capsules,Capsules::DD,false,false);
 
-    Capsules::Capsules(Context *context, DevGroup::SP devices)
-      : Geometry(context,devices)
+    Capsules::Capsules(Device *device)
+      : Geometry(device)
     {}
 
     void Capsules::commit()
     {
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
+      // for (auto device : *devices) {
+      //   PLD *pld = getPLD(device);
+      auto pld = &this->rtc;
         if (pld->userGeoms.empty()) {
           rtc::GeomType *gt
             = device->geomTypes.get(createGeomType_Capsules);
@@ -37,13 +38,13 @@ namespace BARNEY_NS {
         geom->setPrimCount(numIndices);
 
         Capsules::DD dd;
-        Geometry::writeDD(dd,device);
-        dd.vertices  = (vec4f*)(vertices?vertices->getDD(device):0);
-        dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
+        Geometry::writeDD(dd);
+        dd.vertices  = (vec4f*)(vertices?vertices->getDD():0);
+        dd.indices   = (vec2i*)(indices?indices->getDD():0);
         // done:
         geom->setDD(&dd);
       
-      }
+      // }
     } 
 
     bool Capsules::setData(const std::string &member, const Data::SP &value)

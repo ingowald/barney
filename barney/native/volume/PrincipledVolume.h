@@ -9,8 +9,6 @@
 
 namespace BARNEY_NS {
   namespace native {
-    
-    struct Device;
 
     /*! Direct two-transfer-function volume model. The regular transfer
       function supplies scattering tint and extinction; the emission transfer
@@ -24,12 +22,11 @@ namespace BARNEY_NS {
         float   emissionStrength;
       };
 
-      inline DD getDD(Device *device) const
+      inline DD getDD() const
       {
         DD dd;
         dd.enabled = enabled;
         dd.emissionStrength = emissionStrength;
-        (void)device;
         return dd;
       }
     };

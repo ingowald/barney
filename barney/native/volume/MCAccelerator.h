@@ -26,19 +26,21 @@ namespace BARNEY_NS {
         MajorantsGrid::DD     mcGrid;
       };
 
-      struct PLD {
+      // struct PLD {
+      struct {
         rtc::Geom  *geom  = 0;
         rtc::Group *group = 0;
-      };
-      PLD *getPLD(Device *device) 
-      { return &perLogical[device->contextRank()]; } 
-      std::vector<PLD> perLogical;
+      } rtc;
+      // };
+      // PLD *getPLD(Device *device) 
+      // { return &perLogical[device->contextRank()]; } 
+      // std::vector<PLD> perLogical;
 
-      DD getDD(Device *device)
+      DD getDD()
       {
         DD dd;
-        dd.volume = volume->getDD(device,sfSampler);
-        dd.mcGrid = majorantsGrid->getDD(device);
+        dd.volume = volume->getDD(sfSampler);
+        dd.mcGrid = majorantsGrid->getDD();
         return dd;
       }
 
@@ -80,20 +82,22 @@ namespace BARNEY_NS {
         MCGrid::DD mcGrid;
       };
     
-      struct PLD {
+      // struct PLD {
+      struct {
         rtc::Geom  *geom  = 0;
         rtc::Group *group = 0;
-      };
-      PLD *getPLD(Device *device) 
-      { return &perLogical[device->contextRank()]; } 
-      std::vector<PLD> perLogical;
+      } rtc;
+      // };
+      // PLD *getPLD(Device *device) 
+      // { return &perLogical[device->contextRank()]; } 
+      // std::vector<PLD> perLogical;
     
-      DD getDD(Device *device)
+      DD getDD()
       {
         DD dd;
-        dd.isoSurface = isoSurface->getDD(device,sfSampler);
+        dd.isoSurface = isoSurface->getDD(sfSampler);
         // dd.sf     = sfSampler->getDD(device);
-        dd.mcGrid = mcGrid->getDD(device);
+        dd.mcGrid = mcGrid->getDD();
         return dd;
       }
     
@@ -140,16 +144,18 @@ namespace BARNEY_NS {
     template<typename SFSampler>
     void MCVolumeAccel<SFSampler>::refreshDeviceData()
     {
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
-        if (!pld->geom)
-          continue;
-        DD dd = getDD(device);
-        pld->geom->setDD(&dd);
-      }
-      for (auto device : *devices)
-        device->sbtDirty = true;
+      // for (auto device : *devices) {
+      SetActiveGPU forDuration(this->device);
+      // PLD *pld = getPLD(device);
+      // if (!pld->geom)
+      auto pld = &this->rtc;
+      if (!pld->geom)
+        return;
+      DD dd = getDD();
+      pld->geom->setDD(&dd);
+      // }
+      // for (auto device : *devices)
+      device->sbtDirty = true;
     }
 
     template<typename SFSampler>
@@ -162,12 +168,13 @@ namespace BARNEY_NS {
       majorantsGrid->computeMajorants(volume);
       sfSampler->build();
     
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         SetActiveGPU forDuration(device);
       
         // build our own internal per-device data: one geom, and one
         // group that contains it.
-        PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
+        // PLD *pld = getPLD(device);
         if (!pld->geom) {
           rtc::GeomType *gt
             = device->geomTypes.get(creatorFct);
@@ -177,7 +184,7 @@ namespace BARNEY_NS {
           pld->geom->setPrimCount(1);
         }
         rtc::Geom *geom = pld->geom;
-        DD dd = getDD(device);
+        DD dd = getDD();
         geom->setDD(&dd);
       
         if (!pld->group) {
@@ -188,10 +195,12 @@ namespace BARNEY_NS {
       
         // now let the actual volume we're building know about the
         // group we just created
-        Volume::PLD *volumePLD = volume->getPLD(device);
-        if (volumePLD->generatedGroups.empty()) 
-          volumePLD->generatedGroups = { pld->group };
-      }
+        // Volume::PLD *volumePLD = volume->getPLD(device);
+        // if (volumePLD->generatedGroups.empty()) 
+        //   volumePLD->generatedGroups = { pld->group };
+        if (volume->generatedGroups.empty()) 
+          volume->generatedGroups = { pld->group };
+      // }
     }
 
 
@@ -199,15 +208,18 @@ namespace BARNEY_NS {
     template<typename SFSampler>
     void MCIsoSurfaceAccel<SFSampler>::build() 
     {
+      auto device = this->device;
+      
       mcGrid = isoSurface->sf->getMCs();
       sfSampler->build();
     
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
+      // for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
       
         // build our own internal per-device data: one geom, and one
         // group that contains it.
-        PLD *pld = getPLD(device);
+        // PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
         if (!pld->geom) {
           rtc::GeomType *gt
             = device->geomTypes.get(creatorFct);
@@ -217,11 +229,11 @@ namespace BARNEY_NS {
           pld->geom->setPrimCount(1);
         }
         rtc::Geom *geom = pld->geom;
-        DD dd = getDD(device);
+        DD dd = getDD();
         geom->setDD(&dd);
       
-        IsoSurface::PLD *isoSurfacePLD = isoSurface->getPLD(device);
-        isoSurfacePLD->userGeoms = { geom };
+        // IsoSurface::PLD *isoSurfacePLD = isoSurface->getPLD(device);
+        // isoSurfacePLD->userGeoms = { geom };
         // if (!pld->group) {
         //   // now put that into a instantiable group, and build it.
         //   pld->group = device->rtc->createUserGeomsGroup({geom});
@@ -233,7 +245,15 @@ namespace BARNEY_NS {
         // IsoSurface::PLD *isoSurfacePLD = isoSurface->getPLD(device);
         // if (isoSurfacePLD->generatedGroups.empty()) 
         //   isoSurfacePLD->generatedGroups = { pld->group };
-      }
+
+        isoSurface->rtc.userGeoms = { geom };
+        if (!pld->group) {
+          // now put that into a instantiable group, and build it.
+          pld->group = device->rtc->createUserGeomsGroup({geom});
+        }
+        pld->group->buildAccel();
+        if (isoSurface->rtc.generatedGroups.empty()) 
+          isoSurface->rtc.generatedGroups = { pld->group };
     }
   
   
@@ -247,15 +267,16 @@ namespace BARNEY_NS {
         sfSampler(sfSampler),
         creatorFct(creatorFct)
     {
-      perLogical.resize(devices->numLogical);
+      // perLogical.resize(devices->numLogical);
     }
 
     template<typename SFSampler>
     MCVolumeAccel<SFSampler>::~MCVolumeAccel()
     {
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
+        // PLD *pld = getPLD(device);
         if (pld->group) {
           device->rtc->freeGroup(pld->group);
           pld->group = 0;
@@ -264,7 +285,7 @@ namespace BARNEY_NS {
           device->rtc->freeGeom(pld->geom);
           pld->geom = 0;
         }
-      }
+      // }
     }
 
     template<typename SFSampler>
@@ -276,15 +297,17 @@ namespace BARNEY_NS {
         sfSampler(sfSampler),
         creatorFct(creatorFct)
     {
-      perLogical.resize(devices->numLogical);
+      // perLogical.resize(devices->numLogical);
     }
 
     template<typename SFSampler>
     MCIsoSurfaceAccel<SFSampler>::~MCIsoSurfaceAccel()
     {
-      for (auto device : *devices) {
-        SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
+      auto device = this->device;
+      // for (auto device : *devices) {
+      SetActiveGPU forDuration(device);
+        // PLD *pld = getPLD(device);
+        auto pld = &this->rtc;
         if (pld->group) {
           device->rtc->freeGroup(pld->group);
           pld->group = 0;
@@ -292,7 +315,7 @@ namespace BARNEY_NS {
         // iw - do NOT free the geom we created - geometries free their
         // own geoms when they die, if we free here we'll get a double
         // free.
-      }
+      // }
     }
   
     // ------------------------------------------------------------------

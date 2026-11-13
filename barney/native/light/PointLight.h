@@ -25,10 +25,11 @@ namespace BARNEY_NS {
       };
     
       typedef std::shared_ptr<PointLight> SP;
-      PointLight(Context *context,
-                 const DevGroup::SP &devices)
-        : Light(context,devices)
-      {}
+      PointLight(Device *device);
+      // Context *context,
+      //            const DevGroup::SP &devices)
+      //   : Light(context,devices)
+      // {}
     
       DD getDD(const affine3f &instanceXfm) const;
     

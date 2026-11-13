@@ -17,20 +17,19 @@ namespace BARNEY_NS {
     RTC_IMPORT_COMPUTE2D(linearToFixed8);
 
     FrameBuffer::FrameBuffer(Context *context,
-                             const DevGroup::SP &devices,
                              const bool isOwner)
-      : Object(context),
-        isOwner(isOwner),
-        devices(devices)
+      : Object(context->devices[0]),
+        isOwner(isOwner)
     {
       if (FromEnv::explicitlyDisabled("denoise")) {
         if (context->myRank() == 0)
           std::cout << "#bn: denoising explicitly disabled in env-config." << std::endl;
         enableDenoising = false;
       }
-      perLogical.resize(devices->numLogical);
-      for (auto device : *devices) {
-        getPLD(device)->tiledFB
+      tiledFBs.resize(context->devices.size());
+      for (auto device : context->devices) {
+        tiledFBs[device->deviceIdx]
+        // getPLD(device)->tiledFB
           = TiledFB::create(device,context->deviceWeNeedToCopyToForFBMap,this);
       }
 
@@ -49,6 +48,9 @@ namespace BARNEY_NS {
       linear_toFixed8 = 0;
     }
 
+    std::string FrameBuffer::toString() const 
+    { return "<FrameBuffer(base)>"; }
+    
     bool FrameBuffer::needHitIDs() const
     {
       return channels & (BN_FB_PRIMID|BN_FB_INSTID|BN_FB_OBJID|BN_FB_MOTION);
@@ -160,11 +162,11 @@ namespace BARNEY_NS {
     void FrameBuffer::resetAccumulation()
     {
       accumID = 0;
-      for (auto device : *devices) {
+      for (auto device : context->devices) {
         SetActiveGPU forDuration(device);
-        auto pld = getPLD(device);
-        if (!pld || !pld->tiledFB) continue;
-        auto &tfb = *pld->tiledFB;
+        // auto pld = getPLD(device);
+        // if (!pld || !pld->tiledFB) continue;
+        auto &tfb = *getFor(device);
         if (tfb.auxTiles.motion) {
           device->rtc->memsetAsync(tfb.auxTiles.motion, 0,
                                    size_t(tfb.numActiveTilesThisGPU)
@@ -461,9 +463,8 @@ namespace BARNEY_NS {
       }
 
       // tiles render at renderPixels
-      for (auto device : *devices) {
+      for (auto device : context->devices) 
         getFor(device)->resize(channels, renderPixels);
-      }
 
       size_t sizeOfPixel
         = (colorFormat == BN_FLOAT4)
@@ -502,24 +503,25 @@ namespace BARNEY_NS {
       }
     }
 
-    FrameBuffer::PLD *FrameBuffer::getPLD(Device *device)
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    // FrameBuffer::PLD *FrameBuffer::getPLD(Device *device)
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
 
     TiledFB *FrameBuffer::getFor(Device *device)
     {
-      auto pld = getPLD(device);
-      assert(pld);
-      return pld->tiledFB.get();
+      return tiledFBs[device->deviceIdx].get();
+      // auto pld = getPLD(device);
+      // assert(pld);
+      // return pld->tiledFB.get();
     }
 
     Device *FrameBuffer::getDenoiserDevice() const
     {
-      return (*devices)[0];
+      return context->devices[0];
     }
 
     RTC_EXPORT_COMPUTE2D(linearToFixed8,LinearToFixed8);

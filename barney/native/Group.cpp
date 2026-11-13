@@ -8,26 +8,22 @@
 namespace BARNEY_NS {
   namespace native {
 
-    Group::PLD *Group::getPLD(Device *device)
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
+    // Group::PLD *Group::getPLD(Device *device)
+    // {
+    //   assert(device);
+    //   assert(device->contextRank() >= 0);
+    //   assert(device->contextRank() < perLogical.size());
+    //   return &perLogical[device->contextRank()];
+    // }
 
 
-    Group::Group(Context *context, 
-                 const DevGroup::SP &devices, 
+    Group::Group(Device *device,
                  const std::vector<Geometry::SP> &geoms,
                  const std::vector<Volume::SP> &volumes)
-      : Object(context),
-        devices(devices),
+      : Object(device),
         geoms(geoms),
         volumes(volumes)
-    {
-      perLogical.resize(devices->numLogical);
-    }
+    {}
   
     Group::~Group()
     {
@@ -60,30 +56,21 @@ namespace BARNEY_NS {
 
     void Group::freeAllGeoms()
     {
-      // we should NOT call owlGeomRelease on these here: they do belong
-      // to the Geometry's!
-      // userGeoms.clear();
-      // triangleGeoms.clear();
-
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        auto rtc = device->rtc;
-        if (pld->triangleGeomGroup) {
-          rtc->freeGroup(pld->triangleGeomGroup);
-          pld->triangleGeomGroup = 0;
-        }
-        if (pld->userGeomGroup) {
-          rtc->freeGroup(pld->userGeomGroup);
-          pld->userGeomGroup = 0;
-        }
-        if (pld->volumeGeomsGroup) {
-          rtc->freeGroup(pld->volumeGeomsGroup);
-          pld->volumeGeomsGroup = 0;
-        }
-        pld->userGeoms.clear();
-        pld->triangleGeoms.clear();
-        pld->volumeGeoms.clear();
+      if (rtc.triangleGeomGroup) {
+        device->rtc->freeGroup(rtc.triangleGeomGroup);
+        rtc.triangleGeomGroup = 0;
       }
+      if (rtc.userGeomGroup) {
+        device->rtc->freeGroup(rtc.userGeomGroup);
+        rtc.userGeomGroup = 0;
+      }
+      if (rtc.volumeGeomsGroup) {
+        device->rtc->freeGroup(rtc.volumeGeomsGroup);
+        rtc.volumeGeomsGroup = 0;
+      }
+      rtc.userGeoms.clear();
+      rtc.triangleGeoms.clear();
+      rtc.volumeGeoms.clear();
     }
   
     void Group::build()
@@ -101,29 +88,23 @@ namespace BARNEY_NS {
         }
       
         // now, do our stuff on a per-device basis
-        for (auto device : *devices) {
-          PLD *myPLD = getPLD(device);
-          for (auto geom : geoms) {
-            Geometry::PLD *geomPLD = geom->getPLD(device);
-            for (auto g : geomPLD->triangleGeoms)
-              myPLD->triangleGeoms.push_back(g);
-            for (auto g : geomPLD->userGeoms)
-              myPLD->userGeoms.push_back(g);
-            // for (auto g : geomPLD->userGroups)
-            //   myPLD->volumeGroups.push_back(g);
-          }
+        for (auto geom : geoms) {
+          for (auto g : geom->rtc.triangleGeoms)
+            rtc.triangleGeoms.push_back(g);
+          for (auto g : geom->rtc.userGeoms)
+            rtc.userGeoms.push_back(g);
+        }
         
-          if (!myPLD->userGeoms.empty()) {
-            myPLD->userGeomGroup
-              = device->rtc->createUserGeomsGroup(myPLD->userGeoms);
-            myPLD->userGeomGroup->buildAccel();
-          }
+        if (!rtc.userGeoms.empty()) {
+          rtc.userGeomGroup
+            = device->rtc->createUserGeomsGroup(rtc.userGeoms);
+          rtc.userGeomGroup->buildAccel();
+        }
         
-          if (!myPLD->triangleGeoms.empty()) {
-            myPLD->triangleGeomGroup
-              = device->rtc->createTrianglesGroup(myPLD->triangleGeoms);
-            myPLD->triangleGeomGroup->buildAccel();
-          }
+        if (!rtc.triangleGeoms.empty()) {
+          rtc.triangleGeomGroup
+            = device->rtc->createTrianglesGroup(rtc.triangleGeoms);
+          rtc.triangleGeomGroup->buildAccel();
         }
       }
       // ==================================================================
@@ -136,25 +117,21 @@ namespace BARNEY_NS {
         // ------------------------------------------------------------------
         // clear all pld data
         // ------------------------------------------------------------------
-        for (auto device : *devices) {
-          auto myPLD = getPLD(device);
-          auto rtc = device->rtc;
-          // if we have a volume geoms _group_, then it is _us_ that
-          // created this, and we have to free it.
-          if (myPLD->volumeGeomsGroup) {
-            rtc->freeGroup(myPLD->volumeGeomsGroup);
-            myPLD->volumeGeomsGroup = 0;
-          }
-
-          // the volume _geoms_ are created/owned by the actual volume
-          // accel, and it is _their_ job to free those if required.
-          myPLD->volumeGeoms.clear();
-        
-          // the volume _groups_ are created/owned by the actual volume
-          // accel, and it is _their_ job to free those if required.
-          myPLD->volumeGroups.clear();
+        // if we have a volume geoms _group_, then it is _us_ that
+        // created this, and we have to free it.
+        if (rtc.volumeGeomsGroup) {
+          device->rtc->freeGroup(rtc.volumeGeomsGroup);
+          rtc.volumeGeomsGroup = 0;
         }
-      
+
+        // the volume _geoms_ are created/owned by the actual volume
+        // accel, and it is _their_ job to free those if required.
+        rtc.volumeGeoms.clear();
+        
+        // the volume _groups_ are created/owned by the actual volume
+        // accel, and it is _their_ job to free those if required.
+        rtc.volumeGroups.clear();
+        
         // ------------------------------------------------------------------
         // rebuild the volumes themselves. the result is, with each
         // volume, two (possibly) empty sets of generated geoms and
@@ -169,24 +146,13 @@ namespace BARNEY_NS {
         // over all those and gather the generated volume geoms and
         // volume grousp
         // ------------------------------------------------------------------
-        for (auto device : *devices) {
-          PLD *myPLD = getPLD(device);
-          for (auto volume : volumes) {
-            Volume::PLD *volumePLD = volume->getPLD(device);
-            // gather all geoms from this group (if any)
-            for (auto geom : volumePLD->generatedGeoms)
-              myPLD->volumeGeoms.push_back(geom);
-            // gather all geoms from this group (if any)
-            for (auto group : volumePLD->generatedGroups) {
-              assert(group);
-              myPLD->volumeGroups.push_back(group);
-            }
-          }
-
-          // now we have all rtc geoms and all rtc groups across all the
-          // volumes that have been in our current group.
-          if (!myPLD->volumeGeoms.empty())
-            printf("todo: build volume geoms group, and add it to root\n");
+        for (auto volume : volumes) {
+          // // gather all geoms from this group (if any)
+          // for (auto geom : volume->generatedGeoms)
+          //   rtc.volumeGeoms.push_back(geom);
+          // gather all geoms from this group (if any)
+          for (auto group : volume->generatedGroups) 
+            rtc.volumeGroups.push_back(group);
         }
       }
     }

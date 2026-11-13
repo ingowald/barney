@@ -9,9 +9,9 @@
 namespace BARNEY_NS {
   namespace native {
 
-    Object::Object(Context *context)
-      : context(context)
-    {};
+    Object::Object(Device *device)
+      : device(device), context(device->context)
+    {}
     
     Object::~Object()
     {}
@@ -38,14 +38,14 @@ namespace BARNEY_NS {
       alreadyWarned.insert(key);
     }
 
-    SlottedObject::SlottedObject(Context *context,
-                                 const DevGroup::SP &devices)
-      : Object(context),
-        devices(devices)
-    {
-      assert(devices);
-      assert(!devices->empty());
-    }
+    // SlottedObject::SlottedObject(Context *context,
+    //                              const DevGroup::SP &devices)
+    //   : Object(context),
+    //     devices(devices)
+    // {
+    //   assert(devices);
+    //   assert(!devices->empty());
+    // }
  
   }
 }

@@ -11,12 +11,15 @@ namespace BARNEY_NS {
     
     IsoSurfaceAccel::IsoSurfaceAccel(IsoSurface *isoSurface)
       : isoSurface(isoSurface),
-        devices(isoSurface->devices)
+        device(isoSurface->device)
     {}
   
-    IsoSurface::IsoSurface(Context *context, DevGroup::SP devices)
-      : Geometry(context,devices)
+    IsoSurface::IsoSurface(Device *device)
+      : Geometry(device)
     {}
+
+    std::string IsoSurface::toString() const 
+    { return "IsoSurface{}"; }
 
     /*! (re-)build the accel structure for this volume, probably after
       changes to transfer functoin (or later, scalar field) */
@@ -76,7 +79,7 @@ namespace BARNEY_NS {
       if (Geometry::setObject(member,value))
         return true;
       if (member == "scalarField") {
-        sf = value->as<ScalarField>();
+        sf = value->as<SpatialField>();
         if (!sf)
           throw std::runtime_error
             ("'scalarField' value set on 'isoSurface' object "

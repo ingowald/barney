@@ -12,7 +12,7 @@ namespace BARNEY_NS {
     
     struct Context;
     struct Data;
-    struct ModelSlot;
+    // struct ModelSlot;
     struct World;
 
     /*! the base class for _any_ other type of object/actor in the
@@ -20,7 +20,7 @@ namespace BARNEY_NS {
     struct Object : public std::enable_shared_from_this<Object> {
       typedef std::shared_ptr<Object> SP;
 
-      Object(Context *context);
+      Object(Device *device);
       virtual ~Object();
 
       /*! dynamically cast to another (typically derived) class, e.g. to
@@ -66,22 +66,23 @@ namespace BARNEY_NS {
       Context *getContext() const { return context; }
     
       // NOT a shared pointer to avoid cyclical dependencies.
+      Device  *const device;
       Context *const context;
     };
     
-    /*! a object owned (only) in a particular data group */
-    struct SlottedObject : public Object {
-      SlottedObject(Context *context, const DevGroup::SP &devices);
-      virtual ~SlottedObject() = default;
+    // /*! a object owned (only) in a particular data group */
+    // struct SlottedObject : public Object {
+    //   SlottedObject(Context *context, const Device::SP &devices);
+    //   virtual ~SlottedObject() = default;
 
-      /*! pretty-printer for printf-debugging */
-      std::string toString() const override { return "<SlottedObject>"; }
+    //   /*! pretty-printer for printf-debugging */
+    //   std::string toString() const override { return "<SlottedObject>"; }
 
-      const DevGroup::SP devices;    
-    };
+    //   const DevGroup::SP devices;    
+    // };
 
     struct Data : public Object {
-      Data(Context *context) : Object(context) {}
+      Data(Device *device) : Object(device) {}
       typedef std::shared_ptr<Data> SP;
     
       virtual ~Data() = default;

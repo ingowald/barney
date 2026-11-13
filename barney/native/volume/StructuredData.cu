@@ -62,21 +62,20 @@ namespace BARNEY_NS {
     }
 
   
-    StructuredData::StructuredData(Context *context,
-                                   const DevGroup::SP &devices)
-      : ScalarField(context,devices)
+    StructuredData::StructuredData(Device *device)
+      : SpatialField(device)
     {}
 
 
     MCGrid::SP StructuredData::buildMCs() 
     {
-      MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
+      MCGrid::SP mcGrid = std::make_shared<MCGrid>(device);
       vec3i mcDims = divRoundUp(numCells,vec3i(cellsPerMC));
       mcGrid->resize(mcDims);
       mcGrid->gridOrigin = worldBounds.lower;
       mcGrid->gridSpacing = vec3f(cellsPerMC) * this->gridSpacing;
-      for (auto device : *devices) {
-        size_t lc64 = (size_t)mcDims.x*(size_t)mcDims.y*(size_t)mcDims.z;
+
+      size_t lc64 = (size_t)mcDims.x*(size_t)mcDims.y*(size_t)mcDims.z;
         int lc = (int)lc64;
         if (lc != lc64)
           throw std::runtime_error("number of macrocells cannot be expressed in a 32-bit value");
@@ -86,19 +85,17 @@ namespace BARNEY_NS {
         __rtc_launch(device->rtc,
                      StructuredData_computeMCs,
                      nb,bs,
-                     mcGrid->getDD(device),
+                     mcGrid->getDD(),
                      numScalars,
-                     textureNN->getDD(device));
-      }
-      for (auto device : *devices)
+                     textureNN->getDD());
         device->sync();
       return mcGrid;
     }
   
-    StructuredDataSampler::DD StructuredDataSampler::getDD(Device *device)
+    StructuredDataSampler::DD StructuredDataSampler::getDD()
     {
       DD dd;
-      dd.texObj = sf->texture->getDD(device);
+      dd.texObj = sf->texture->getDD();
       assert(dd.texObj);
       dd.cellGridOrigin  = sf->gridOrigin;
       dd.cellGridSpacing = sf->gridSpacing;

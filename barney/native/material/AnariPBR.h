@@ -54,12 +54,11 @@ namespace BARNEY_NS {
         PossiblyMappedParameter::DD iridescenceThickness;
       };
       
-      AnariPBR(LDGContext *context);
-      virtual ~AnariPBR() = default;
+      AnariPBR(Device *device);
       
       std::string toString() const override { return "AnariPBR"; }
       
-      DeviceMaterial getDD(Device *device) override;
+      DeviceMaterial getDD() override;
 
       bool setObject(const std::string &member,
                      const Object::SP &value) override;

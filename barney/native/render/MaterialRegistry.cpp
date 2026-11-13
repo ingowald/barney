@@ -10,25 +10,21 @@
 namespace BARNEY_NS {
   namespace native {
 
-    MaterialRegistry::PLD *MaterialRegistry::getPLD(Device *device)
-    { return &perLogical[device->contextRank()]; }
+    // MaterialRegistry::PLD *MaterialRegistry::getPLD(Device *device)
+    // { return &perLogical[device->contextRank()]; }
     
-    MaterialRegistry::MaterialRegistry(const DevGroup::SP &devices)
-      : devices(devices)
+    MaterialRegistry::MaterialRegistry(Device *device)
+      : device(device)
     {
       numReserved = 1;
-      perLogical.resize(devices->numLogical);
-      
-      for (auto device : *devices)
-        getPLD(device)->buffer
-          = device->rtc->createBuffer(numReserved*sizeof(DeviceMaterial));
+      rtc.buffer
+        = device->rtc->createBuffer(numReserved*sizeof(DeviceMaterial));
     }
 
     MaterialRegistry::~MaterialRegistry()
     {
       // owlBufferRelease(buffer);
-      for (auto device : *devices)
-        device->rtc->freeBuffer(getPLD(device)->buffer);
+      device->rtc->freeBuffer(rtc.buffer);
     }
     
     void MaterialRegistry::grow()
@@ -36,21 +32,19 @@ namespace BARNEY_NS {
       size_t oldNumBytes = numReserved * sizeof(DeviceMaterial);
       numReserved *= 2;
       size_t newNumBytes = numReserved * sizeof(DeviceMaterial);
-      for (auto device : *devices) {
       // ------------------------------------------------------------------
       // save old materials
       // ------------------------------------------------------------------
-        PLD *pld = getPLD(device);
-        rtc::Buffer *oldBuffer = pld->buffer;
-        auto rtc = device->rtc;
-        
-        rtc::Buffer *newBuffer
-          = rtc->createBuffer(newNumBytes);
-        rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
-        rtc->sync();
-        rtc->freeBuffer(oldBuffer);
-        pld->buffer = newBuffer;
-      }
+      auto pld = &this->rtc;
+      rtc::Buffer *oldBuffer = pld->buffer;
+      auto rtc = device->rtc;
+      
+      rtc::Buffer *newBuffer
+        = rtc->createBuffer(newNumBytes);
+      rtc->copyAsync(newBuffer->getDD(),oldBuffer->getDD(),oldNumBytes);
+      rtc->sync();
+      rtc->freeBuffer(oldBuffer);
+      pld->buffer = newBuffer;
     }
 
     int MaterialRegistry::allocate()
@@ -71,12 +65,10 @@ namespace BARNEY_NS {
     }
   
     void MaterialRegistry::setMaterial(int materialID,
-                                       const DeviceMaterial &dd,
-                                       Device *device)
+                                       const DeviceMaterial &dd)
     {
       // for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        pld->buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
+      rtc.buffer->upload(&dd,sizeof(dd),sizeof(dd)*materialID);
       // }
     }
 

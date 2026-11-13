@@ -34,14 +34,14 @@ namespace BARNEY_NS {
     struct SpatialField;
     struct BarneyGlobalState;
     
-    struct TetheredModel : public std::enable_shared_from_this<TetheredModel> {
-      typedef std::shared_ptr<TetheredModel> SP;
-      TetheredModel(Tether *tether, int uniqueID);
-      ~TetheredModel();
-      BNModel model = 0;
-      Tether *const tether;
-      int     const uniqueID;
-    };
+    // struct TetheredModel : public std::enable_shared_from_this<TetheredModel> {
+    //   typedef std::shared_ptr<TetheredModel> SP;
+    //   TetheredModel(Tether *tether, int uniqueID);
+    //   ~TetheredModel();
+    //   BNModel model = 0;
+    //   Tether *const tether;
+    //   int     const uniqueID;
+    // };
 
     /*! keeps info on multiple (banari-)devices that are tethered
       together onto a singel barney ncontext */
@@ -52,16 +52,17 @@ namespace BARNEY_NS {
 
       bool allDevicesPresent();
 
-      TetheredModel::SP getOrCreateTetheredModel(int uniqueID);
-      std::map<int,TetheredModel*> activeModels;
-      std::mutex mutex;
+      // TetheredModel::SP getOrCreateTetheredModel(int uniqueID);
+      // std::map<int,TetheredModel*> activeModels;
+      // std::mutex mutex;
 
       int numRenderCallsOutstanding = 0;
       struct {
         BNCamera camera;
         BNRenderer renderer;
         BNFrameBuffer fb;
-        BNModel model;
+        std::vector<BNModel> models;
+        // BNModel model;
       } deferredRenderCall;
 
       std::vector<BarneyDevice *> devices;

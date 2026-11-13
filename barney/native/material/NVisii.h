@@ -11,6 +11,7 @@
 namespace BARNEY_NS {
   namespace native {
 
+#if 0
     /*! Disney "Principled" BSDF material, exposed through the barney
         core as the "nvisii" subtype. Wraps the packedBSDF::NVisii
         BSDF (a port of the NVIDIA NVisii Disney material), carrying
@@ -135,6 +136,7 @@ namespace BARNEY_NS {
       return opacity.x;
     }
 #endif
-
+#endif
+    
   }
 }

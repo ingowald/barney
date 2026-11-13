@@ -96,10 +96,10 @@ namespace BARNEY_NS {
         return std::make_shared<AnariMatte>(slotContext); 
       if (type == "physicallyBased" || type == "AnariPBR")
         return std::make_shared<AnariPBR>(slotContext); 
-      if (type == "nvisii" || type == "NVisii")
-        return std::make_shared<NVisii>(slotContext); 
-      if (type == "glass" || type == "Glass")
-        return std::make_shared<Glass>(slotContext); 
+      // if (type == "nvisii" || type == "NVisii")
+      //   return std::make_shared<NVisii>(slotContext); 
+      // if (type == "glass" || type == "Glass")
+      //   return std::make_shared<Glass>(slotContext); 
       return std::make_shared<AnariPBR>(slotContext); 
     }
 

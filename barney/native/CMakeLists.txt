@@ -96,8 +96,8 @@ set(HOST_SOURCES
   # volume data 
   volume/Volume.h
   volume/Volume.cpp
-  volume/ScalarField.h
-  volume/ScalarField.cpp
+  volume/SpatialField.h
+  volume/SpatialField.cpp
   volume/MCAccelerator.h
   volume/TransferFunction.h
   volume/TransferFunction.cpp

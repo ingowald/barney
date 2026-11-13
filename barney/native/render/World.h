@@ -6,18 +6,16 @@
 
 #include "native/DeviceGroup.h"
 #include "native/render/Sampler.h"
-#include "native/light/EnvMap.h"
-#include "native/light/DirLight.h"
-#include "native/light/PointLight.h"
-#include "native/light/QuadLight.h"
+#include "native/render/DeviceWorld.h"
 
 namespace BARNEY_NS {
   namespace native {
 
-    struct LDGContext;
+    // struct LDGContext;
     struct DeviceMaterial;
     struct HostMaterial;
-
+    struct Group;
+    
     /*! the rendering/path racing related part of a model that describes
       global render settings like light sources, background, envmap,
       etc
@@ -28,33 +26,14 @@ namespace BARNEY_NS {
     */
     struct World {
       typedef std::shared_ptr<World> SP;
-      
-      struct DD {
-        int                  numQuadLights = 0;
-        const QuadLight::DD *quadLights    = nullptr;
-        int                  numDirLights  = 0;
-        const DirLight::DD  *dirLights     = nullptr;
-        int                  numPointLights  = 0;
-        const PointLight::DD  *pointLights     = nullptr;
-        int                 *instIDToUserInstID = 0;
-        // Indexed by native input instance ID, like instance attributes.
-        const float         *instanceOrientations = nullptr;
-        const affine3f      *motionDeltas       = nullptr;
-        int                  numMotionDeltas    = 0;
 
-        const DeviceMaterial *materials;
-        const Sampler::DD    *samplers;
-        const rtc::float4    *instanceAttributes[5];
-        EnvMapLight::DD       envMapLight;
-        // uint32_t              rngSeed;
-        uint32_t              rank;
-      };
+      using DD = DeviceWorld;
       struct {
         EnvMapLight::SP light;
         affine3f        xfm;
       } envMapLight;
 
-      World(LDGContext *ldgContext);
+      World(Device *device);//LDGContext *ldgContext);
       virtual ~World();
 
       void set(const std::vector<QuadLight::DD> &quadLights);
@@ -64,12 +43,36 @@ namespace BARNEY_NS {
       void setMotionDeltas(const std::vector<affine3f> &deltas);
       void setInstanceOrientations(const std::vector<affine3f> &transforms);
 
+      void setInstances(Group **groups,
+                        const affine3f *xfms,
+                        int numInstances);
+      void updateInstanceTransforms(const affine3f *xfms, int numInstances);
+      void setInstanceAttributes(const std::string &which, const PODData::SP &data);
+      void setInstanceMotionDeltas(const affine3f *deltas, int numInstances);
+      void updateWorldLightsFromInstances();
+      void flattenInstancesForDevice(Device *device,
+                                     std::vector<rtc::Group *> *rtcGroups,
+                                     std::vector<affine3f> &rtcTransforms,
+                                     std::vector<int> *inputInstIDs);
+
+      struct {
+        std::vector<std::shared_ptr<Group>> groups;
+        std::vector<affine3f>  xfms;
+        std::vector<int>       userIDs;
+      } instances;
+      rtc::Group *instanceGroup = 0;
+      rtc::AccelHandle getInstanceAccel()
+      {
+        return rtc::getAccelHandle(instanceGroup);
+      }
+      
       PODData::SP instanceAttributes[5];
       PODData::SP instanceUserIDs;
       
-      DD getDD(Device *device);
+      DD getDD();//Device *device);
 
-      struct PLD {
+      // struct PLD {
+      struct {
         QuadLight::DD *quadLights = 0;
         int numQuadLights = 0;
         DirLight::DD *dirLights = 0;
@@ -79,12 +82,14 @@ namespace BARNEY_NS {
         float *instanceOrientations = nullptr;
         affine3f *motionDeltas = 0;
         int numMotionDeltas = 0;
-      };
-      PLD *getPLD(Device *device);
+      } rtc;
+      // };
+      // PLD *getPLD(Device *device);
       
-      std::vector<PLD> perLogical;
-      DevGroup::SP const devices;
-      LDGContext *const ldgContext;
+      // std::vector<PLD> perLogical;
+      // DevGroup::SP const devices;
+      // LDGContext *const ldgContext;
+      Device *const device;
     };
 
   }

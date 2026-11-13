@@ -4,13 +4,13 @@
 
 #include "native/volume/Volume.h"
 #include "native/ModelSlot.h"
-#include "native/volume/ScalarField.h"
+#include "native/volume/SpatialField.h"
 
 namespace BARNEY_NS {
   namespace native {
 
-    Volume::PLD *Volume::getPLD(Device *device)
-    { return &perLogical[device->contextRank()]; }
+    // Volume::PLD *Volume::getPLD(Device *device)
+    // { return &perLogical[device->contextRank()]; }
 
     void Volume::setXF(const range1f &domain,
                        const bn_float4 *_values,
@@ -105,21 +105,19 @@ namespace BARNEY_NS {
       return false;
     }
 
-    inline ScalarField::SP assertNotNull(const ScalarField::SP &s)
+    inline SpatialField::SP assertNotNull(const SpatialField::SP &s)
     { assert(s); return s; }
   
-    inline ScalarField *assertNotNull(ScalarField *s)
+    inline SpatialField *assertNotNull(SpatialField *s)
     { assert(s); return s; }
   
-    Volume::Volume(ScalarField::SP sf)
-      : Object(sf->context),
+    Volume::Volume(SpatialField::SP sf)
+      : Object(sf->device),
         sf(sf),
-        xf((Context*)sf->context,sf->devices),
-        emissionXf((Context*)sf->context,sf->devices),
-        devices(sf->devices)
+        xf(sf->device),
+        emissionXf(sf->device)
     {
       accel = sf->createAccel(this);
-      perLogical.resize(devices->numLogical);
     }
 
     const TransferFunction *VolumeAccel::getXF() const { return &volume->xf; }
@@ -129,8 +127,7 @@ namespace BARNEY_NS {
       assert(accel);
       accel->build(full_rebuild);
       needsMajorantRebuild = false;
-      for (auto device : *devices)
-        device->sbtDirty = true;
+      device->sbtDirty = true;
     }
 
   }

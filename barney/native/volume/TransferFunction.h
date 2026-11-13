@@ -10,9 +10,8 @@
 namespace BARNEY_NS {
   namespace native {
 
-    struct TransferFunction : public SlottedObject {
+    struct TransferFunction : public Object {
       struct DD {
-
         /*! maps given scalar through this trnasfer function, and
           returns /opacity-times-density value for that scalar. scalars
           outside the specified domain get mapped to the boundary
@@ -33,23 +32,26 @@ namespace BARNEY_NS {
         int      numValues;
       };
 
-      TransferFunction(Context *context,
-                       const DevGroup::SP &devices);
-      ~TransferFunction();
+      TransferFunction(Device *device);
+      // Context *context,
+      //                  const DevGroup::SP &devices);
+      ~TransferFunction() override;
 
       /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-      DD getDD(Device *device);
+      DD getDD();
     
       void set(const range1f &domain,
                const std::vector<vec4f> &values,
                float baseDensity);
 
-      struct PLD {
+      // struct PLD {
+      struct {
         rtc::Buffer        *valuesBuffer = 0;
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      } rtc;
+    // };
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
     
       range1f             domain = { 0.f, 1.f };
       std::vector<vec4f>  values;

@@ -14,7 +14,7 @@ namespace BARNEY_NS {
 
     enum class AlphaMode : int { Opaque = 0, Mask, Blend };
 
-    struct LDGContext;
+    // struct LDGContext;
     struct DeviceMaterial;
     
     struct PossiblyMappedParameter {
@@ -78,8 +78,8 @@ namespace BARNEY_NS {
         (and even worse, its type) if the assigned material's type
         changes */
 
-      HostMaterial(LDGContext *slotContext);
-      virtual ~HostMaterial();
+      HostMaterial(Device *device);
+      ~HostMaterial() override;
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -90,10 +90,10 @@ namespace BARNEY_NS {
       bool set1i(const std::string &member, const int &value) override;
       /*! @} */
       // ------------------------------------------------------------------
-      static HostMaterial::SP create(LDGContext *context,
+      static HostMaterial::SP create(Device *device,
                                      const std::string &type);
     
-      virtual DeviceMaterial getDD(Device *device) = 0;
+      virtual DeviceMaterial getDD() = 0;
 
       void packCoverage(DeviceMaterial &dd, bool opacityIdenticallyOne) const;
 
@@ -107,7 +107,7 @@ namespace BARNEY_NS {
       const int materialID;
 
       bool hasBeenCommittedAtLeastOnce = false;
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
       
       // keep reference to material library, so it cannot die before
       // all materials are dead

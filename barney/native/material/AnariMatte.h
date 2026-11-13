@@ -28,8 +28,7 @@ namespace BARNEY_NS {
         PossiblyMappedParameter::DD color;
         PossiblyMappedParameter::DD opacity;
       };
-      AnariMatte(LDGContext *context);
-      virtual ~AnariMatte() = default;
+      AnariMatte(Device *device);
 
       bool setString(const std::string &member,
                      const std::string &value) override;
@@ -44,7 +43,7 @@ namespace BARNEY_NS {
       
       std::string toString() const override { return "AnariMatte"; }
       
-      DeviceMaterial getDD(Device *device) override;
+      DeviceMaterial getDD() override;
       
       PossiblyMappedParameter color   = vec3f(.8f);
       PossiblyMappedParameter opacity = 1.f;

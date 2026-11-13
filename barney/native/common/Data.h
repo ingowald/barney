@@ -18,19 +18,21 @@ namespace BARNEY_NS {
     struct BaseData : public Data {
       typedef std::shared_ptr<BaseData> SP;
 
-      BaseData(Context *context,
-               const DevGroup::SP &devices,
+      BaseData(Device *device,
+               // Context *context,
+               // const DevGroup::SP &devices,
                BNDataType type);
       virtual ~BaseData() = default;
     
       // virtual void set(const void *data, size_t count) = 0;
-      static BaseData::SP create(Context *context,
-                                 const DevGroup::SP &devices,
+      static BaseData::SP create(// Context *context,
+                                 // const DevGroup::SP &devices,
+                                 Device *device,
                                  BNDataType type);
 
       BNDataType type  = BN_DATA_UNDEFINED;
       size_t     count = 0;
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
     };
 
     /*! a data array for 'plain-old-data' type data (such as int, float,
@@ -42,24 +44,25 @@ namespace BARNEY_NS {
     
       /*! constructor for a 'global' data array that lives on the
         context itself, and spans all model slots */
-      PODData(Context *context,
-              const DevGroup::SP &devices,
+      PODData(// Context *context,
+              // const DevGroup::SP &devices,
+              Device *device,
               BNDataType type);
     
       virtual ~PODData();
 
       size_t size() const { return numBytes; }
-      const void *getDD(Device *device);
+      const void *getDD();
       void set(const void *data, size_t count) override;
       void download(Device *device, void *hostPtr);
 
-      struct PLD {
+      // struct PLD {
         rtc::Buffer *rtcBuffer   = 0;
-      };
+      // };
       size_t numBytes = 0;
       uint64_t revision = 0;
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
     };
 
     /*! data array over reference-counted barney object handles (e.g.,
@@ -67,8 +70,9 @@ namespace BARNEY_NS {
       put into this data array will remain properly refcoutned. */
     struct ObjectRefsData : public BaseData {
       typedef std::shared_ptr<ObjectRefsData> SP;
-      ObjectRefsData(Context *context,
-                     const DevGroup::SP &devices,
+      ObjectRefsData(// Context *context,
+                     // const DevGroup::SP &devices,
+                     Device *device,
                      BNDataType type);
       void set(const void *data, size_t count) override;
       std::vector<Object::SP> items;

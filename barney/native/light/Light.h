@@ -39,7 +39,7 @@ namespace BARNEY_NS {
       };
   
     
-      Light(Context *context, const DevGroup::SP &devices);
+      Light(Device *device);//Context *context, const DevGroup::SP &devices);
 
       std::string toString() const override { return "Light<>"; }
 
@@ -50,12 +50,13 @@ namespace BARNEY_NS {
       /*! @} */
       // ------------------------------------------------------------------
     
-      static Light::SP create(Context *context,
-                              const DevGroup::SP &devices,
+      static Light::SP create(Device *device,
+                              // Context *context,
+                              // const DevGroup::SP &devices,
                               const std::string &name);
 
       vec3f color = vec3f(1.f);
-      DevGroup::SP const devices;
+      // DevGroup::SP const devices;
     };
 
   }

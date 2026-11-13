@@ -23,12 +23,12 @@
 namespace BARNEY_NS {
   namespace native {
 
-    struct NanoVDBData : public ScalarField
+    struct NanoVDBData : public SpatialField
     {
       /*! device data for this class. nothis special for a structured
         data object; all sampling related stuff will be in the
         StructuredDataSampler */
-      struct DD : public ScalarField::DD {
+      struct DD : public SpatialField::DD {
         vec3f voxelSize;
         vec3i gridSize;
         box3i indexBounds;
@@ -39,9 +39,10 @@ namespace BARNEY_NS {
       /*! construct a new NanoDVB scalar field; will not do anything -
         or have any data - untile 'set' and 'commit'ed
       */
-      NanoVDBData(Context *context,
-                  const DevGroup::SP &devices);
-      virtual ~NanoVDBData() = default;
+      NanoVDBData(Device *device);
+      // Context *context,
+      //             const DevGroup::SP &devices);
+      // virtual ~NanoVDBData() = default;
 
       // ------------------------------------------------------------------
       /*! @{ parameter set/commit interface */
@@ -51,7 +52,7 @@ namespace BARNEY_NS {
       /*! @} */
       // ------------------------------------------------------------------
     
-      DD getDD(Device *device);
+      DD getDD();
       VolumeAccel::SP createAccel(Volume *volume) override;
       IsoSurfaceAccel::SP createIsoAccel(IsoSurface *isoSurface) override;
       MCGrid::SP buildMCs() override;
@@ -66,7 +67,7 @@ namespace BARNEY_NS {
 
     /*! sampler object for a StructuredData object, using a 3d texture */
     template<typename T>
-    struct NanoVDBDataSampler : public ScalarFieldSampler {
+    struct NanoVDBDataSampler : public SpatialFieldSampler {
       using NVDBGridT = typename nanovdb::Grid<nanovdb::NanoTree<T>>;
       using NVDBAccessorT = typename NVDBGridT::AccessorType;
     
@@ -85,7 +86,7 @@ namespace BARNEY_NS {
 
       void build() override;
     
-      DD getDD(Device *device);
+      DD getDD();
       NanoVDBData *const sf;
     };
   

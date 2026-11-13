@@ -56,9 +56,10 @@ namespace BARNEY_NS {
 #endif
     }
   
-    NanoVDBData::NanoVDBData(Context *context,
-                             const DevGroup::SP &devices)
-      : ScalarField(context,devices)
+    NanoVDBData::NanoVDBData(Device *device)
+    // Context *context,
+    //                          const DevGroup::SP &devices)
+      : SpatialField(device)
     {}
 
     template<typename T>
@@ -71,7 +72,7 @@ namespace BARNEY_NS {
     MCGrid::SP NanoVDBData::buildMCs() 
     {
 #if BARNEY_HAVE_NANOVDB
-      MCGrid::SP mcGrid = std::make_shared<MCGrid>(devices);
+      MCGrid::SP mcGrid = std::make_shared<MCGrid>(device);
       const auto dims = barney_nanovdb::macrocellDims(nanovdb::CoordBBox(
         nanovdb::Coord(indexBounds.lower.x, indexBounds.lower.y, indexBounds.lower.z),
         nanovdb::Coord(indexBounds.upper.x, indexBounds.upper.y, indexBounds.upper.z)));
@@ -89,21 +90,21 @@ namespace BARNEY_NS {
       }
       mcGrid->resize(mcDims);
 
-      for (auto device : *devices) {
+      // for (auto device : *devices) {
         SetActiveGPU forDuration(device);
         switch (gridType) {
 #define BUILD_RANGES(BuildType, Suffix, EnumName)                       \
           case nanovdb::GridType::EnumName:                             \
             __rtc_launch(device->rtc, (NanoVDBData_computeMCs<BuildType>), \
                          int((count + 127) / 128), 128,                 \
-                         mcGrid->getDD(device), getDD(device));         \
+                         mcGrid->getDD(), getDD());         \
             break;
           BARNEY_NANOVDB_FLOAT_TYPES(BUILD_RANGES)
 #undef BUILD_RANGES
           default: throw std::runtime_error("Unsupported NanoVDB grid type");
         }
-      }
-      for (auto device : *devices)
+      // }
+      // for (auto device : *devices)
         device->sync();
       return mcGrid;
 #else
@@ -112,13 +113,13 @@ namespace BARNEY_NS {
     }
 
     template<typename T>
-    typename NanoVDBDataSampler<T>::DD NanoVDBDataSampler<T>::getDD(Device *device)
+    typename NanoVDBDataSampler<T>::DD NanoVDBDataSampler<T>::getDD()
     {
       DD dd;
 
       assert(sf);
       assert(sf->data);
-      dd.nvdbGrid    = (NVDBGridT*)sf->data->getDD(device);
+      dd.nvdbGrid    = (NVDBGridT*)sf->data->getDD();
       dd.indexBounds = sf->indexBounds;
       dd.filterMode = sf->filterMode;
 
@@ -126,7 +127,7 @@ namespace BARNEY_NS {
       return dd;
     }
 
-    NanoVDBData::DD NanoVDBData::getDD(Device *device)
+    NanoVDBData::DD NanoVDBData::getDD()
     {
       assert(this->data);
     
@@ -135,7 +136,7 @@ namespace BARNEY_NS {
       dd.voxelSize   = voxelSize;
       dd.gridType    = gridType;
       dd.gridSize    = gridSize;
-      dd.gridData    = data->getDD(device);
+      dd.gridData    = data->getDD();
       dd.indexBounds = indexBounds;
     
       assert(dd.gridData);
@@ -198,7 +199,7 @@ namespace BARNEY_NS {
       // nanovdb.
       size_t numBytes = data->size();
     
-      auto dev0 = (*devices)[0];
+      auto dev0 = device;
       auto nvHostBuffer = nanovdb::HostBuffer::create(numBytes);
       data->download(dev0,nvHostBuffer.data());
     

@@ -11,6 +11,7 @@
 namespace BARNEY_NS {
   namespace native {
 
+#if 0
     /*! smooth dielectric material, exposed through the barney core as the
         "glass" subtype. Wraps the packedBSDF::Glass BSDF (specular
         reflect/refract through the robust OSPRay dielectric), carrying an
@@ -38,7 +39,7 @@ namespace BARNEY_NS {
 
       std::string toString() const override { return "Glass"; }
 
-      DeviceMaterial getDD(Device *device) override;
+      DeviceMaterial getDD() override;
 
       bool setObject(const std::string &member,
                      const Object::SP &value) override;
@@ -81,6 +82,7 @@ namespace BARNEY_NS {
       return 1.f;
     }
 #endif
-
+#endif
+    
   }
 }

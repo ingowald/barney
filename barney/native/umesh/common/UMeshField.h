@@ -30,14 +30,15 @@ namespace BARNEY_NS {
 
     /*! scalar field represented by a unstructured mesh. can contain
       tets, pyramids, tents, or hexes */
-    struct UMeshField : public ScalarField
+    struct UMeshField : public SpatialField
     {
       typedef std::shared_ptr<UMeshField> SP;
 
-      UMeshField(Context *context,
-                 const DevGroup::SP &devices);
+      UMeshField(Device *device);
+      // Context *context,
+      //            const DevGroup::SP &devices);
 
-      virtual ~UMeshField() = default;
+      // virtual ~UMeshField() = default;
     
       /*! helper class for representing an N-long integer tuple, to
         represent prism, pyramid, hex, etc elemnet indices */
@@ -49,7 +50,7 @@ namespace BARNEY_NS {
       /*! device-data for a unstructured-mesh scalar field, containing
         all device-side pointers and function to access this field and
         sample/evaluate its elemnets */
-      struct DD : public ScalarField::DD {
+      struct DD : public SpatialField::DD {
       
         inline __rtc_device box4f cellBounds(uint32_t cellIdx) const;
 
@@ -136,7 +137,7 @@ namespace BARNEY_NS {
       // ------------------------------------------------------------------
 
     
-      DD getDD(Device *device);
+      DD getDD();
 
       /*! create, fill, and return a macrocell grid for this field */
       MCGrid::SP buildMCs() override;
@@ -160,11 +161,11 @@ namespace BARNEY_NS {
       int numCells;
       bool scalarsArePerVertex = false;
       /*! @} */
-      struct PLD {
-        box3f   *pWorldBounds = 0;
-      };
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
+      // struct PLD {
+      box3f   *d_pWorldBounds = 0;
+      // };
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
     };
 
     /*! VTK_POLYHEDRON face stream: numFaces, then per face (n, i0..i_{n-1}).

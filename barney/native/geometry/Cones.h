@@ -23,12 +23,11 @@ namespace BARNEY_NS {
         const float *radii;
       };
     
-      Cones(Context *context, DevGroup::SP devices);
-      virtual ~Cones() = default;
+      Cones(Device *device);//Context *context, DevGroup::SP devices);
+      // virtual ~Cones() = default;
     
       /*! pretty-printer for printf-debugging */
-      std::string toString() const override
-      { return "Cones{}"; }
+      std::string toString() const override;
     
       void commit() override;
     

@@ -13,27 +13,25 @@ namespace BARNEY_NS {
 
     RTC_IMPORT_TRIANGLES_GEOM(Triangles,Triangles,Triangles::DD,true,false);
 
-    Triangles::Triangles(Context *context, DevGroup::SP devices)
-      : Geometry(context,devices), tangentBuffers(devices->numLogical,nullptr)
+    Triangles::Triangles(Device *device)
+      : Geometry(device)
     {}
   
     Triangles::~Triangles()
     {
-      for (auto device : *devices)
-        if (auto buffer = tangentBuffers[device->contextRank()])
-          device->rtc->freeBuffer(buffer);
+      if (tangentBuffer) 
+          device->rtc->freeBuffer(tangentBuffer);
     }
 
-    void Triangles::writeDD(Triangles::DD &dd, Device *device)
+    void Triangles::writeDD(Triangles::DD &dd)
     {
-      Geometry::writeDD(dd,device);
-      dd.vertices = (const vec3f *)vertices->getDD(device);
-      dd.indices = (const vec3i *)indices->getDD(device);
-      if (auto buffer = tangentBuffers[device->contextRank()]) {
-        auto &tangent = dd.attributes.tangentAttribute;
-        tangent.scope = GeometryAttribute::FACE_VARYING;
-        tangent.fromArray = {buffer->getDD(),BN_FLOAT4,int(3*indices->count)};
-      }
+      Geometry::writeDD(dd);
+      dd.vertices = (const vec3f *)vertices->getDD();
+      dd.indices = (const vec3i *)indices->getDD();
+      auto buffer = tangentBuffer;
+      auto &tangent = dd.attributes.tangentAttribute;
+      tangent.scope = GeometryAttribute::FACE_VARYING;
+      tangent.fromArray = {buffer->getDD(),BN_FLOAT4,int(3*indices->count)};
     }
   
     /*! handle data arrays for vertices and indices; note that
@@ -69,45 +67,46 @@ namespace BARNEY_NS {
       for (size_t i = 0; i < inputs.size(); ++i)
         revisions[i] = inputs[i] ? inputs[i]->revision : 0;
       const bool regenerate = inputs != tangentInputs || revisions != tangentRevisions;
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        if (pld->triangleGeoms.empty()) {
-          rtc::GeomType *gt
-            = device->geomTypes.get(createGeomType_Triangles);
-          rtc::Geom *geom = gt->createGeom();
-          pld->triangleGeoms = { geom };
-        }
-    
-        rtc::Geom *geom = pld->triangleGeoms[0];
-        rtc::Buffer *verticesBuffer
-          = vertices->getPLD(device)->rtcBuffer;
-        rtc::Buffer *indicesBuffer
-          = indices->getPLD(device)->rtcBuffer;
-      
-        int numVertices = (int)vertices->count;
-        int numIndices  = (int)indices->count;
-      
-        geom->setVertices(verticesBuffer,numVertices);
-        geom->setIndices(indicesBuffer,numIndices);
-        Triangles::DD dd;
-        if (regenerate) {
-          auto &buffer = tangentBuffers[device->contextRank()];
-          if (buffer) device->rtc->freeBuffer(buffer);
-          buffer = nullptr;
-          if (!attributes.tangentAttribute.perVertex
-              && !attributes.tangentAttribute.faceVarying) {
-            const auto attrs = attributes.getDD(device);
-            TangentMesh mesh{(const vec3f *)vertices->getDD(device),
-              (const vec3i *)indices->getDD(device),numVertices,numIndices,
-              attrs.normalAttribute,attrs.attribute[0]};
-            buffer = generateTangentFrames(device->rtc,mesh);
-          }
-        }
-        writeDD(dd,device);
-
-        // done:
-        geom->setDD(&dd);
+      // for (auto device : *devices) {
+      //   PLD *pld = getPLD(device);
+      auto pld = &this->rtc;
+      if (pld->triangleGeoms.empty()) {
+        rtc::GeomType *gt
+          = device->geomTypes.get(createGeomType_Triangles);
+        rtc::Geom *geom = gt->createGeom();
+        pld->triangleGeoms = { geom };
       }
+    
+      rtc::Geom *geom = pld->triangleGeoms[0];
+      rtc::Buffer *verticesBuffer
+        = vertices->rtcBuffer;
+      rtc::Buffer *indicesBuffer
+        = indices->rtcBuffer;
+      
+      int numVertices = (int)vertices->count;
+      int numIndices  = (int)indices->count;
+      
+      geom->setVertices(verticesBuffer,numVertices);
+      geom->setIndices(indicesBuffer,numIndices);
+      Triangles::DD dd;
+      if (regenerate) {
+        auto &buffer = tangentBuffer;
+        if (buffer) device->rtc->freeBuffer(buffer);
+        buffer = nullptr;
+        if (!attributes.tangentAttribute.perVertex
+            && !attributes.tangentAttribute.faceVarying) {
+          const auto attrs = attributes.getDD();
+          TangentMesh mesh{(const vec3f *)vertices->getDD(),
+                           (const vec3i *)indices->getDD(),numVertices,numIndices,
+                           attrs.normalAttribute,attrs.attribute[0]};
+          buffer = generateTangentFrames(device->rtc,mesh);
+        }
+      }
+      writeDD(dd);
+      
+      // done:
+      geom->setDD(&dd);
+      
       tangentInputs = inputs;
       tangentRevisions = revisions;
     }

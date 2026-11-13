@@ -10,8 +10,8 @@ namespace BARNEY_NS {
     
     /*! the base class for _any_ other type of object/actor in the
       barney class hierarchy */
-    Renderer::Renderer(Context *context)
-      : Object(context)
+    Renderer::Renderer(Device *device)
+      : Object(device)
     {}
 
     /*! pretty-printer for printf-debugging */
@@ -19,9 +19,6 @@ namespace BARNEY_NS {
     {
       return "barney::Renderer";
     }
-
-    Renderer::SP Renderer::create(Context *context)
-    { return std::make_shared<Renderer>(context); }
 
     void Renderer::commit()
     {
@@ -100,12 +97,12 @@ namespace BARNEY_NS {
       return false;
     }
 
-    Renderer::DD Renderer::getDD(Device *device) const
+    Renderer::DD Renderer::getDD() const
     {
       Renderer::DD dd;
       dd.bgColor = bgColor;
       dd.bgTexture
-        = bgTexture ? bgTexture->getTextureObject(device)
+        = bgTexture ? bgTexture->getTextureObject()
         : 0;
       dd.ambientRadiance = ambientRadiance;
       dd.pathsPerPixel = pathsPerPixel;

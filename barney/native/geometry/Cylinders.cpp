@@ -11,30 +11,34 @@ namespace BARNEY_NS {
 
     RTC_IMPORT_USER_GEOM(Cylinders,Cylinders,Cylinders::DD,false,false);
 
-    Cylinders::Cylinders(Context *context, DevGroup::SP devices)
-      : Geometry(context,devices)
+    Cylinders::Cylinders(Device *device)
+      : Geometry(device)
     {}
+
+    std::string Cylinders::toString() const 
+    { return "Cylinders{}"; }
 
     void Cylinders::commit()
     {
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
-        if (pld->userGeoms.empty()) {
-          rtc::GeomType *gt
-            = device->geomTypes.get(createGeomType_Cylinders);
-          rtc::Geom *geom = gt->createGeom();
-          geom->setPrimCount((int)indices->count);
-          pld->userGeoms.push_back(geom);
-        }
-        rtc::Geom *geom = pld->userGeoms[0];
-
-        Cylinders::DD dd;
-        Geometry::writeDD(dd,device);
-        dd.vertices = (vec3f*)(vertices?vertices->getDD(device):0);
-        dd.indices  = (vec2i*)(indices?indices->getDD(device):0);
-        dd.radii    = (float*)(radii?radii->getDD(device):0);
-        geom->setDD(&dd);
+      // for (auto device : *devices) {
+      //   PLD *pld = getPLD(device);
+      auto pld = &rtc;
+      if (pld->userGeoms.empty()) {
+        rtc::GeomType *gt
+          = device->geomTypes.get(createGeomType_Cylinders);
+        rtc::Geom *geom = gt->createGeom();
+        geom->setPrimCount((int)indices->count);
+        pld->userGeoms.push_back(geom);
       }
+      rtc::Geom *geom = pld->userGeoms[0];
+      
+      Cylinders::DD dd;
+      Geometry::writeDD(dd);
+      dd.vertices = (vec3f*)(vertices?vertices->getDD():0);
+      dd.indices  = (vec2i*)(indices?indices->getDD():0);
+      dd.radii    = (float*)(radii?radii->getDD():0);
+      geom->setDD(&dd);
+      // }
     } 
 
     bool Cylinders::set1i(const std::string &member,

@@ -5,7 +5,7 @@
 #include "native/Context.h"
 #include "native/DeviceGroup.h"
 #include "native/fb/FrameBuffer.h"
-#include "native/GlobalModel.h"
+// #include "native/GlobalModel.h"
 #include "native/render/RayQueue.h"
 #include "native/render/Sampler.h"
 #include "native/render/SamplerRegistry.h"
@@ -13,86 +13,97 @@
 #include "native/Camera.h"
 #include "native/render/Renderer.h"
 #include "native/FromEnv.h"
+#include "native/volume/Volume.h"
+#include "native/geometry/Geometry.h"
+#include "native/Group.h"
 
 namespace BARNEY_NS {
   namespace native {
     
-    Context::Context(const std::vector<DataGroupDescriptor> &localDataGroups,
+    Context::Context(const std::vector<int> &gpuIDs,
+                     const std::vector<int> &dataGroupIDs,
                      WorkerTopo::SP topo)
-      : isActiveWorker(!localDataGroups.empty() && localDataGroups[0].dataRank >= 0),
-        topo(topo)
+      : topo(topo)
     {
-      assert(!localDataGroups.empty());
-      for (auto &ldg : localDataGroups) {
-        assert(!ldg.gpuIDs.empty());
-        for (auto gpu : ldg.gpuIDs)
-          assert(gpu >= 0);
-      }
+      // assert(!localDataGroups.empty());
+      assert(gpuIDs.size() == dataGroupIDs.size());
+      assert(!gpuIDs.empty());
+      // for (auto &ldg : localDataGroups) {
+      //   assert(!ldg.gpuIDs.empty());
+      //   for (auto gpu : ldg.gpuIDs)
+      //     assert(gpu >= 0);
+      // }
       
-      assert(!localDataGroups.empty());
-      for (int i=0;i<(int)localDataGroups.size();i++) {
-        assert(localDataGroups[i].dataRank >= 0 ||
-               i == 0 && localDataGroups[i].dataRank == -1);
-        assert(!localDataGroups[i].gpuIDs.empty());
-      }
+      // assert(!localDataGroups.empty());
+      // for (int i=0;i<(int)localDataGroups.size();i++) {
+      //   assert(localDataGroups[i].dataRank >= 0 ||
+      //          i == 0 && localDataGroups[i].dataRank == -1);
+      //   assert(!localDataGroups[i].gpuIDs.empty());
+      // }
     
-      if (!isActiveWorker)  {
-        // not an active worker: no device groups etc, just create a
-        // single default device
-        throw std::runtime_error
-          ("inactive workers not implemented right now");
-        return;
-      }
+      // if (!isActiveWorker)  {
+      //   // not an active worker: no device groups etc, just create a
+      //   // single default device
+      //   throw std::runtime_error
+      //     ("inactive workers not implemented right now");
+      //   return;
+      // }
 
-      { // try to enable peer access across all GPUs across all of
-        // this context's data groups
-        havePeerAccess = true;
-        std::vector<int> allGPUs;
-        for (auto &dg : localDataGroups)
-          for (auto gpu : dg.gpuIDs)
-            allGPUs.push_back(gpu);
-        havePeerAccess
-          = havePeerAccess && rtc::enablePeerAccess(allGPUs);
-      }
+      // { // try to enable peer access across all GPUs across all of
+      //   // this context's data groups
+      //   havePeerAccess = true;
+      //   // std::vector<int> allGPUs;
+      //   // for (auto &dg : localDataGroups)
+      //   //   for (auto gpu : dg.gpuIDs)
+      //   //     allGPUs.push_back(gpu);
+      //   havePeerAccess
+      //     = havePeerAccess && rtc::enablePeerAccess(gpuIDs);//allGPUs);
+      // }
+      havePeerAccess = rtc::enablePeerAccess(gpuIDs);//allGPUs);
       
       std::vector<Device *> allLocalDevices;
-      int numLDGs = (int)localDataGroups.size();
-      for (int i=0;i<numLDGs;i++)
-        perLDG.push_back(new LDGContext);
+      int numDevices = gpuIDs.size();//numLDGs = (int)localDataGroups.size();
+      // for (int i=0;i<numLDGs;i++)
+      //   perLDG.push_back(new LDGContext);
 
-      for (int ldgIdx=0;ldgIdx<numLDGs;ldgIdx++) {
-        auto &ldgSpec = localDataGroups[ldgIdx];
-        auto &dg = *perLDG[ldgIdx];
-        dg.context = this;
-        dg.modelRankInThisSlot = ldgSpec.dataRank;
+      for (int localDevIdx=0;localDevIdx<numDevices;localDevIdx++) {
+      // for (int ldgIdx=0;ldgIdx<numLDGs;ldgIdx++) {
+      //   auto &ldgSpec = localDataGroups[ldgIdx];
+      //   auto &dg = *perLDG[ldgIdx];
+        // dg.context = this;
+        // dg.deviceIdx = ldgIdx;
+        // dg.modelRankInThisSlot = ldgSpec.dataRank;
 
-        std::vector<Device *> devicesForThisLDG;
-        for (auto gpuID : ldgSpec.gpuIDs) {
-          rtc::Device *rtc = new rtc::Device(gpuID);
-          int localDeviceRank = (int)allLocalDevices.size();
-          Device *device 
-            = new Device(rtc,topo.get(),localDeviceRank);
+        // std::vector<Device *> devicesForThisLDG;
+        // for (auto gpuID : ldgSpec.gpuIDs) {
+        int gpuID = gpuIDs[localDevIdx];
+        int dgID = dataGroupIDs[localDevIdx];
+        rtc::Device *rtc = new rtc::Device(gpuID);
+        // int localDeviceRank = (int)allLocalDevices.size();
+        Device *device 
+          = new Device(rtc,topo.get(),this,localDevIdx);//localDeviceRank);
           
-          devicesForThisLDG.push_back(device);
-          allLocalDevices.push_back(device);
-        }
-        dg.devices
-          = std::make_shared<DevGroup>(devicesForThisLDG,
-                                       (int)allLocalDevices.size());
+        // devicesForThisLDG.push_back(device);
+        allLocalDevices.push_back(device);
+        // }
+        // dg.devices
+        //   = std::make_shared<DevGroup>(devicesForThisLDG,
+        //                                (int)allLocalDevices.size());
       }
-      devices = std::make_shared<DevGroup>
-        (allLocalDevices,(int)allLocalDevices.size());
+      devices = allLocalDevices;
+      // devices = std::make_shared<DevGroup>
+      //   (allLocalDevices,(int)allLocalDevices.size());
       if (!havePeerAccess) {
         std::cout << "don't have peer access between GPUs ... this is going to get interesting" << std::endl;
         deviceWeNeedToCopyToForFBMap = allLocalDevices[0];
       }
     
-      for (auto &dg : perLDG) {
-        dg->materialRegistry
-          = std::make_shared<MaterialRegistry>(dg->devices);
-        dg->samplerRegistry
-          = std::make_shared<SamplerRegistry>(dg->devices);
-      }
+      // for (auto &dg : perLDG) {
+      //   dg->materialRegistry
+      //     = std::make_shared<MaterialRegistry>(dg->devices);
+      //   dg->samplerRegistry
+      //     = std::make_shared<SamplerRegistry>(dg->devices);
+      // }
     }
   
     Context::~Context()
@@ -102,10 +113,10 @@ namespace BARNEY_NS {
       delete globalTraceImpl;
       globalTraceImpl = 0;
 
-      for (auto dg : perLDG) delete dg;
-      perLDG.clear();
+      // for (auto dg : perLDG) delete dg;
+      // perLDG.clear();
       
-      for (auto &device : *devices) {
+      for (auto &device : devices) {
         delete device;
         device = 0;
       }
@@ -125,7 +136,7 @@ namespace BARNEY_NS {
     int Context::numRaysActiveLocally()
     {
       int numActive = 0;
-      for (auto device : *devices)
+      for (auto device : devices)
         numActive += device->rayQueue->numActiveRays();
       return numActive;
     }
@@ -136,37 +147,38 @@ namespace BARNEY_NS {
       fb->finalizeTiles();
     }
 
-    void Context::renderTiles(Renderer    *renderer,
-                              GlobalModel *model,
+    void Context::renderTiles(const std::vector<Renderer*> &renderers,
+                              const std::vector<World *> &worlds,
                               Camera      *camera,
                               FrameBuffer *fb)
     {
       auto _context = this;
-      if (!isActiveWorker)
-        return;
+      // if (!isActiveWorker)
+      //   return;
 
-      for (auto device : *devices)
+      for (auto device : devices)
         device->syncPipelineAndSBT();
 
-      activeCutPlane = renderer->cutPlane;
+      activeCutPlane = renderers[0]->cutPlane;
 
       // iw - todo: add wave-front-merging here.
-      for (int p=0;p<renderer->pathsPerPixel;p++) {
+      int ppp = renderers[0]->pathsPerPixel;
+      for (int p=0;p<ppp;p++) {
 
         if (FromEnv::logQueues) 
           std::cout << "#################### RENDER ######################" << std::endl;
         if (FromEnv::logQueues) 
           std::cout << "==================== new pixel wave ======================" << std::endl;
-        generateRays(camera,renderer,fb);
+        generateRays(camera,renderers,fb);
         for (int generation=0;true;generation++) {
           if (FromEnv::logQueues) 
             std::cout << "-------------------- new generation " << generation << " ----------------------" << std::endl;
 
           bool needHitIDs = fb->needHitIDs() && (generation==0);
           uint32_t rngSeed = fb->accumID*16+generation;
-          traceRaysGlobally(model,rngSeed,needHitIDs);
+          traceRaysGlobally(worlds,rngSeed,needHitIDs);
 
-          shadeRaysLocally(renderer, model, camera, fb, generation, rngSeed);
+          shadeRaysLocally(renderers, worlds, camera, fb, generation, rngSeed);
 
           const int numActiveGlobally = numRaysActiveGlobally();
           if (FromEnv::logQueues)
@@ -185,30 +197,32 @@ namespace BARNEY_NS {
     /*! trace all rays currently in a ray queue, including forwarding
       if and where applicable, untile every ray in the ray queue as
       found its intersection */
-    void Context::traceRaysGlobally(GlobalModel *model, uint32_t rngSeed, bool needHitIDs)
+    void Context::traceRaysGlobally(const std::vector<World *> &worlds,
+                                    uint32_t rngSeed,
+                                    bool needHitIDs)
     {
       // if (myRank() == 0) printf("globaltrace....\n");
       if (FromEnv::logQueues) 
         printf("(mr%i) traceRaysGlobally\n",myRank());
-      globalTraceImpl->traceRays(model,rngSeed,needHitIDs);
+      globalTraceImpl->traceRays(worlds,rngSeed,needHitIDs);
     }
 
-    std::shared_ptr<GlobalModel> Context::createModel()
-    {
-      return GlobalModel::create(this);
-    }
+    // std::shared_ptr<GlobalModel> Context::createModel()
+    // {
+    //   return GlobalModel::create(this);
+    // }
   
-    std::shared_ptr<Renderer> Context::createRenderer()
+    std::shared_ptr<Renderer> Context::createRenderer(int slot)
     {
-      return Renderer::create(this);
+      return std::make_shared<Renderer>(devices[slot]);
     }
 
     void Context::ensureRayQueuesLargeEnoughFor(FrameBuffer *fb)
     {
-      if (!isActiveWorker)
-        return;
+      // if (!isActiveWorker)
+      //   return;
 
-      auto dev0 = (*devices)[0];
+      auto dev0 = devices[0];
       auto devFB = fb->getFor(dev0);
       int numTilesInFrame        = devFB->numTiles.x*devFB->numTiles.y;
       int numGPUsThatRenderTiles = topo->numWorkerDevices;
@@ -218,24 +232,24 @@ namespace BARNEY_NS {
         = maxTilesOnAnyGPU
         * /* max two rays per pixel*/2
         * BARNEY_NS::native::pixelsPerTile;
-      for (auto device : *devices) {
+      for (auto device : devices) {
         assert(device->rayQueue);
         device->rayQueue->resize(upperBoundOnNumRays);
       }
     
     }
 
-    int Context::contextSize() const
-    {
-      return (int)devices->size();
-    }
+    // int Context::contextSize() const
+    // {
+    //   return (int)devices->size();
+    // }
   
-    LDGContext *Context::getLDG(int localDataGroupIndex)
-    {
-      assert(localDataGroupIndex >= 0);
-      assert(localDataGroupIndex < perLDG.size());
-      return perLDG[localDataGroupIndex];
-    }
+    // LDGContext *Context::getLDG(int localDataGroupIndex)
+    // {
+    //   assert(localDataGroupIndex >= 0);
+    //   assert(localDataGroupIndex < perLDG.size());
+    //   return perLDG[localDataGroupIndex];
+    // }
 
     bool Context::logging() 
     {
@@ -260,32 +274,32 @@ namespace BARNEY_NS {
       hostOwnedHandles.erase(it);
     }
   
-    /*! helper function to print a warning when app tries to create anari
-      object of certain kind and type that barney does not support */
-    void Context::warn_unsupported_object(const std::string &kind,
-                                          const std::string &type)
-    {
-      static std::set<std::string> alreadyWarned;
-      if (alreadyWarned.find(kind+"::"+type) != alreadyWarned.end())
-        return;
-      std::cout << OWL_TERMINAL_RED
-                << "#bn: asked to create object of unknown/unsupported "
-                <<  kind << " of type '" << type << "'"
-                << " that I know nothing about"
-                << OWL_TERMINAL_DEFAULT << std::endl;
-      alreadyWarned.insert(kind+"::"+type);
-    }
+    // /*! helper function to print a warning when app tries to create anari
+    //   object of certain kind and type that barney does not support */
+    // void Context::warn_unsupported_object(const std::string &kind,
+    //                                       const std::string &type)
+    // {
+    //   static std::set<std::string> alreadyWarned;
+    //   if (alreadyWarned.find(kind+"::"+type) != alreadyWarned.end())
+    //     return;
+    //   std::cout << OWL_TERMINAL_RED
+    //             << "#bn: asked to create object of unknown/unsupported "
+    //             <<  kind << " of type '" << type << "'"
+    //             << " that I know nothing about"
+    //             << OWL_TERMINAL_DEFAULT << std::endl;
+    //   alreadyWarned.insert(kind+"::"+type);
+    // }
 
     std::shared_ptr<Camera>
     Context::createCamera(const std::string &type)
     {
-      return Camera::create(this,type);
+      return Camera::create(devices[0],type);
     }
   
     std::shared_ptr<Volume>
-    Context::createVolume(const std::shared_ptr<ScalarField> &sf)
+    Context::createVolume(const std::shared_ptr<SpatialField> &sf)
     {
-      // sf->as<ScalarField>()
+      // sf->as<SpatialField>()
       if (!sf) return {};
       return Volume::create(sf);
     }
@@ -296,8 +310,9 @@ namespace BARNEY_NS {
                                vec3i dims,
                                const void *texels)
     {
-      return std::make_shared<TextureData>(this,
-                                           getDevices(slot),
+      return std::make_shared<TextureData>(devices[slot],
+                                           // this,
+                                           // getDevices(slot),
                                            texelFormat,
                                            dims,texels);
     }
@@ -314,34 +329,37 @@ namespace BARNEY_NS {
     }
   
     
-    std::shared_ptr<ScalarField>
-    Context::createScalarField(int slot, const std::string &type)
+    std::shared_ptr<SpatialField>
+    Context::createSpatialField(int slot, const std::string &type)
     {
-      return ScalarField::create(this,getDevices(slot),type);
+      return SpatialField::create(devices[slot],type);
     }
     
     std::shared_ptr<Geometry>
     Context::createGeometry(int slot, const std::string &type) 
     {
-      return Geometry::create(this,getDevices(slot),type);
+      return Geometry::create(devices[slot],type);
     }
     
     std::shared_ptr<HostMaterial>
     Context::createMaterial(int slot, const std::string &type) 
     {
-      return HostMaterial::create(getLDG(slot),type);
+      return HostMaterial::create(devices[slot],
+                                  // getLDG(slot),
+                                  type);
     }
 
     std::shared_ptr<Sampler>
     Context::createSampler(int slot, const std::string &type) 
     {
-      return Sampler::create(getLDG(slot),type);
+      return Sampler::create(devices[slot],//getLDG(slot),
+                             type);
     }
 
     std::shared_ptr<Light>
     Context::createLight(int slot, const std::string &type) 
     {
-      return Light::create(this,getDevices(slot),type);
+      return Light::create(devices[slot],type);
     }
 
     std::shared_ptr<Group>
@@ -359,8 +377,9 @@ namespace BARNEY_NS {
         auto g = _volumes[i];
         if (g) volumes.push_back(g->as<Volume>());
       }
-      return std::make_shared<Group>(this,
-                                     getDevices(slot),
+      return std::make_shared<Group>(devices[slot],
+                                     // this,
+                                     // getDevices(slot),
                                      geoms,volumes);
     }
 
@@ -368,16 +387,16 @@ namespace BARNEY_NS {
     Context::createData(int slot,
                         BNDataType dataType)
     {
-      return BaseData::create(this,getDevices(slot),dataType);
+      return BaseData::create(devices[slot],dataType);
     }
     
-    DevGroup::SP Context::getDevices(int slot)
-    {
-      if (slot < 0)
-        return this->devices;
-      else 
-        return getLDG(slot)->devices;
-    }
+    // DevGroup::SP Context::getDevices(int slot)
+    // {
+    //   if (slot < 0)
+    //     return this->devices;
+    //   else 
+    //     return getLDG(slot)->devices;
+    // }
 
     void *Context::initReference(Object *object)
     {

@@ -11,10 +11,13 @@ namespace BARNEY_NS {
     
     RTC_IMPORT_USER_GEOM(Cones,Cones,Cones::DD,false,false);
 
-    Cones::Cones(Context *context, DevGroup::SP devices)
-      : Geometry(context,devices)
+    Cones::Cones(Device *device)
+      : Geometry(device)
     {}
 
+    std::string Cones::toString() const 
+    { return "Cones{}"; }
+    
     void Cones::commit()
     {
       if (!vertices || vertices->count == 0) {
@@ -24,8 +27,7 @@ namespace BARNEY_NS {
                   << std::endl;
         return;
       }
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
+      auto pld = &this->rtc;
         if (pld->userGeoms.empty()) {
           rtc::GeomType *gt
             = device->geomTypes.get(createGeomType_Cones);
@@ -42,13 +44,12 @@ namespace BARNEY_NS {
         geom->setPrimCount((int)numCones);
 
         Cones::DD dd;
-        Geometry::writeDD(dd,device);
-        dd.vertices  = (vec3f*)(vertices?vertices->getDD(device):0);
-        dd.indices   = (vec2i*)(indices?indices->getDD(device):0);
-        dd.radii     = (float*)(radii?radii->getDD(device):0);
+        Geometry::writeDD(dd);
+        dd.vertices  = (vec3f*)(vertices?vertices->getDD():0);
+        dd.indices   = (vec2i*)(indices?indices->getDD():0);
+        dd.radii     = (float*)(radii?radii->getDD():0);
         // done:
         geom->setDD(&dd);
-      }
     } 
   
     bool Cones::setData(const std::string &member, const Data::SP &value)

@@ -6,6 +6,8 @@
 #include "native/render/OptixGlobals.h"
 #include "native/Context.h"
 #include "native/render/RayQueue.h"
+#include "native/render/SamplerRegistry.h"
+#include "native/render/MaterialRegistry.h"
 
 namespace BARNEY_NS {
   namespace native {
@@ -47,17 +49,19 @@ namespace BARNEY_NS {
       }
     }
 
-    DevGroup::DevGroup(const std::vector<Device*> &devices,
-                       int numLogical)
-      : std::vector<Device *>(devices),
-        numLogical(numLogical)
-    {}
+    // DevGroup::DevGroup(const std::vector<Device*> &devices,
+    //                    int numLogical)
+    //   : std::vector<Device *>(devices),
+    //     numLogical(numLogical)
+    // {}
 
 
     Device::Device(rtc::Device *rtc,
                    const WorkerTopo *topo,
+                   Context *context,
                    int localRank)
       : rtc(rtc),
+        context(context),
         geomTypes(rtc),
         topo(topo),
         _localRank(localRank),
@@ -67,6 +71,10 @@ namespace BARNEY_NS {
       rayQueue = new RayQueue(this);
       traceRays
         = createTrace_traceRays(rtc);
+      materialRegistry
+        = std::make_shared<MaterialRegistry>(this);
+      samplerRegistry
+        = std::make_shared<SamplerRegistry>(this);
     }
 
     Device::~Device()

@@ -20,8 +20,9 @@ namespace BARNEY_NS {
 
     struct EnvMapLight : public Light {
       typedef std::shared_ptr<EnvMapLight> SP;
-      EnvMapLight(Context *context,
-                  const DevGroup::SP &devices);
+      EnvMapLight(Device *device);
+      // Context *context,
+      //             const DevGroup::SP &devices);
       virtual ~EnvMapLight();
     
       struct DD {
@@ -63,18 +64,21 @@ namespace BARNEY_NS {
     private:
       void computeCDFs();
     public: // =========== PLD STUFF ===========
-      struct PLD {
-        rtc::Buffer  *cdf_y = 0;
-        rtc::Buffer  *allCDFs_x = 0;
+      // struct PLD {
+      //   rtc::Buffer  *cdf_y = 0;
+      //   rtc::Buffer  *allCDFs_x = 0;
       
-        rtc::ComputeKernel2D *computeWeights_xy;
-        rtc::ComputeKernel1D *computeCDFs_doLine;
-        rtc::ComputeKernel1D *normalize_cdf_y;
-      };
+      //   rtc::ComputeKernel2D *computeWeights_xy;
+      //   rtc::ComputeKernel1D *computeCDFs_doLine;
+      //   rtc::ComputeKernel1D *normalize_cdf_y;
+      // };
 
-      PLD *getPLD(Device *);
-      std::vector<PLD> perLogical;
-    
+      // PLD *getPLD(Device *);
+      // std::vector<PLD> perLogical;
+
+      rtc::Buffer  *d_cdf_y = 0;
+      rtc::Buffer  *d_allCDFs_x = 0;
+      
     public: // =========== parameters ===========
       struct {
         Texture::SP texture;

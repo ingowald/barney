@@ -12,12 +12,14 @@ namespace BARNEY_NS {
     /*! a barney context for "local"-node rendering - no MPI */
     struct LocalContext : public Context {
     
-      LocalContext(const std::vector<DataGroupDescriptor> &dataGroupsOnThisContext);
+      LocalContext(const std::vector<int> &gpuIDs,
+                   const std::vector<int> &dataGroups);
 
-      virtual ~LocalContext();
+      ~LocalContext() override;
 
       static WorkerTopo::SP
-      makeTopo(const std::vector<DataGroupDescriptor> &localDataGroups);
+      makeTopo(const std::vector<int> &gpuIDs,
+               const std::vector<int> &dataGroups);
       
       static Context *create(/*! this is the NUMBER of different data
                                groups/slots inthat context. a data
@@ -45,8 +47,8 @@ namespace BARNEY_NS {
 
       int numRaysActiveGlobally() override;
     
-      void render(Renderer    *renderer,
-                  GlobalModel *model,
+      void render(const std::vector<Renderer *> &renderers,
+                  const std::vector<World *> &worlds,
                   Camera      *camera,
                   FrameBuffer *fb) override;
 

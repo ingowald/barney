@@ -10,7 +10,7 @@
 #include "native/render/GeometryAttributes.h"
 #include "native/material/HostMaterial.h"
 #include "native/render/OptixGlobals.h"
-#include "native/render/World.h"
+#include "native/render/DeviceWorld.h"
 
 namespace BARNEY_NS {
   namespace native {
@@ -32,7 +32,7 @@ namespace BARNEY_NS {
         inline __rtc_device
         void setHitAttributes(HitAttributes &hit,
                               const InterpolatePerVertex &interpolate,
-                              const World::DD &world,
+                              const DeviceWorld &world,
                               bool dbg=false) const;
 
         GeometryAttributes::DD attributes;
@@ -40,25 +40,28 @@ namespace BARNEY_NS {
         int materialID;
       };
     
-      Geometry(Context *context,
-               DevGroup::SP devices);
+      Geometry(Device *device);
+      // Context *context,
+      //          DevGroup::SP devices);
       virtual ~Geometry();
 
-      static Geometry::SP create(Context *context,
-                                 DevGroup::SP devices,
+      static Geometry::SP create(Device *device,
+                                 // Context *context,
+                                 // DevGroup::SP devices,
                                  const std::string &type);
     
       /*! pretty-printer for printf-debugging */
-      std::string toString() const override
-      { return "Geometry{}"; }
+      std::string toString() const override;
 
       /*! ask this geometry to build whatever owl geoms it needs to build */
       virtual void build() {}
 
-      void setAttributesOn(Geometry::DD &dd,
-                           Device *device);
-      void writeDD(Geometry::DD &dd,
-                   Device *device);
+      void setAttributesOn(Geometry::DD &dd);
+        // ,
+        //                    Device *device);
+      void writeDD(Geometry::DD &dd);
+      // ,
+        //            Device *device);
 
       bool set1i(const std::string &member,
                  const int   &value) override;
@@ -78,18 +81,21 @@ namespace BARNEY_NS {
 
       /*! @{ the different intersectable objects that this geometry
           creates during 'build' */
-      struct PLD {
+      // struct PLD {
+      struct {
         std::vector<rtc::Geom *>  triangleGeoms;
-        std::vector<rtc::Geom *>  userGeoms;        
-      };
+        std::vector<rtc::Geom *>  userGeoms;
+        std::vector<rtc::Group *> generatedGroups;
+      } rtc;
+      // };
       /*! a possible whole-wave kernel for this geom; this is not
           inside our own PLD, but can manage its own PLD by itself */
       WholeWaveIntersectKernel::SP wholeWaveKernel;
       /*! @} */
       
-      PLD *getPLD(Device *device);
-      std::vector<PLD> perLogical;
-      DevGroup::SP const devices;
+      // PLD *getPLD(Device *device);
+      // std::vector<PLD> perLogical;
+      // DevGroup::SP const devices;
     protected:
       HostMaterial::SP material;
 
@@ -101,7 +107,7 @@ namespace BARNEY_NS {
     inline __rtc_device
     void Geometry::DD::setHitAttributes(HitAttributes &hit,
                                         const InterpolatePerVertex &interpolate,
-                                        const World::DD &world,
+                                        const DeviceWorld &world,
                                         bool dbg) const
     {
       auto set = [&](vec4f &out,

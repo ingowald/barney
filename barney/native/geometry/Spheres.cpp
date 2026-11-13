@@ -11,16 +11,15 @@ namespace BARNEY_NS {
     
     RTC_IMPORT_USER_GEOM(Spheres,Spheres,Spheres::DD,false,true);
   
-    Spheres::Spheres(Context *context, DevGroup::SP devices)
-      : Geometry(context,devices)
+    Spheres::Spheres(Device *device)
+      : Geometry(device)
     {}
 
     void Spheres::commit()
     {
       if (!origins) return;
 
-      for (auto device : *devices) {
-        PLD *pld = getPLD(device);
+      auto pld = &this->rtc;
         if (pld->userGeoms.empty()) {
           int numOrigins = (int)origins->count;
           rtc::GeomType *gt
@@ -32,14 +31,13 @@ namespace BARNEY_NS {
         rtc::Geom *geom = pld->userGeoms[0];
       
         Spheres::DD dd;
-        Geometry::writeDD(dd,device);
-        dd.origins = (vec3f*)(origins->getDD(device));
-        dd.radii   = (float*)(radii?radii->getDD(device):0);
-        dd.colors  = (vec3f*)(colors?colors->getDD(device):0);
+        Geometry::writeDD(dd);
+        dd.origins = (vec3f*)(origins->getDD());
+        dd.radii   = (float*)(radii?radii->getDD():0);
+        dd.colors  = (vec3f*)(colors?colors->getDD():0);
         dd.defaultRadius = defaultRadius;
         // done:
         geom->setDD(&dd);
-      }
     } 
 
     bool Spheres::set1f(const std::string &member, const float &value)

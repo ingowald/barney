@@ -7,7 +7,7 @@
 namespace BARNEY_NS {
   namespace native {
       
-    GeometryAttributes::DD GeometryAttributes::getDD(Device *device)
+    GeometryAttributes::DD GeometryAttributes::getDD()
     {
       GeometryAttributes::DD attributes;
       auto set = [&](GeometryAttribute::DD &out,
@@ -18,19 +18,19 @@ namespace BARNEY_NS {
           out.scope = GeometryAttribute::FACE_VARYING;
           out.fromArray.type = in.faceVarying->type;
           out.fromArray.ptr
-            = in.faceVarying->getDD(device);
+            = in.faceVarying->getDD();
           out.fromArray.size = (int)in.faceVarying->count;
         } else if (in.perVertex) {
           out.scope = GeometryAttribute::PER_VERTEX;
           out.fromArray.type = in.perVertex->type;
           out.fromArray.ptr
-            = in.perVertex->getDD(device);
+            = in.perVertex->getDD();
           out.fromArray.size = (int)in.perVertex->count;
         } else if (in.perPrim) {
           out.scope = GeometryAttribute::PER_PRIM;
           out.fromArray.type = in.perPrim->type;
           out.fromArray.ptr
-            = in.perPrim->getDD(device);
+            = in.perPrim->getDD();
           out.fromArray.size = (int)in.perPrim->count;
         } else if (isnan(in.constant[0])) {
           out.scope = GeometryAttribute::INVALID;

@@ -73,12 +73,12 @@ namespace BARNEY_NS {
         // static void addVars(std::vector<OWLVarDecl> &vars, int base);
       };
 
-      MCGrid(const DevGroup::SP &devices);
+      MCGrid(Device *device);
       ~MCGrid();
 
       /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-      DD getDD(Device *device);
+      DD getDD();
 
       // void setVariables(OWLGeom geom);
     
@@ -92,19 +92,22 @@ namespace BARNEY_NS {
         allocated/built - mostly for sanity checking nd debugging */
       inline bool built() const { return (dims != vec3i(0)); }
 
-      struct PLD {
-        /* buffer of range1f's, the min/max scalar values per cell */
-        rtc::Buffer *scalarRangesBuffer = 0;
-      };
-      PLD *getPLD(Device *device) 
-      { return &perLogical[device->localRank()]; } 
-      std::vector<PLD> perLogical;
+      // struct PLD {
+      /* buffer of range1f's, the min/max scalar values per cell */
+      struct {
+      rtc::Buffer *scalarRangesBuffer = 0;
+      } rtc;
+      // };
+      // PLD *getPLD(Device *device) 
+      // { return &perLogical[device->localRank()]; } 
+      // std::vector<PLD> perLogical;
 
     
       vec3i     dims { 0,0,0 };
       vec3f     gridOrigin;
       vec3f     gridSpacing;
-      const DevGroup::SP devices;
+      // const DevGroup::SP devices;
+      Device *const device;
     };
 
 
@@ -121,13 +124,15 @@ namespace BARNEY_NS {
         }
       };
 
-      struct PLD {
+      // struct PLD {
         /* buffer of floats, the actual per-cell majorants */
+      struct {
         rtc::Buffer *majorantsBuffer = 0;
-      };
-      PLD *getPLD(Device *device) 
-      { return &perLogical[device->localRank()]; } 
-      std::vector<PLD> perLogical;
+      } rtc;
+      // };
+      // PLD *getPLD(Device *device) 
+      // { return &perLogical[device->localRank()]; } 
+      // std::vector<PLD> perLogical;
     
       MajorantsGrid(MCGrid::SP mcGrid);
       ~MajorantsGrid();
@@ -141,11 +146,12 @@ namespace BARNEY_NS {
     
       /*! get cuda-usable device-data for given device ID (relative to
         devices in the devgroup that this gris is in */
-      DD getDD(Device *device);
+      DD getDD();
 
       vec3i dims { 0, 0, 0 };
       MCGrid::SP const mcGrid;
-      const DevGroup::SP devices;
+      Device *const device;
+      // const DevGroup::SP devices;
     };
     
   }  
