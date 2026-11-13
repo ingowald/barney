@@ -46,7 +46,7 @@ namespace BARNEY_NS {
         const float        *allCDFs_x = 0;
       };
 
-      DD getDD(Device *device, const affine3f &xfm);
+      DD getDD(const affine3f &xfm);
 
       // ==================================================================
       std::string toString() const override { return "EnvMapLight"; }
@@ -75,9 +75,10 @@ namespace BARNEY_NS {
 
       // PLD *getPLD(Device *);
       // std::vector<PLD> perLogical;
-
-      rtc::Buffer  *d_cdf_y = 0;
-      rtc::Buffer  *d_allCDFs_x = 0;
+      struct {
+        rtc::Buffer  *cdf_y = 0;
+        rtc::Buffer  *allCDFs_x = 0;
+      } rtc;
       
     public: // =========== parameters ===========
       struct {

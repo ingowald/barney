@@ -95,17 +95,14 @@ namespace BARNEY_NS {
     // in common/Data.cpp
     rtc::DataType toRTC(BNDataType format);
 
-    Texture::Texture(Context *context, 
-                     TextureData::SP data,
+    Texture::Texture(TextureData::SP data,
                      // const vec4f          borderColor,
                      BNTextureFilterMode  filterMode,
                      BNTextureAddressMode addressModes[],
                      BNTextureColorSpace  colorSpace)
-      : Object(context),
-        devices(data->devices),
+      : Object(data->device),
         data(data)
     {
-      perLogical.resize(devices->numLogical);
       rtc::TextureDesc desc;
       desc.filterMode     = toRTC(filterMode);
       // desc.borderColor    = borderColor;
@@ -118,60 +115,48 @@ namespace BARNEY_NS {
           desc.addressMode[i] = toRTC(addressModes[i]);
       // desc.addressMode[1] = toRTC(addressMode_y);
       desc.colorSpace     = toRTC(colorSpace);
-      for (auto device : *devices) {
-        auto pld = getPLD(device);
-        assert(pld);
-        pld->rtcTexture
-          = data->getPLD(device)->rtc->createTexture(desc);
-      }
+      rtcTexture
+        = data->rtc->createTexture(desc);
     }
 
-    TextureData::TextureData(Context *context,
-                             const DevGroup::SP &devices,
+    TextureData::TextureData(Device *device,
                              BNDataType texelFormat,
                              vec3i size,
                              const void *texels)
-      : Object(context),
-        devices(devices),
+      : Object(device),
         dims(size),
         numChannels(numChannelsOf(texelFormat)),
         texelFormat(texelFormat)
     {
-      perLogical.resize(devices->numLogical);
       rtc::DataType format = toRTC(texelFormat);
-      for (auto device : *devices) {
-        auto pld = getPLD(device);
-        pld->rtc
-          = device->rtc->createTextureData(size,format,texels);
-        assert(pld->rtc);
-      }
+      // for (auto device : *devices) {
+      //   auto pld = getPLD(device);
+      this->rtc
+        = device->rtc->createTextureData(size,format,texels);
     }
 
     Texture::~Texture()
     {
-      for (auto device : *devices) {
         SetActiveGPU forDuration(device);
-        PLD *pld = getPLD(device);
-        if (pld->rtcTexture) {
-          device->rtc->freeTexture(pld->rtcTexture);
-          pld->rtcTexture = 0;
-        }
+        if (rtcTexture) {
+          device->rtc->freeTexture(rtcTexture);
+          rtcTexture = 0;
       }
     }
 
     TextureData::~TextureData()
     {
-      for (auto device : *devices)
-        device->rtc->freeTextureData(getPLD(device)->rtc);
+        device->rtc->freeTextureData(this->rtc);
     }
 
     rtc::TextureObject
-    Texture::getTextureObject(Device *device) 
+    Texture::getTextureObject() 
     {
-      auto pld = getPLD(device);
-      assert(pld);
-      assert(pld->rtcTexture);
-      return pld->rtcTexture->getDD();
+      // auto pld = getPLD(device);
+      // assert(pld);
+      // assert(pld->rtcTexture);
+      // return pld->rtcTexture->getDD();
+      return rtcTexture->getDD();
     }
 
   }

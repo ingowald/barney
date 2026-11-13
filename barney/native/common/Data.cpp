@@ -247,18 +247,16 @@ namespace BARNEY_NS {
       };
     }
 
-    BaseData::BaseData(Context *context,
-                       const DevGroup::SP &devices,
+    BaseData::BaseData(Device *device,
                        BNDataType type)
-      : Data(context),
+      : Data(device),
         type(type),
-        count(0),
-        devices(devices)
+        count(0)
     {}
 
     void PODData::download(Device *device, void *hostPtr)
     {
-      void *d_ptr = getPLD(device)->rtcBuffer->getDD();
+      void *d_ptr = rtcBuffer->getDD();
       auto rtc = device->rtc;
       rtc->copyAsync(hostPtr,d_ptr,numBytes);
       rtc->sync();
@@ -270,55 +268,34 @@ namespace BARNEY_NS {
       ++revision;
       this->count = count;
       this->numBytes = count*owlSizeOf(type);
-      for (auto device : *devices) {
-        getPLD(device)->rtcBuffer->resize(count*owlSizeOf(type));
-        if (numBytes && !getPLD(device)->rtcBuffer->getDD())
-          throw std::bad_alloc();
-        getPLD(device)->rtcBuffer->upload(_items,count*owlSizeOf(type));
-      }
+      rtcBuffer->resize(count*owlSizeOf(type));
+      if (numBytes && !rtcBuffer->getDD())
+        throw std::bad_alloc();
+      rtcBuffer->upload(_items,count*owlSizeOf(type));
     }
 
-    PODData::PODData(Context *context,
-                     const DevGroup::SP &devices,
+    PODData::PODData(Device *device,
                      BNDataType type)
-      : BaseData(context,devices,type)
+      : BaseData(device,type)
     {
-      perLogical.resize(devices->numLogical);
-      for (auto device : *devices) {
-        getPLD(device)->rtcBuffer 
-          = device->rtc->createBuffer(1);//*owlSizeOf(type),_items);
-        assert(getPLD(device)->rtcBuffer);
-      }
-      for (auto device : *devices)
-        device->sync();
+      rtcBuffer 
+        = device->rtc->createBuffer(1);//*owlSizeOf(type),_items);
+      assert(rtcBuffer);
+      device->sync();
     }
   
     PODData::~PODData()
     {
       BN_TRACK_LEAKS(std::cout << "#barney: ~PODData is dying" << std::endl);
-      for (auto device : *devices)
-        device->rtc->freeBuffer(getPLD(device)->rtcBuffer);
+      device->rtc->freeBuffer(rtcBuffer);
     }
 
-    const void *PODData::getDD(Device *device) 
+    const void *PODData::getDD() 
     {
-      assert(device);
-      PLD *pld = getPLD(device);
-      assert(pld);
-      assert(pld->rtcBuffer);
-      return pld->rtcBuffer->getDD();
+      return rtcBuffer->getDD();
     }
   
-    PODData::PLD *PODData::getPLD(Device *device) 
-    {
-      assert(device);
-      assert(device->contextRank() >= 0);
-      assert(device->contextRank() < perLogical.size());
-      return &perLogical[device->contextRank()];
-    }
-  
-    BaseData::SP BaseData::create(Context *context,
-                                  const DevGroup::SP &devices,
+    BaseData::SP BaseData::create(Device *device,
                                   BNDataType type)
     {
       switch(type) {
@@ -365,10 +342,10 @@ namespace BARNEY_NS {
       case BN_FLOAT16_VEC3:
       case BN_FLOAT16_VEC4:
         return std::make_shared<PODData>
-          (context,devices,type);
+          (device,type);
       case BN_OBJECT:
         return std::make_shared<ObjectRefsData>
-          (context,devices,type);
+          (device,type);
       default:
         throw std::runtime_error("un-implemented data type '"
                                  +to_string(type)
@@ -376,10 +353,9 @@ namespace BARNEY_NS {
       }
     }
   
-    ObjectRefsData::ObjectRefsData(Context *context,
-                                   const DevGroup::SP &devices,
+    ObjectRefsData::ObjectRefsData(Device *device,
                                    BNDataType type)
-      : BaseData(context,devices,type)
+      : BaseData(device,type)
     {}
 
     void ObjectRefsData::set(const void *_items, size_t count)

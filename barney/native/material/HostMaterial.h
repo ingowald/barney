@@ -47,7 +47,7 @@ namespace BARNEY_NS {
       void set(Sampler::SP sampler);
       void set(const std::string &attributeName);
       
-      DD getDD(Device *device);
+      DD getDD();
       
       Type type = VALUE;
       Sampler::SP          sampler;

@@ -14,7 +14,7 @@ namespace BARNEY_NS {
   namespace native {
     
     PossiblyMappedParameter::DD
-    PossiblyMappedParameter::getDD(Device *device) 
+    PossiblyMappedParameter::getDD() 
     {
       PossiblyMappedParameter::DD dd;
       dd.type = type;
@@ -73,13 +73,11 @@ namespace BARNEY_NS {
       attribute = parseAttribute(attributeName);
     }
     
-    HostMaterial::HostMaterial(LDGContext *slotContext)
-      : Object(slotContext->context),
-        devices(slotContext->devices),
-        materialRegistry(slotContext->materialRegistry),
-        materialID(slotContext->materialRegistry->allocate())
+    HostMaterial::HostMaterial(Device *device)
+      : Object(device),
+        materialRegistry(device->materialRegistry),
+        materialID(device->materialRegistry->allocate())
     {
-      assert(slotContext->context);
     }
 
     HostMaterial::~HostMaterial()
@@ -89,18 +87,18 @@ namespace BARNEY_NS {
       materialRegistry->release(materialID);
     }
     
-    HostMaterial::SP HostMaterial::create(LDGContext *slotContext,
+    HostMaterial::SP HostMaterial::create(Device *device,
                                           const std::string &type)
     {
       if (type == "AnariMatte" || type == "matte")
-        return std::make_shared<AnariMatte>(slotContext); 
+        return std::make_shared<AnariMatte>(device); 
       if (type == "physicallyBased" || type == "AnariPBR")
-        return std::make_shared<AnariPBR>(slotContext); 
+        return std::make_shared<AnariPBR>(device); 
       // if (type == "nvisii" || type == "NVisii")
       //   return std::make_shared<NVisii>(slotContext); 
       // if (type == "glass" || type == "Glass")
       //   return std::make_shared<Glass>(slotContext); 
-      return std::make_shared<AnariPBR>(slotContext); 
+      return std::make_shared<AnariPBR>(device); 
     }
 
     bool HostMaterial::setString(const std::string &member,
@@ -186,10 +184,9 @@ namespace BARNEY_NS {
 
     void HostMaterial::commit()
     {
-      for (auto device : *devices) {
-        DeviceMaterial dd = getDD(device);
-        materialRegistry->setMaterial(materialID,dd,device);
-      }
+      // for (auto device : *devices) {
+      DeviceMaterial dd = getDD();
+      materialRegistry->setMaterial(materialID,dd);
       hasBeenCommittedAtLeastOnce = true;      
     }
   

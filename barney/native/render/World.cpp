@@ -65,7 +65,7 @@ namespace BARNEY_NS {
       dd.numPointLights = pld->numPointLights;
       dd.envMapLight
         = envMapLight.light
-        ? envMapLight.light->getDD(device,envMapLight.xfm)
+        ? envMapLight.light->getDD(envMapLight.xfm)
         : EnvMapLight::DD{};
       dd.rank            = device->context->myRank();
       dd.instanceOrientations = pld->instanceOrientations;

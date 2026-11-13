@@ -11,8 +11,6 @@
 namespace BARNEY_NS {
   namespace native {
     
-    struct ModelSlot;
-  
     struct Light : public Object {
       typedef std::shared_ptr<Light> SP;
 

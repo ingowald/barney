@@ -27,10 +27,10 @@ namespace BARNEY_NS {
       device->rtc->freeMem(rtc.memory);
     }
      
-    SamplerRegistry::PLD *SamplerRegistry::getPLD(Device *device)
-    {
-      return &perLogical[device->contextRank()];
-    }
+    // SamplerRegistry::PLD *SamplerRegistry::getPLD(Device *device)
+    // {
+    //   return &perLogical[device->contextRank()];
+    // }
     
     void SamplerRegistry::grow()
     {
@@ -74,7 +74,7 @@ namespace BARNEY_NS {
       SetActiveGPU forDuration(device);
       size_t offset = samplerID*sizeof(dd);
       assert(samplerID >= 0 && samplerID < nextFree);
-      device->rtc->copy(((uint8_t*)getPLD(device)->memory)+offset,
+      device->rtc->copy(((uint8_t*)rtc.memory)+offset,
                         &dd,sizeof(dd));
     }
     

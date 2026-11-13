@@ -157,11 +157,11 @@ namespace BARNEY_NS {
         BNTextureAddressMode addressModes[3] = {
           BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP,BN_TEXTURE_CLAMP
         };
-        texture = std::make_shared<Texture>((Context*)context,scalars,
+        texture = std::make_shared<Texture>(scalars,
                                             BN_TEXTURE_LINEAR,
                                             addressModes,
                                             BN_COLOR_SPACE_LINEAR);
-        textureNN = std::make_shared<Texture>((Context*)context,scalars,
+        textureNN = std::make_shared<Texture>(scalars,
                                               BN_TEXTURE_NEAREST,
                                               addressModes,
                                               BN_COLOR_SPACE_LINEAR);

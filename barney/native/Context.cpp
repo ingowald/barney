@@ -323,8 +323,7 @@ namespace BARNEY_NS {
                            BNTextureAddressMode addressModes[],
                            BNTextureColorSpace  colorSpace)
     {
-      return std::make_shared<Texture>(this,
-                                       td->as<TextureData>(),
+      return std::make_shared<Texture>(td->as<TextureData>(),
                                        filterMode,addressModes,colorSpace);
     }
   

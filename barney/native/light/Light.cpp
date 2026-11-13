@@ -13,26 +13,22 @@
 namespace BARNEY_NS {
   namespace native {
     
-    Light::Light(Context *context,
-                 const DevGroup::SP &devices)
-      : Object(context),
-        devices(devices)
+    Light::Light(Device *device)
+      : Object(device)
     {}
   
-    Light::SP Light::create(Context *context,
-                            const DevGroup::SP &devices,
+    Light::SP Light::create(Device *device,
                             const std::string &type)
     {
       if (type == "directional")
-        return std::make_shared<DirLight>(context,devices);
+        return std::make_shared<DirLight>(device);
       if (type == "quad")
-        return std::make_shared<QuadLight>(context,devices);
+        return std::make_shared<QuadLight>(device);
       if (type == "point")
-        return std::make_shared<PointLight>(context,devices);
+        return std::make_shared<PointLight>(device);
       if (type == "envmap")
-        return std::make_shared<EnvMapLight>(context,devices);
+        return std::make_shared<EnvMapLight>(device);
     
-      context->warn_unsupported_object("Light",type);
       return {};
     }
 

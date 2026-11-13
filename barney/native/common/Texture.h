@@ -27,7 +27,7 @@ namespace BARNEY_NS {
    
     TextureData(// Context *context,
                 // const DevGroup::SP &devices,
-                const Device *device,
+                Device *device,
                 BNDataType texelFormat,
                 vec3i size,
                 const void *texels);
@@ -47,8 +47,7 @@ namespace BARNEY_NS {
   struct Texture : public Object {
     typedef std::shared_ptr<Texture> SP;
 
-    Texture(Context *context,
-            TextureData::SP data,
+    Texture(TextureData::SP data,
             BNTextureFilterMode  filterMode,
             BNTextureAddressMode addressModes[],
             BNTextureColorSpace  colorSpace);

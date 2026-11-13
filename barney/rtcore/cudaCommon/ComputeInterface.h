@@ -262,6 +262,6 @@ namespace BARNEY_NS {
 # define __rtc_launch(myRTC,kernel,nb,bs,...)                           \
   {                                                                     \
     ::BARNEY_NS::rtc::SetActiveGPU forDuration(myRTC);                  \
-    if (nb) kernel<<<nb,bs,0,myRTC->stream>>>                           \
+    kernel<<<nb,bs,0,myRTC->stream>>>                           \
               (::BARNEY_NS::rtc::ComputeInterface(), __VA_ARGS__);      \
   }
